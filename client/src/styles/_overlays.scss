@@ -1,0 +1,157 @@
+@use "variables" as *;
+@use "panels" as *;
+
+/// Shared scaffold for blocking full-screen overlays (pause, settings, create-lobby).
+@mixin overlay($z: 50, $bg: rgba(8, 6, 4, 0.78)) {
+  position: fixed; inset: 0; z-index: $z;
+  background: $bg;
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  font-family: $font-mono; color: $ink;
+}
+
+/// Pause overlay (RESUME / OPTIONS / LEAVE).
+#pause-overlay {
+  @include overlay(50);
+
+  .panel {
+    min-width: 360px; padding: 26px 32px;
+    --bracket-bg: #{$panel-bg-overlay};
+
+    h2 {
+      @include section-heading;
+      font-size: 26px; letter-spacing: 0.22em;
+    }
+  }
+
+  .menu { display: flex; flex-direction: column; align-items: flex-start; }
+  .menu-btn {
+    background: transparent; border: none;
+    color: $ink;
+    font-family: $font-mono;
+    font-size: clamp(20px, 3.2vh, 32px);
+    letter-spacing: 0.2em;
+    padding: 4px 0 4px 36px;
+    position: relative; cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.12s;
+
+    &::before {
+      content: ">"; position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%) translateX(-6px);
+      opacity: 0; color: $accent;
+      transition: opacity 0.12s, transform 0.12s;
+    }
+    &:hover { color: $accent; }
+    &:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); }
+    &.primary { font-size: clamp(26px, 4vh, 40px); }
+  }
+}
+
+/// In-game settings overlay (sliders for FOV / pixelation / FPS / volume).
+#settings-overlay {
+  @include overlay(50);
+
+  .panel {
+    min-width: 480px; max-width: 600px; max-height: 88vh; overflow-y: auto;
+    padding: 22px 28px;
+    --bracket-bg: #{$panel-bg-overlay};
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+    h2 { @include section-heading; font-size: 26px; }
+  }
+
+  .menu-btn.back {
+    background: transparent; border: none; color: $dim;
+    font-family: $font-mono; font-size: 18px;
+    letter-spacing: 0.18em; padding: 8px 0 8px 22px; margin-top: 12px;
+    cursor: pointer; position: relative;
+
+    &::before { content: "<"; position: absolute; left: 0; color: $accent; }
+    &:hover { color: $accent; }
+  }
+}
+
+/// Admin settings modal (max players / password / map size / teacher pick).
+#lobby-admin-overlay {
+  @include overlay(40, rgba(0, 0, 0, 0.78));
+
+  .panel {
+    min-width: 520px; max-width: 720px; width: 92vw;
+    max-height: 88vh;
+    display: flex; flex-direction: column;
+    padding: 26px 32px;
+    --bracket-bg: #{$panel-bg-modal};
+    --bracket-size: 18px;
+
+    h2 {
+      @include section-heading;
+      font-size: 22px; letter-spacing: 0.22em;
+      margin: 0 0 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed rgba(200,162,90,0.35);
+    }
+
+    .admin-settings {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(200,162,90,0.4) transparent;
+      &::-webkit-scrollbar { width: 6px; }
+      &::-webkit-scrollbar-thumb { background: rgba(200,162,90,0.4); }
+    }
+  }
+
+  .menu-btn.primary {
+    flex: 0 0 auto;
+    margin-top: 18px; align-self: flex-end;
+    background: transparent; color: $accent;
+    font-family: $font-mono; font-size: 16px;
+    letter-spacing: 0.2em; padding: 8px 22px; cursor: pointer;
+    text-transform: uppercase; border: none;
+    box-shadow: inset 0 0 0 2px $accent;
+    transition: background 0.12s;
+    &:hover { background: rgba(200, 162, 90, 0.12); }
+  }
+}
+
+/// Create-lobby modal (name / max players / password).
+#create-modal {
+  @include overlay(30, rgba(0, 0, 0, 0.78));
+
+  .panel {
+    min-width: 420px; max-width: 540px; padding: 26px 32px;
+    --bracket-bg: #{$panel-bg-modal};
+    --bracket-size: 18px;
+  }
+  h2 { @include section-heading; font-size: 22px; letter-spacing: 0.22em; margin-bottom: 18px; }
+
+  .field {
+    margin-bottom: 14px;
+    label {
+      display: block; font-size: 14px; letter-spacing: 0.18em;
+      color: $dim; text-transform: uppercase; margin-bottom: 6px;
+    }
+  }
+  input {
+    width: 100%; box-sizing: border-box;
+    @include terminal-input;
+  }
+
+  .footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px; }
+  .menu-btn {
+    background: transparent; color: $ink;
+    font-family: $font-mono; font-size: 20px;
+    letter-spacing: 0.18em; padding: 8px 18px; cursor: pointer;
+    text-transform: uppercase; border: none;
+    box-shadow: inset 0 0 0 1px rgba(106,98,88,0.45);
+
+    &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
+    &.primary { color: $accent; box-shadow: inset 0 0 0 2px $accent; }
+    &.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    &.back { box-shadow: none; color: $dim; }
+    &.back:hover { box-shadow: none; color: $accent; }
+  }
+}

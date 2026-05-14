@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BBBACKROOMS</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0a0a0d" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=VT323&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet" />
+    <style>
+      /* Bare-bones first-paint defaults so the page is dark + monospace
+         before the SCSS bundle finishes loading. Real styling lives in src/styles. */
+      html, body {
+        margin: 0; padding: 0; height: 100%;
+        background: #0a0a0d; color: #d9d2c4;
+        font-family: "VT323", monospace;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="status">connecting…</div>
+    <div id="crosshair"></div>
+    <div id="interact-prompt" class="hidden"><span class="key">[E]</span> <span class="label">interact</span></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

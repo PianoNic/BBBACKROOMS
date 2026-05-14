@@ -1,0 +1,18 @@
+@use "variables" as *;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: $bg;
+  overflow: hidden;
+  font-family: $font-mono;
+  color: $ink;
+}
+
+#app { position: fixed; inset: 0; }
+
+#status {
+  position: fixed; left: 8px; top: 8px;
+  font-size: 12px; opacity: 0.7;
+}

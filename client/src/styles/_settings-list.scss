@@ -1,0 +1,133 @@
+@use "variables" as *;
+
+/// Form list used inside the settings overlay (and the title-screen options screen).
+.settings-list {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px;
+  overflow-x: hidden;
+
+  .set-section {
+    margin: 14px 0 6px; padding-bottom: 4px;
+    font-family: $font-mono; font-size: 18px; letter-spacing: 0.22em;
+    color: $dim; border-bottom: 1px dashed rgba(106,98,88,0.35);
+    text-transform: uppercase;
+    &:first-child { margin-top: 0; }
+  }
+
+  .set-row {
+    display: grid; grid-template-columns: 1fr 1.4fr;
+    align-items: center; gap: 12px;
+    padding: 6px 0;
+    font-family: $font-mono; font-size: 20px;
+    min-width: 0;
+
+    label {
+      color: $ink; letter-spacing: 0.1em; text-transform: uppercase;
+      min-width: 0; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+  }
+
+  .set-note { color: $dim; font-size: 14px; letter-spacing: 0.08em; text-transform: none; }
+  .set-ctrl {
+    display: flex; gap: 6px; align-items: center;
+    min-width: 0; // let flex children shrink below their content
+  }
+
+  .set-ctrl input[type="range"] {
+    flex: 1; appearance: none; height: 4px; background: rgba(106,98,88,0.4);
+    outline: none;
+    &::-webkit-slider-thumb {
+      appearance: none; width: 12px; height: 16px;
+      background: $accent; cursor: pointer;
+    }
+    &::-moz-range-thumb {
+      width: 12px; height: 16px;
+      background: $accent; cursor: pointer; border: none;
+    }
+  }
+
+  .set-value {
+    min-width: 56px; color: $accent;
+    text-align: right; letter-spacing: 0.06em;
+  }
+
+  .seg-btn {
+    background: transparent; color: $dim;
+    border: none; box-shadow: inset 0 0 0 1px rgba(106,98,88,0.5);
+    font-family: $font-mono; font-size: 18px;
+    letter-spacing: 0.12em;
+    padding: 4px 12px;
+    cursor: pointer;
+    &:hover { color: $accent; }
+    &.active {
+      color: $accent;
+      box-shadow: inset 0 0 0 1px $accent;
+      background: rgba(200,162,90,0.1);
+    }
+  }
+}
+
+.device-select {
+  flex: 1 1 0; min-width: 0; max-width: 100%;
+  appearance: none; background: transparent; color: $ink;
+  border: none; box-shadow: inset 0 0 0 1px rgba(106,98,88,0.5);
+  font-family: $font-mono; font-size: 16px;
+  letter-spacing: 0.08em; padding: 4px 8px; cursor: pointer;
+  // Truncate the visible selected option when the device name is long.
+  text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+  &:focus { outline: none; box-shadow: inset 0 0 0 1px $accent; color: $accent; }
+  option { background: #1a1816; color: $ink; }
+}
+
+.mic-meter {
+  position: relative; flex: 1; height: 18px;
+  box-shadow: inset 0 0 0 1px rgba(106,98,88,0.5);
+  background: rgba(0,0,0,0.25); overflow: hidden;
+
+  .mic-meter-fill {
+    position: absolute; inset: 0 auto 0 0; width: 0%;
+    background: linear-gradient(90deg,
+      rgba(200,162,90,0.7) 0%,
+      rgba(200,162,90,0.95) 65%,
+      rgba(232,90,74,0.95) 100%);
+    transition: width 60ms linear;
+  }
+  .mic-meter-label {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-family: $font-mono; font-size: 12px;
+    letter-spacing: 0.18em; color: $dim; text-transform: uppercase;
+    pointer-events: none; mix-blend-mode: difference;
+  }
+}
+
+.cam-preview {
+  position: relative; width: 200px; height: 112px;
+  background: #000;
+  box-shadow: inset 0 0 0 1px rgba(106,98,88,0.5);
+  overflow: hidden;
+
+  .cam-preview-video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    transform: scaleX(-1);
+  }
+  .cam-preview-placeholder {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: $font-mono; font-size: 11px; color: $dim;
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+}
+
+.menu-btn.reset {
+  background: transparent; border: none;
+  color: $dim;
+  box-shadow: inset 0 0 0 1px rgba(106,98,88,0.4);
+  font-family: $font-mono; font-size: 18px;
+  letter-spacing: 0.16em;
+  padding: 6px 12px;
+  margin-top: 12px;
+  cursor: pointer;
+  align-self: flex-start;
+  &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
+}

@@ -1,0 +1,359 @@
+@use "variables" as *;
+@use "panels" as *;
+
+#title {
+  --accent: #{$accent};
+  --dim: #{$dim};
+  --ink: #{$ink};
+  @include terminal-screen(10);
+
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { display: none; }
+
+  // Top sysbar: SYS://… and the blinking REC.
+  .sysbar {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px; letter-spacing: 0.2em; color: $dim;
+    margin-bottom: 4vh; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(106, 98, 88, 0.25);
+
+    .rec {
+      color: $red-rec;
+      display: inline-flex; align-items: center; gap: 6px;
+      &::before {
+        content: ""; width: 8px; height: 8px; background: $red-rec;
+        display: inline-block;
+        animation: rec-blink 1.4s steps(1) infinite;
+      }
+    }
+  }
+  @keyframes rec-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.15; }
+  }
+
+  // Hero title.
+  h1 {
+    font-family: $font-display;
+    font-size: clamp(60px, 13vh, 160px);
+    font-weight: 400;
+    margin: 0;
+    color: $accent-bright;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-shadow:
+      0 0 18px rgba(232, 196, 74, 0.45),
+      2px 0 0 rgba(255, 0, 80, 0.55),
+      -2px 0 0 rgba(0, 200, 255, 0.55),
+      0 6px 0 rgba(0, 0, 0, 0.8);
+    animation: title-flicker 4.2s infinite steps(1);
+  }
+  @keyframes title-flicker {
+    0%, 19%, 21%, 49%, 51%, 79%, 81%, 100% { opacity: 1; }
+    20%, 50%, 80% { opacity: 0.55; }
+  }
+
+  h2 { @include section-heading; }
+
+  // Vertical text-only main menu.
+  .menu {
+    display: flex; flex-direction: column;
+    align-items: flex-start; margin-top: 4vh;
+  }
+  .menu-btn,
+  .menu .menu-btn {
+    background: transparent; border: none;
+    color: $ink;
+    font-family: $font-mono;
+    font-size: clamp(20px, 3.5vh, 36px);
+    letter-spacing: 0.2em;
+    padding: 4px 0 4px 36px;
+    position: relative;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.12s;
+
+    &::before {
+      content: ">"; position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%) translateX(-6px);
+      opacity: 0; color: $accent;
+      transition: opacity 0.12s, transform 0.12s;
+    }
+    &:hover { color: $accent; }
+    &:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); }
+    &.primary { font-size: clamp(26px, 4.5vh, 44px); }
+    &.wide { width: 100%; text-align: left; padding-left: 22px; }
+    &.back {
+      font-size: 18px; color: $dim;
+      margin-top: 14px; padding-left: 24px;
+      &::before { content: "<"; }
+      &:hover { color: $accent; }
+    }
+  }
+
+  // The main right-hand server panel.
+  .panel {
+    max-width: 720px; padding: 18px 24px;
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column;
+  }
+
+  // Options screen: settings list grows past the panel — make it scroll.
+  .options-panel .settings-list {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding-right: 8px; // breathing room so slider thumbs don't clip
+  }
+
+  // Tutorial screen: same scroll container pattern as options.
+  .tutorial-panel .tutorial-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding-right: 8px;
+    font-family: $font-mono;
+    color: $ink;
+  }
+
+  .tutorial-panel {
+    width: 760px; max-width: 96vw;
+  }
+
+  .tut-section {
+    margin-bottom: 22px;
+  }
+  .tut-title {
+    font-size: 22px;
+    letter-spacing: 0.18em;
+    color: $accent;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+    border-bottom: 1px dashed rgba(200,162,90,0.35);
+    padding-bottom: 4px;
+  }
+  .tut-list {
+    list-style: none; padding: 0; margin: 0;
+    li {
+      font-size: 16px;
+      line-height: 1.55;
+      padding: 4px 0 4px 18px;
+      position: relative;
+      color: $ink;
+      &::before {
+        content: ">";
+        position: absolute; left: 0; top: 4px;
+        color: $accent;
+      }
+    }
+  }
+
+  .tut-showcase {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 6px;
+  }
+  .tut-item {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: 4px;
+    padding: 10px 6px;
+    background: rgba(0,0,0,0.35);
+    box-shadow: inset 0 0 0 1px rgba(106,98,88,0.4);
+  }
+  .tut-item canvas { display: block; }
+  .tut-item-name { font-size: 14px; color: $accent; letter-spacing: 0.1em; }
+  .tut-item-sub { font-size: 11px; color: $dim; letter-spacing: 0.04em; }
+
+  .field {
+    margin-bottom: 18px;
+    label {
+      display: block; font-family: $font-mono;
+      font-size: 16px; letter-spacing: 0.2em; color: $dim;
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+  }
+  .avatar-controls { display: flex; align-items: center; gap: 14px; }
+  .file-input-hidden { @include sr-only-input; }
+  .file-group { display: flex; flex-direction: column; gap: 4px; }
+  .file-btn {
+    background: transparent; color: $accent;
+    border: none;
+    box-shadow: inset 0 0 0 1px $accent;
+    padding: 6px 14px;
+    font-family: $font-mono; font-size: 18px;
+    letter-spacing: 0.16em;
+    cursor: pointer; text-transform: uppercase;
+    transition: background 0.12s;
+    &:hover { background: rgba(200,162,90,0.18); }
+  }
+  .file-name {
+    color: $dim; font-size: 14px;
+    letter-spacing: 0.12em; font-family: $font-mono;
+    text-transform: uppercase;
+  }
+  #avatar-preview {
+    width: 64px; height: 64px; background: #000;
+    image-rendering: pixelated;
+    box-shadow: inset 0 0 0 1px $accent;
+  }
+
+  input { @include terminal-input; }
+
+  // Lobby-creation row (legacy, only used as the wide CREATE button now).
+  .create-row {
+    display: flex; gap: 10px; margin-bottom: 22px; align-items: stretch;
+    input { flex: 1; }
+    .menu-btn {
+      padding: 6px 14px; font-size: 22px; letter-spacing: 0.15em;
+      color: $accent;
+      box-shadow: inset 0 0 0 1px $accent;
+      background: rgba(200,162,90,0.06);
+      &::before { display: none; }
+      &:hover { background: rgba(200,162,90,0.18); }
+    }
+  }
+
+  .list-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 16px; letter-spacing: 0.18em; color: $dim;
+    text-transform: uppercase; margin: 8px 0;
+  }
+  .icon-btn {
+    background: transparent; border: none; color: $dim;
+    cursor: pointer; font-size: 22px; font-family: $font-mono;
+    padding: 0 4px;
+    &:hover { color: $accent; }
+  }
+
+  // Manifest-style lobby list.
+  .lobby-list {
+    list-style: none; padding: 0 8px 0 0; margin: 0 0 14px;
+    flex: 1; min-height: 0; overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: $accent rgba(106, 98, 88, 0.18);
+
+    &::-webkit-scrollbar { display: block; width: 4px; }
+    &::-webkit-scrollbar-track { background: rgba(106, 98, 88, 0.15); }
+    &::-webkit-scrollbar-thumb { background: $accent; border-radius: 0; }
+    &::-webkit-scrollbar-thumb:hover { background: $accent-bright; }
+
+    .empty { padding: 14px 0; color: $dim; font-style: italic; }
+  }
+  .lobby-row {
+    display: flex; align-items: center;
+    padding: 6px 4px 6px 24px; position: relative;
+    cursor: pointer; font-size: 22px;
+    border-bottom: 1px dashed rgba(106,98,88,0.18);
+
+    &::before {
+      content: ">"; position: absolute; left: 4px; top: 50%;
+      transform: translateY(-50%) translateX(-4px); opacity: 0;
+      color: $accent; transition: opacity 0.1s, transform 0.1s;
+    }
+    &:hover { color: $accent; }
+    &:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+    .lobby-name { color: inherit; letter-spacing: 0.08em; }
+    .lobby-dots {
+      flex: 1; min-width: 24px; margin: 0 10px;
+      border-bottom: 1px dotted rgba(106,98,88,0.5);
+      align-self: center; height: 0;
+    }
+    .lobby-count { color: $dim; letter-spacing: 0.1em; }
+  }
+
+  // Server screen: lobbies + profile flush together, with an empty
+  // filler column on the right so the wasted space lives there, not between.
+  .server-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) 280px 1fr;
+    grid-template-rows: 1fr;
+    column-gap: 24px;
+    flex: 1 1 0; min-height: 0;
+    align-items: stretch;
+
+    > .panel,
+    > .profile-panel { height: 100%; min-height: 0; box-sizing: border-box; }
+  }
+
+  // Profile panel: editable name + 3D voxel + avatar change.
+  .profile-panel {
+    display: flex; flex-direction: column; gap: 14px; padding: 18px 20px;
+
+    .col-header {
+      font-size: 14px; letter-spacing: 0.22em; color: $accent;
+      text-transform: uppercase; padding-bottom: 4px;
+      border-bottom: 1px dashed rgba(200,162,90,0.35);
+    }
+    .p-name-row {
+      display: flex; flex-direction: column; gap: 4px;
+      label {
+        font-size: 12px; letter-spacing: 0.18em; color: $dim;
+        text-transform: uppercase;
+      }
+    }
+    input { @include terminal-input; }
+    .change-avatar {
+      background: transparent; color: $accent;
+      font-family: $font-mono; font-size: 16px;
+      letter-spacing: 0.18em; padding: 6px 12px; cursor: pointer;
+      text-transform: uppercase; border: none;
+      box-shadow: inset 0 0 0 1px $accent;
+      align-self: center;
+      &:hover { background: rgba(200,162,90,0.15); }
+    }
+
+    // 3D voxel cube — proportions match in-game player (0.6 × 1.7 × 0.6).
+    .p-avatar-stage {
+      position: relative; align-self: center;
+      width: 100%; flex: 1 1 0; min-height: 0;
+      perspective: 800px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 12px 0;
+    }
+    .p-cube {
+      --w: 80px;  --h: 226px;  --d: 80px;
+      --hw: 40px; --hh: 113px; --hd: 40px;
+      position: relative; width: var(--w); height: var(--h);
+      transform-style: preserve-3d;
+      animation: cube-spin 6s linear infinite;
+
+      .face {
+        position: absolute;
+        background: #5a5060;
+        box-shadow: inset 0 0 0 2px #2a221a;
+        overflow: hidden;
+      }
+      .face.front, .face.back {
+        width: var(--w); height: var(--h); top: 0; left: 0;
+      }
+      .face.left, .face.right {
+        width: var(--d); height: var(--h); top: 0;
+        left: calc((var(--w) - var(--d)) / 2);
+      }
+      .face.top, .face.bottom {
+        width: var(--w); height: var(--d);
+        top: calc((var(--h) - var(--d)) / 2); left: 0;
+      }
+      .face.front  { transform: translateZ(var(--hd)); }
+      .face.back   { transform: rotateY(180deg) translateZ(var(--hd)); }
+      .face.left   { transform: rotateY(-90deg) translateZ(var(--hw)); }
+      .face.right  { transform: rotateY(90deg)  translateZ(var(--hw)); }
+      .face.top    { transform: rotateX(90deg)  translateZ(var(--hh)); }
+      .face.bottom { transform: rotateX(-90deg) translateZ(var(--hh)); }
+      .face.front .p-cube-face-img {
+        width: 100%; height: 100%; object-fit: cover;
+        image-rendering: pixelated; background: #000;
+      }
+    }
+  }
+  @keyframes cube-spin {
+    0%   { transform: rotateX(-12deg) rotateY(0deg); }
+    100% { transform: rotateX(-12deg) rotateY(360deg); }
+  }
+
+  // Bottom-left junk metadata
+  .footnote {
+    position: fixed; left: 16px; bottom: 12px;
+    font-family: $font-mono; font-size: 14px;
+    color: $dim; letter-spacing: 0.15em;
+    z-index: 1;
+  }
+}
