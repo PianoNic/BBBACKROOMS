@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Maskable: edge-to-edge fill so the OS launcher mask can crop safely.
+       The 80% safe zone (radius 25.6 from center) holds the entire doorway. -->
+  <rect width="64" height="64" fill="#c8a25a"/>
+  <rect x="22" y="14" width="20" height="36" fill="#1a1408"/>
+</svg>

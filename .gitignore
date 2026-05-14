@@ -1,0 +1,127 @@
+# ───────── Dependencies ─────────
+node_modules/
+.pnp
+.pnp.js
+jspm_packages/
+
+# ───────── Build output ─────────
+dist/
+dist-ssr/
+build/
+out/
+*.local
+
+# ───────── Vite / frontend cache ─────────
+.vite/
+.vite.log
+.vite.err
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+.parcel-cache
+.cache/
+
+# ───────── Frontend logs ─────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+bun-debug.log*
+
+# ───────── Test / coverage ─────────
+coverage/
+*.lcov
+.nyc_output/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+.tox/
+.nox/
+.hypothesis/
+nosetests.xml
+coverage.xml
+*.cover
+
+# ───────── Environment / secrets ─────────
+.env
+.env.*
+!.env.example
+.envrc
+
+# ───────── Python ─────────
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+sdist/
+wheels/
+share/python-wheels/
+.installed.cfg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python tooling
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+cython_debug/
+.pdm-python
+.pdm-build/
+.ipynb_checkpoints/
+
+# Django / Flask
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+instance/
+.webassets-cache
+
+# ───────── Databases / runtime data ─────────
+*.rdb
+*.aof
+*.pid
+*.log
+
+# ───────── OS ─────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ───────── Editors / IDEs ─────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ───────── Docker ─────────
+*.pid
+docker-compose.override.yml

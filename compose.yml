@@ -1,0 +1,32 @@
+services:
+  backend:
+    image: pianonic/bbbackrooms-backend:latest
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - TURN_TOKEN_ID=${TURN_TOKEN_ID:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:8000/healthz').status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: pianonic/bbbackrooms-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${PORT:-5367}:80"
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
