@@ -8,7 +8,7 @@
 import * as THREE from "three";
 import type { Prop } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
-import { M, mulberry32 } from "../world/propBuilders/_common";
+import { M, mulberry32, seedFromPos } from "../world/propBuilders/_common";
 
 const OPEN_ANGLE = -Math.PI / 2.4;     // ~75° swing out toward the room
 const OPEN_SPEED = 4.5;                 // rad/s
@@ -71,7 +71,7 @@ export class ToiletStallDoors {
     inner.add(pivot);
 
     // Deterministic initial open/closed from the prop's xz.
-    const rand = mulberry32((p.x * 71.3 + p.z * 19.7) | 0);
+    const rand = mulberry32(seedFromPos(p.x, p.z, 71.3, 19.7));
     const isOpen = rand() < 0.45;
     pivot.rotation.y = isOpen ? OPEN_ANGLE : 0;
 

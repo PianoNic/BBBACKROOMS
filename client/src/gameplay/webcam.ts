@@ -1,20 +1,16 @@
-/** Peer-to-peer media mesh: video (webcam) + audio (voice) on the same
- *  RTCPeerConnection. Server only relays SDP / ICE; media flows
+/** Peer-to-peer media mesh: video (webcam) + audio (voice) over the same
+ *  RTCPeerConnection. The server only relays SDP / ICE; media flows
  *  browser-to-browser. Polite-peer pattern handles offer collisions.
  *  Video is capped at 96×72 @ 6fps @ 40 kbps for an 8-player mesh.
- *  Audio uses Opus defaults (echo-cancellation/noise-suppression enabled). */
+ *
+ *  Per-peer connection wiring lives in `webcamPeer.ts`. */
 import type { NetClient } from "../net/client";
 import { createMicProcessor, type MicProcessor } from "./micProcessor";
 import { acquireMedia, applyVideoBitrateCap, fetchIceServers } from "./webrtcIce";
-
-type Peer = {
-  pc: RTCPeerConnection;
-  remoteStream: MediaStream | null;
-  makingOffer: boolean;
-  ignoreOffer: boolean;
-  polite: boolean;
-};
-type StreamCb = (id: string, stream: MediaStream | null) => void;
+import {
+  attachLocalTracks, createPeer, detachVideoTracks,
+  type Peer, type PeerContext, type StreamCb,
+} from "./webcamPeer";
 
 export type WebcamMesh = {
   setLocalEnabled: (on: boolean) => Promise<void>;
@@ -48,81 +44,24 @@ export function createWebcamMesh(selfId: string, net: NetClient): WebcamMesh {
     if (!iceServers) iceServers = await fetchIceServers();
   }
 
-  function attachLocalTracks(p: Peer): void {
-    const add = (stream: MediaStream): void => {
-      for (const track of stream.getTracks()) {
-        if (!p.pc.getSenders().some((s) => s.track === track)) {
-          p.pc.addTrack(track, stream);
-        }
-      }
+  function peerCtx(): PeerContext {
+    return {
+      selfId, net, iceServers: iceServers ?? [],
+      onAudio: (id, s) => audioCb?.(id, s),
+      onVideo: (id, s) => remoteCb?.(id, s),
     };
-    if (localStream && localEnabled) add(localStream);
-    if (mic) add(mic.processed);
   }
 
-  function detachVideoTracks(p: Peer): void {
-    for (const sender of p.pc.getSenders()) {
-      if (sender.track?.kind === "video") {
-        try { p.pc.removeTrack(sender); } catch { /* noop */ }
-      }
-    }
-  }
-
-  function handleTrack(peerId: string, peer: Peer, e: RTCTrackEvent): void {
-    const stream = e.streams[0] ?? new MediaStream([e.track]);
-    if (e.track.kind === "audio") {
-      audioCb?.(peerId, stream);
-      e.track.addEventListener("ended", () => audioCb?.(peerId, null));
-      return;
-    }
-    peer.remoteStream = stream;
-    remoteCb?.(peerId, stream);
-    e.track.addEventListener("ended", () => {
-      if (peer.remoteStream === stream) {
-        peer.remoteStream = null;
-        remoteCb?.(peerId, null);
-      }
-    });
-  }
-
-  function createPeer(peerId: string): Peer {
-    const pc = new RTCPeerConnection({ iceServers: iceServers ?? [] });
-    const peer: Peer = {
-      pc, remoteStream: null, makingOffer: false, ignoreOffer: false,
-      polite: selfId < peerId,
-    };
-    pc.onicecandidate = (e) => {
-      if (!e.candidate) return;
-      net.send({
-        type: "webrtc_signal", to: peerId, kind: "ice",
-        data: e.candidate.toJSON() as unknown as Record<string, unknown>,
-      });
-    };
-    pc.ontrack = (e) => handleTrack(peerId, peer, e);
-    pc.onnegotiationneeded = async () => {
-      try {
-        peer.makingOffer = true;
-        await pc.setLocalDescription();
-        applyVideoBitrateCap(pc);
-        net.send({
-          type: "webrtc_signal", to: peerId, kind: "offer",
-          data: { sdp: pc.localDescription?.sdp, type: pc.localDescription?.type },
-        });
-      } catch (err) {
-        console.warn("[webcam] negotiation failed", err);
-      } finally {
-        peer.makingOffer = false;
-      }
-    };
-    return peer;
+  function wireLocal(p: Peer): void {
+    attachLocalTracks(p, localStream, localEnabled, mic?.processed ?? null);
   }
 
   function ensurePeer(peerId: string): Peer {
     let p = peers.get(peerId);
     if (p) return p;
-    p = createPeer(peerId);
+    p = createPeer(peerId, peerCtx());
     peers.set(peerId, p);
-    attachLocalTracks(p);
+    wireLocal(p);
     return p;
   }
 
@@ -141,12 +80,10 @@ export function createWebcamMesh(selfId: string, net: NetClient): WebcamMesh {
       if (!raw) return;
       mic = createMicProcessor(raw);
       await ensureIce();
-      for (const p of peers.values()) attachLocalTracks(p);
+      for (const p of peers.values()) wireLocal(p);
     }
     micEnabled = on;
-    if (mic) {
-      for (const t of mic.processed.getAudioTracks()) t.enabled = on;
-    }
+    if (mic) for (const t of mic.processed.getAudioTracks()) t.enabled = on;
   }
 
   async function setLocalEnabled(on: boolean): Promise<void> {
@@ -157,7 +94,7 @@ export function createWebcamMesh(selfId: string, net: NetClient): WebcamMesh {
       localStream = s;
       localEnabled = true;
       await ensureIce();
-      for (const p of peers.values()) attachLocalTracks(p);
+      for (const p of peers.values()) wireLocal(p);
     } else {
       localEnabled = false;
       localStream?.getTracks().forEach((t) => t.stop());
@@ -212,18 +149,14 @@ export function createWebcamMesh(selfId: string, net: NetClient): WebcamMesh {
     removePeer,
     setPeers: (ids) => {
       const wanted = new Set(ids.filter((i) => i !== selfId));
-      for (const id of [...peers.keys()]) {
-        if (!wanted.has(id)) removePeer(id);
-      }
+      for (const id of [...peers.keys()]) if (!wanted.has(id)) removePeer(id);
       for (const id of wanted) {
         if (!peers.has(id)) void ensureIce().then(() => ensurePeer(id));
       }
     },
     onRemoteStream: (cb) => {
       remoteCb = cb;
-      for (const [id, p] of peers) {
-        if (p.remoteStream) cb(id, p.remoteStream);
-      }
+      for (const [id, p] of peers) if (p.remoteStream) cb(id, p.remoteStream);
     },
     onRemoteAudio: (cb) => {
       audioCb = cb;
@@ -240,10 +173,7 @@ export function createWebcamMesh(selfId: string, net: NetClient): WebcamMesh {
     applySignal,
     applyPeerOff: (id) => {
       const p = peers.get(id);
-      if (p?.remoteStream) {
-        p.remoteStream = null;
-        remoteCb?.(id, null);
-      }
+      if (p?.remoteStream) { p.remoteStream = null; remoteCb?.(id, null); }
     },
     dispose: () => {
       void setLocalEnabled(false);

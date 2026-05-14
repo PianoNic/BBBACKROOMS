@@ -11,6 +11,7 @@ import random
 import time as _time
 
 from app.domain.lobby import Lobby, PlayerConn
+from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.world.geom import within_radius_xz
 
@@ -25,7 +26,7 @@ TEACHER_CLOSE_CHANCE = 0.05
 
 
 async def handle_door_toggle(lobby: Lobby, me: PlayerConn, door_id: str) -> None:
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     d = lobby.doors_state.get(door_id)
     if d is None:

@@ -24,6 +24,26 @@ export function offsetFromWall(build: Builder, depth: number): Builder {
   };
 }
 
+/** Hash a prop's world (x, z) into an integer seed. The two multipliers
+ *  scatter neighbouring props onto unrelated PRNG sequences — each builder
+ *  picks its own pair so a bookshelf and a bulletin board at the same
+ *  position don't share visual variation. */
+export function seedFromPos(
+  x: number, z: number, mulX: number, mulZ: number,
+): number {
+  return (x * mulX + z * mulZ) | 0;
+}
+
+/** XZ unit vector pointing away from a wall-mounted prop's face into the
+ *  room. Wall-prop builders place the visible front on local -Z, and the
+ *  placement code rotates yaw so that local -Z maps to the room direction
+ *  — so world-space "into the room" is `(-sin yaw, -cos yaw) * distance`. */
+export function wallForward(
+  yaw: number, distance: number,
+): { dx: number; dz: number } {
+  return { dx: -Math.sin(yaw) * distance, dz: -Math.cos(yaw) * distance };
+}
+
 /** Deterministic PRNG seeded by an integer. Same seed → same sequence.
  *  Used by builders that want per-prop visual variation (whiteboard
  *  scribbles, bookshelf book widths, bulletin notes) without networked

@@ -1,22 +1,26 @@
 """Per-archetype inventory declarations.
 
-This file IS the decoration design doc. Every room type lists what props
-can exist inside it, how many, and any placement constraints. The
-`decorator` module turns each list into world-space `Prop`s via the
-occupancy grid — no per-room imperative code, no overrides.
+Every room type lists what props can exist inside it, how many, and any
+placement constraints. The `decorator` module turns each list into
+world-space `Prop`s via the occupancy grid — no per-room imperative
+code, no overrides.
 
 Slot options:
-- `count`: (min, max). Actual count is rng.randint(min, max).
+- `count` (min, max): actual count is rng.randint(min, max).
 - `wall`: pin a wall prop to a specific wall ("front", "back",
   "side_a", "side_b"). Default: any free wall.
 - `on`: for `on_top` props, the parent prop type that must be underneath.
 - `pattern`: "default" | "grid_fill" | "paired" (see decorator.py).
 - `pair_with`: for pattern="paired", the partner prop type.
 - `variants`: ids to choose from (paintings have 24, default just 0).
+- `centered`: for wall props — prefer the middle anchor.
+- `aisle` / `aisle_w` / `aisle_d` / `front_reserve`: grid_fill tuning.
+- `contiguous`: wall placements pack tight against each other (urinal
+  rows, locker banks).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 from app.world.room_grid import Wall
@@ -33,19 +37,11 @@ class Slot:
     pattern: Pattern = "default"
     pair_with: str | None = None
     variants: tuple[int, ...] = (0,)
-    centered: bool = False  # for wall props: prefer the middle anchor
-    # grid_fill tuning. Defaults give student-desk spacing (1m aisle,
-    # 2m teacher reserve at the front). Set aisle=0 to pack props with
-    # no gap; front_reserve=0 to use the whole room. `aisle_w` /
-    # `aisle_d` override the per-axis aisle independently (server racks
-    # pack tight on W but need a walkable aisle on D).
+    centered: bool = False
     aisle: int = 2
     front_reserve: int = 4
     aisle_w: int | None = None
     aisle_d: int | None = None
-    # If set, this slot's wall placements pack tight against each other
-    # (lowest free anchor first) instead of scattering randomly. Use for
-    # urinal rows, toilet stalls, locker banks.
     contiguous: bool = False
 
 
@@ -55,13 +51,10 @@ _PAINTING_VARIANTS = tuple(range(24))
 INVENTORIES: dict[str, list[Slot]] = {
     "cafeteria": [
         Slot("counter", count=(2, 3), wall="side_a"),
-        # Microwaves sit on the counter (always against a wall).
-        Slot("microwave", count=(1, 2), on="counter"),
+        Slot("microwave", count=(1, 2), on="counter"),  # always against a wall
         Slot("vending_machine", count=(2, 3), wall="side_b"),
         Slot("coffee_machine", count=(1, 1), wall="side_b"),
-        # Use grid_fill so tables sit in a single neat row instead of
-        # scattering across the floor at random angles. Big aisle_d so
-        # the cafeteria forms one row of tables, not stacked rows.
+        # Big aisle_d so the cafeteria forms ONE row of tables, not stacked rows.
         Slot("cafeteria_table", count=(0, 99), pattern="grid_fill",
              aisle_w=2, aisle_d=20),
         Slot("recycle_bin", count=(2, 3)),

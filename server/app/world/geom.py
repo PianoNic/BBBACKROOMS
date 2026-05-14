@@ -16,6 +16,7 @@ the radius, etc.).
 """
 from __future__ import annotations
 
+import math
 from typing import Protocol
 
 
@@ -43,3 +44,12 @@ def distance_squared_xz(ax: float, az: float, bx: float, bz: float) -> float:
     """Raw-coordinate version of `distance_squared`. Use for nearest-of-many
     loops where you want to compare distances without squaring a radius."""
     return (ax - bx) ** 2 + (az - bz) ** 2
+
+
+def wall_forward(yaw: float, distance: float) -> tuple[float, float]:
+    """XZ offset pointing away from a wall-mounted prop's face into the room.
+
+    Wall-prop builders draw their visible front on local -Z; the placement
+    code rotates yaw so local -Z lines up with the room direction. World
+    "into the room" is therefore `(-sin yaw, -cos yaw) * distance`."""
+    return -math.sin(yaw) * distance, -math.cos(yaw) * distance
