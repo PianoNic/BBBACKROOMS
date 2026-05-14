@@ -52,12 +52,13 @@ export function mergeStaticMeshes(stage: THREE.Group): THREE.Group {
   stage.traverse((obj) => {
     if ((obj as THREE.InstancedMesh).isInstancedMesh) out.add(obj);
   });
+  // Textured / transparent meshes are reparented directly onto `out`
+  // with their world transform preserved. Reparenting via `attach`
+  // recomputes the local matrix so the mesh stays at its world pose.
+  // We avoid cloning so the original geometry's UVs and any per-mesh
+  // material state are kept exactly as the builder created them.
   for (const mesh of passthrough) {
-    const clone = new THREE.Mesh(mesh.geometry, mesh.material);
-    clone.applyMatrix4(mesh.matrixWorld);
-    clone.matrixAutoUpdate = false;
-    clone.matrixWorldAutoUpdate = false;
-    out.add(clone);
+    out.attach(mesh);
   }
   out.matrixAutoUpdate = false;
   out.updateMatrixWorld(true);

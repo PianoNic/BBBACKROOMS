@@ -49,7 +49,15 @@ export type PropType =
   | "cafeteria_table"
   | "pylon"
   | "mop_bucket"
-  | "server_rack";
+  | "server_rack"
+  | "printer"
+  | "sofa"
+  | "fridge"
+  | "side_table"
+  | "map"
+  | "chalkboard"
+  | "coat_rack"
+  | "microscope";
 export type Prop = { type: PropType; x: number; z: number; yaw: number; variant?: number };
 
 export type ItemType =

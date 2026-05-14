@@ -14,7 +14,7 @@ from app.domain.lobby import Lobby, PlayerConn
 from app.services.broadcast import broadcast
 from app.world.geom import within_radius_xz
 
-DOOR_REACH = 1.8
+DOOR_REACH = 3.5
 TEACHER_TOGGLE_RADIUS = 1.0
 TEACHER_TOGGLE_COOLDOWN_S = 4.0
 # Per-tick chance a teacher inside the radius toggles a door. Kept low so

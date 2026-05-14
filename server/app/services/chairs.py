@@ -17,7 +17,7 @@ from app.world.constants import CELL_SIZE
 from app.world.geom import within_radius, within_radius_xz
 
 
-PICKUP_RADIUS = 1.8           # m — must be this close to grab
+PICKUP_RADIUS = 3.0           # m — must be this close to grab
 THROW_SPEED = 14.0            # m/s — flat ground-plane velocity
 THROW_LIFETIME = 1.6          # s — auto-land if nothing hit
 TEACHER_HIT_RADIUS = 0.85     # m

@@ -10,6 +10,8 @@ import type { InteractPrompt } from "../ui/interactPrompt";
 import type { LaptopOverlay } from "../ui/laptop/index";
 import type { Chairs } from "../gameplay/chairs";
 import type { Spectator } from "../gameplay/spectator";
+import type { ToiletStallDoors } from "../gameplay/toiletStallDoors";
+import type { FuseBoxes } from "../gameplay/fuseBoxes";
 import type { InventoryHud } from "../ui/inventory";
 import type { ReviveBar } from "../ui/reviveBar";
 
@@ -22,6 +24,8 @@ export type GameInputDeps = {
   laptop: LaptopOverlay;
   chairs: Chairs;
   spectator: Spectator;
+  toiletStallDoors: ToiletStallDoors;
+  fuseBoxes: FuseBoxes;
   inventory: InventoryHud;
   reviveBar: ReviveBar;
   /** V key push-to-talk: held = mic active for the duration of the press,
@@ -78,6 +82,19 @@ function handleInteract(d: GameInputDeps): void {
   }
   if (cur?.kind === "door" && cur.doorId) {
     d.net.send({ type: "door_toggle", doorId: cur.doorId }); return;
+  }
+  if (cur?.kind === "toilet_stall" && cur.stallId) {
+    // Client-only toggle; cabin doors aren't synced across players.
+    d.toiletStallDoors.toggle(cur.stallId); return;
+  }
+  if (cur?.kind === "fuse_box_door" && cur.fuseBoxId) {
+    d.fuseBoxes.toggleDoor(cur.fuseBoxId); return;
+  }
+  if (cur?.kind === "fuse_box_lever" && cur.fuseBoxId && cur.leverIdx != null) {
+    // Flipping the last lever triggers the standard interact packet
+    // inside FuseBoxes.flipLever, completing the fuse-box quest spot.
+    d.fuseBoxes.flipLever(cur.fuseBoxId, cur.leverIdx, d.net);
+    return;
   }
   if (cur?.kind === "corpse" && cur.corpseId && d.inventory.hasMedkit()) {
     d.reviveState.active = true;

@@ -12,7 +12,7 @@ from app.domain.lobby import Lobby, PlayerConn, Revive
 from app.services.broadcast import broadcast
 from app.world.geom import within_radius_xz
 
-REVIVE_RADIUS = 2.2
+REVIVE_RADIUS = 4.0
 REVIVE_MOVE_TOLERANCE = 1.4  # m — reviver must hold still
 REVIVE_DURATION = 3.0
 

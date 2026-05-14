@@ -1,13 +1,60 @@
 /** Start-of-game slot machine: spins through the full teacher roster and
  * lands on the 3 teachers picked for this run. Resolves when the player
  * presses CONTINUE so the rest of game-start can proceed. */
-import { playSfx } from "../core/audio";
+import { getSfxDestination, playSfx } from "../core/audio";
 import { abilityCopy } from "../gameplay/abilityLabels";
 import type { RosterEntry, TeacherInfo } from "../net/protocol";
 import { el } from "./dom";
 
-const TICK_SOUND = "/sounds/paper/rustle.mp3";
 const LOCK_SOUND = "/sounds/metal/clang.mp3";
+
+/** Procedural slot-machine tick. A real click is a short broadband noise
+ *  burst, NOT a pitched sweep — so we generate ~10ms of white noise
+ *  through a sharp bandpass, with a 1ms attack and 8ms decay. */
+let cachedClickBuffer: AudioBuffer | null = null;
+function getClickBuffer(ctx: BaseAudioContext): AudioBuffer {
+  if (cachedClickBuffer && cachedClickBuffer.sampleRate === ctx.sampleRate) {
+    return cachedClickBuffer;
+  }
+  const samples = Math.floor(ctx.sampleRate * 0.015);
+  const buf = ctx.createBuffer(1, samples, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < samples; i++) data[i] = Math.random() * 2 - 1;
+  cachedClickBuffer = buf;
+  return buf;
+}
+function playTick(volume: number, freq: number, q: number): void {
+  const dest = getSfxDestination();
+  if (!dest) return;
+  const ctx = dest.context;
+  const now = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = getClickBuffer(ctx);
+  // Each wheel gets a slightly different bandpass centre + Q so the
+  // ticks don't sound like a single pulse train.
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = freq;
+  bp.Q.value = q;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.linearRampToValueAtTime(volume, now + 0.001);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
+  src.connect(bp);
+  bp.connect(g);
+  g.connect(dest);
+  src.start(now);
+  src.stop(now + 0.02);
+}
+
+// Per-wheel tick voices — distinct bandpass centres so each reel
+// chatters at its own pitch. Cycles if there are more than 4 wheels.
+const TICK_VOICES = [
+  { freq: 2600, q: 1.5 },
+  { freq: 3100, q: 1.7 },
+  { freq: 3700, q: 1.8 },
+  { freq: 2200, q: 1.4 },
+];
 
 let styleInjected = false;
 
@@ -164,7 +211,11 @@ export function showTeacherSlots(
     const startTimes = teachers.map((_, i) => i * 250);
     const stopTimes = teachers.map((_, i) => 2400 + i * 700);
     const t0 = performance.now();
-    let lastTick = 0;
+    // Per-wheel last-cell index so each reel fires a tick as it visually
+    // crosses a cell boundary. With the cubic ease-out, cells pass fast
+    // at the start and slow as the wheel decelerates → the tick rate
+    // tracks the wheel's actual speed for free.
+    const lastCellIdx: number[] = teachers.map(() => -1);
 
     const tick = (now: number) => {
       const dt = now - t0;
@@ -190,11 +241,14 @@ export function showTeacherSlots(
         const targetIdx = stripLengths[i] - 1;
         const offset = eased * targetIdx * CELL_H;
         r.strip.style.transform = `translateY(${-offset}px)`;
+        // Fire a tick whenever this reel crosses the next cell row.
+        const cellIdx = Math.floor(eased * targetIdx);
+        if (cellIdx !== lastCellIdx[i]) {
+          lastCellIdx[i] = cellIdx;
+          const voice = TICK_VOICES[i % TICK_VOICES.length];
+          playTick(0.18, voice.freq, voice.q);
+        }
       });
-      if (stillSpinning && now - lastTick > 140) {
-        lastTick = now;
-        playSfx(TICK_SOUND, 0.08);
-      }
       if (stillSpinning) requestAnimationFrame(tick);
       else if (!countdownStarted) startCountdown();
     };

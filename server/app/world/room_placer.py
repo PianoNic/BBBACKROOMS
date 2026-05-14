@@ -26,6 +26,7 @@ WALL_CLEARANCE = 0.02
 def place_wall(
     grid: RoomGrid, prop_type: str, spec: PropSpec, wall: Wall,
     rng: random.Random, variant: int = 0, centered: bool = False,
+    contiguous: bool = False,
 ) -> Prop | None:
     along, _ = spec.footprint
     axis_len = grid.w_cells if wall in ("front", "back") else grid.d_cells
@@ -35,6 +36,11 @@ def place_wall(
         # centre, falling back outward only if the centre is taken.
         mid = (axis_len - along) / 2
         candidates.sort(key=lambda a: abs(a - mid))
+    elif contiguous:
+        # Iterate in order so successive placements naturally land on the
+        # lowest free anchor — props end up flush against whatever was
+        # placed before (no gaps, no interleave with other prop types).
+        pass
     else:
         rng.shuffle(candidates)
     for anchor in candidates:
@@ -114,22 +120,35 @@ def place_center(
     return None
 
 
+def _axis_aligned_yaw(grid: RoomGrid, rng: random.Random) -> float:
+    """Random yaw snapped to the room's cardinal axes. Free-floating props
+    look uniformly wrong at arbitrary angles — snapping to 90° increments
+    keeps tables/benches/plants parallel to the walls."""
+    return grid.frame.front_yaw + rng.randint(0, 3) * (math.pi / 2)
+
+
 def place_corner(
     grid: RoomGrid, prop_type: str, spec: PropSpec, rng: random.Random,
 ) -> Prop | None:
     along, out = spec.footprint
+    # (corner, yaw-toward-room-interior). The yaw points the prop's local
+    # -Z (its front) diagonally inward from its corner.
+    diag = math.pi / 4
+    front = grid.frame.front_yaw
     corners = [
-        (0, 0), (grid.w_cells - along, 0),
-        (0, grid.d_cells - out), (grid.w_cells - along, grid.d_cells - out),
+        ((0, 0), front + diag),
+        ((grid.w_cells - along, 0), front - diag),
+        ((0, grid.d_cells - out), front + math.pi - diag),
+        ((grid.w_cells - along, grid.d_cells - out), front + math.pi + diag),
     ]
     rng.shuffle(corners)
-    for w, d in corners:
+    for (w, d), yaw in corners:
         if not grid.is_free("floor", w, d, along, out):
             continue
         grid.mark("floor", w, d, along, out)
         grid.reservations.append((prop_type, w, d, along, out, "corner"))
         cx, cz = grid.to_world(w + along / 2 - 0.5, d + out / 2 - 0.5)
-        return Prop(type=prop_type, x=cx, z=cz, yaw=rng.uniform(0, math.tau))
+        return Prop(type=prop_type, x=cx, z=cz, yaw=yaw)
     return None
 
 
@@ -151,7 +170,7 @@ def place_floor(
         cx, cz = grid.to_world(w + along / 2 - 0.5, d + out / 2 - 0.5)
         return Prop(
             type=prop_type, x=cx, z=cz,
-            yaw=yaw if yaw is not None else rng.uniform(0, math.tau),
+            yaw=yaw if yaw is not None else _axis_aligned_yaw(grid, rng),
         )
     return None
 
@@ -161,32 +180,33 @@ def place_on(
     rng: random.Random,
 ) -> Prop | None:
     """Place on the next free spot on a `parent_type` prop's offered layer.
-    Inherits the parent's wall yaw so the stacked prop faces the room."""
+    Inherits the parent's wall yaw so the stacked prop faces the room.
+
+    The stacked prop's world position uses the chosen sub-cell's centre
+    on the parent's ALONG axis (so multiple stacks spread across left /
+    centre / right of the parent) but stays at the parent's centre on
+    the OUT axis (since the parent's mesh is often shallower than its
+    reserved sub-cells)."""
     parents = [r for r in grid.reservations if r[0] == parent_type]
     rng.shuffle(parents)
     for _, pw, pd, psw, psd, wall in parents:
         along, out = spec.footprint
-        # Prefer the middle of the parent's footprint — parents like the
-        # teacher's desk have a mesh smaller than their reserved sub-cells,
-        # so a corner slot pushes the stacked prop past the visible edge.
-        cw = (psw - along) / 2
-        cd = (psd - out) / 2
         offsets = [
             (dw, dd)
             for dw in range(psw - along + 1)
             for dd in range(psd - out + 1)
         ]
-        offsets.sort(key=lambda o: (o[0] - cw) ** 2 + (o[1] - cd) ** 2)
+        rng.shuffle(offsets)
         for dw, dd in offsets:
             w, d = pw + dw, pd + dd
             if not grid.is_free(spec.requires_layer, w, d, along, out):
                 continue
             grid.mark(spec.requires_layer, w, d, along, out)
             grid.reservations.append((prop_type, w, d, along, out, wall))
-            # Place the stacked prop on the parent's actual WORLD centre
-            # (not the chosen sub-cell centre) so it sits on the mesh
-            # regardless of the parent's footprint/mesh size mismatch.
-            cx, cz = grid.to_world(pw + psw / 2 - 0.5, pd + psd / 2 - 0.5)
+            cx, cz = grid.to_world(
+                pw + dw + along / 2 - 0.5,
+                pd + psd / 2 - 0.5,
+            )
             yaw = grid.wall_yaw(wall) if wall in ALL_WALLS else 0.0
             return Prop(type=prop_type, x=cx, z=cz, yaw=yaw)
     return None

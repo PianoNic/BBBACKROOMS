@@ -49,11 +49,11 @@ def _place_slot(
     spec = get_spec(slot.type)
     # Patterns ignore count semantics — they fill as much as fits.
     if slot.pattern == "grid_fill":
-        # Bigger aisle (2 sub-cells) keeps the prop count manageable —
-        # student-desk and server-rack patterns no longer carpet the
-        # entire room interior at sub-cell density.
         return place_grid_fill(
-            grid, slot.type, spec, rng, front_reserve=4, aisle=2,
+            grid, slot.type, spec, rng,
+            front_reserve=slot.front_reserve, aisle=slot.aisle,
+            aisle_w=slot.aisle_w, aisle_d=slot.aisle_d,
+            variants=slot.variants,
         )
     lo, hi = slot.count
     n = rng.randint(lo, hi) if hi >= lo else 0
@@ -81,8 +81,11 @@ def _place_one(
     placement = spec.placement
     if placement == "wall":
         if slot.wall is not None:
-            return place_wall(grid, slot.type, spec, slot.wall, rng,
-                              variant=variant, centered=slot.centered)
+            return place_wall(
+                grid, slot.type, spec, slot.wall, rng,
+                variant=variant, centered=slot.centered,
+                contiguous=slot.contiguous,
+            )
         return place_any_wall(grid, slot.type, spec, rng, variant=variant)
     if placement == "center":
         return place_center(grid, slot.type, spec, rng)

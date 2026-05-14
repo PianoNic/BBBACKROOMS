@@ -1,7 +1,7 @@
 /** Storage furniture: cupboards, closets, bins. */
 import * as THREE from "three";
 import { materials } from "../../rendering/materials";
-import type { Builder } from "./_common";
+import { offsetFromWall, type Builder } from "./_common";
 
 const CUPBOARD_BODY = new THREE.BoxGeometry(1.2, 1.8, 0.5);
 const CUPBOARD_SPLIT = new THREE.BoxGeometry(0.03, 1.6, 0.51);
@@ -37,8 +37,10 @@ const buildTrashCan: Builder = () => {
   return m;
 };
 
+// Wall-prop wrappers: cupboard is 0.5m deep → shift back to wall by 0.23m.
+// Closet 0.45m deep → 0.205m. trash_can is floor placement, no offset.
 export const STORAGE_BUILDERS: Record<string, Builder> = {
-  cupboard: buildCupboard,
-  closet: buildCloset,
+  cupboard: offsetFromWall(buildCupboard, 0.23),
+  closet: offsetFromWall(buildCloset, 0.205),
   trash_can: buildTrashCan,
 };

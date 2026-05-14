@@ -88,18 +88,24 @@ const buildSwissFlag: Builder = () => {
   return g;
 };
 
-// Desk-top projector aimed at the whiteboard. It inherits the teacher
-// desk's "back" wall yaw, which rotates local -Z into the room. We want
-// the lens pointing the OPPOSITE way (toward the whiteboard / back wall),
-// so the lens sits on local +Z.
+// Ceiling-mounted projector aimed at the whiteboard. The prop is anchored
+// at the teacher desk's xz (via place_on) but hangs from the ceiling on
+// a short pole. It inherits the desk's "back" wall yaw, so local +Z
+// points toward the whiteboard.
 const buildProjector: Builder = () => {
   const g = new THREE.Group();
+  const Y = 2.75;  // body height; ceiling is at 3.0
+  const mount = new THREE.Mesh(PROJ_MOUNT, materials.projector);
+  mount.position.set(0, 2.85, 0);  // pole from ceiling to body top
+  g.add(mount);
   const body = new THREE.Mesh(PROJ_BODY, materials.projector);
-  body.position.y = 0.84;
+  body.position.y = Y;
+  body.rotation.x = 0.25;  // tilt nose (+Z side) down toward whiteboard
   g.add(body);
   const lens = new THREE.Mesh(PROJ_LENS, materials.projectorLens);
-  lens.rotation.x = Math.PI / 2;
-  lens.position.set(0, 0.84, 0.18);
+  lens.rotation.x = Math.PI / 2 + 0.25;
+  // Lens sits at the front of the (tilted) body, pointing down + back.
+  lens.position.set(0, Y - 0.05, 0.17);
   g.add(lens);
   return g;
 };
@@ -120,10 +126,57 @@ const buildGlobe: Builder = () => {
   return g;
 };
 
+// Small lab microscope that sits ON a desk's desk_top layer. Black base,
+// arched arm, eyepiece tube angled forward, stage with sample slide.
+const MICRO_BASE = new THREE.BoxGeometry(0.16, 0.04, 0.16);
+const MICRO_ARM = new THREE.BoxGeometry(0.04, 0.22, 0.05);
+const MICRO_TUBE = new THREE.CylinderGeometry(0.022, 0.022, 0.14, 10);
+const MICRO_EYE = new THREE.CylinderGeometry(0.018, 0.025, 0.04, 10);
+const MICRO_STAGE = new THREE.BoxGeometry(0.10, 0.02, 0.08);
+const MICRO_OBJ = new THREE.CylinderGeometry(0.018, 0.012, 0.05, 8);
+const MICRO_KNOB = new THREE.CylinderGeometry(0.022, 0.022, 0.018, 8);
+
+const buildMicroscope: Builder = () => {
+  const g = new THREE.Group();
+  const T = 0.75;  // desk_top height
+  const baseMat = materials.projector;
+  const trimMat = materials.projectorLens;
+  const base = new THREE.Mesh(MICRO_BASE, baseMat);
+  base.position.y = T + 0.02;
+  g.add(base);
+  const arm = new THREE.Mesh(MICRO_ARM, baseMat);
+  arm.position.set(-0.04, T + 0.15, 0.02);
+  arm.rotation.x = -0.15;
+  g.add(arm);
+  const tube = new THREE.Mesh(MICRO_TUBE, baseMat);
+  tube.position.set(0.0, T + 0.24, -0.01);
+  tube.rotation.x = 0.15;
+  g.add(tube);
+  const eye = new THREE.Mesh(MICRO_EYE, trimMat);
+  eye.position.set(0.0, T + 0.31, -0.02);
+  eye.rotation.x = 0.15;
+  g.add(eye);
+  const stage = new THREE.Mesh(MICRO_STAGE, baseMat);
+  stage.position.y = T + 0.10;
+  g.add(stage);
+  const slide = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.005, 0.025), trimMat);
+  slide.position.y = T + 0.112;
+  g.add(slide);
+  const obj = new THREE.Mesh(MICRO_OBJ, baseMat);
+  obj.position.set(0, T + 0.155, 0);
+  g.add(obj);
+  const knob = new THREE.Mesh(MICRO_KNOB, baseMat);
+  knob.rotation.z = Math.PI / 2;
+  knob.position.set(-0.07, T + 0.12, 0);
+  g.add(knob);
+  return g;
+};
+
 export const CLASSROOM_FRONT_BUILDERS: Record<string, Builder> = {
   whiteboard: buildWhiteboard,
   clock: buildClock,
   swiss_flag: buildSwissFlag,
   projector: buildProjector,
   globe: buildGlobe,
+  microscope: buildMicroscope,
 };

@@ -106,6 +106,8 @@ async function main(): Promise<void> {
     net, camera: ctx.camera, state: s.state, reviveState,
     interactPrompt: s.interactPrompt, laptop: s.laptop, chairs: s.chairs,
     spectator: s.spectator, inventory: s.inventory, reviveBar: s.reviveBar,
+    toiletStallDoors: s.toiletStallDoors,
+    fuseBoxes: s.fuseBoxes,
     voice: {
       isToggleOn: () => getSettings().voiceMode === "open",
       setActive: (on) => { voice.pttHeld = on; void voice.sync(); },
@@ -181,6 +183,7 @@ async function main(): Promise<void> {
     portal: s.portal, spectator: s.spectator, state: s.state,
     laptops: s.laptops, teachers: s.teachers, teacherEffects: s.teacherEffects,
     chairs: s.chairs, pickups: s.pickups, lockers: s.lockers, doors: s.doors,
+    toiletStallDoors: s.toiletStallDoors, fuseBoxes: s.fuseBoxes,
     corpses: s.corpses, inventory: s.inventory, compass: s.compass,
     heartbeat: s.heartbeat, proximityVoice: s.proximityVoice,
     gogglesState,

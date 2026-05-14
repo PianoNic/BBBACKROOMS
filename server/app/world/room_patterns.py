@@ -19,22 +19,33 @@ from app.world.room_placer import CENTER_MARGIN_SUBCELLS, place_center
 def place_grid_fill(
     grid: RoomGrid, prop_type: str, spec: PropSpec, rng: random.Random,
     front_reserve: int = 0, aisle: int = 1, yaw: float | None = None,
+    variants: tuple[int, ...] = (0,),
+    aisle_w: int | None = None, aisle_d: int | None = None,
 ) -> list[Prop]:
     """Fill the room (minus a front reserve band) with a regular grid of
     this prop. The outer 2m ring is excluded so rows don't hug the
     side/back walls. Sub-cells already taken are skipped silently — the
-    pattern adapts around wall props."""
+    pattern adapts around wall props.
+
+    `aisle` sets gap on BOTH axes. To pack rows tight on one axis while
+    leaving a walkable aisle on the other (server racks), pass
+    `aisle_w` / `aisle_d` explicitly."""
     along, out = spec.footprint
     use_yaw = yaw if yaw is not None else grid.frame.front_yaw
-    pitch_w = along + aisle
-    pitch_d = out + aisle
+    aw = aisle if aisle_w is None else aisle_w
+    ad = aisle if aisle_d is None else aisle_d
+    pitch_w = along + aw
+    pitch_d = out + ad
     margin_w = min(CENTER_MARGIN_SUBCELLS,
                    max(0, (grid.w_cells - along) // 2))
     margin_d = min(CENTER_MARGIN_SUBCELLS,
                    max(0, (grid.d_cells - out) // 2))
-    d_start = max(front_reserve, margin_d)
+    # Centre each prop within its pitch tile by shifting the start by
+    # half an aisle on each axis — otherwise the prop sits flush in the
+    # top-left of its cell and looks corner-anchored.
+    d_start = max(front_reserve, margin_d) + ad // 2
     d_stop = grid.d_cells - out - margin_d + 1
-    w_start = margin_w
+    w_start = margin_w + aw // 2
     w_stop = grid.w_cells - along - margin_w + 1
     placed: list[Prop] = []
     for d in range(d_start, d_stop, pitch_d):
@@ -44,7 +55,9 @@ def place_grid_fill(
             grid.mark("floor", w, d, along, out)
             grid.reservations.append((prop_type, w, d, along, out, "center"))
             cx, cz = grid.to_world(w + along / 2 - 0.5, d + out / 2 - 0.5)
-            placed.append(Prop(type=prop_type, x=cx, z=cz, yaw=use_yaw))
+            v = rng.choice(variants)
+            placed.append(Prop(type=prop_type, x=cx, z=cz, yaw=use_yaw,
+                               variant=v))
     return placed
 
 
@@ -96,8 +109,13 @@ def place_paired(
         grid.reservations.append(
             (partner_type, w, d, pa_along, pa_out, "floor"),
         )
+        # Use the DESK's w-centre for the chair's world position so the
+        # chair stays dead-centre behind the desk even when the desk's
+        # along-footprint and the chair's along-footprint have different
+        # parities (the integer reservation cell would otherwise land
+        # half a sub-cell off-centre).
         cx, cz = grid.to_world(
-            w + pa_along / 2 - 0.5, d + pa_out / 2 - 0.5,
+            pw + psw / 2 - 0.5, d + pa_out / 2 - 0.5,
         )
         return primary, Prop(type=partner_type, x=cx, z=cz, yaw=chair_yaw)
     return primary, None

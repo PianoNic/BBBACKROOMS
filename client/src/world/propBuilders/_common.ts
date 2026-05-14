@@ -9,6 +9,21 @@ import type { Prop } from "../../net/protocol";
 
 export type Builder = (prop: Prop) => THREE.Object3D;
 
+/** Wrap a wall-prop builder so its mesh contents are offset away from the
+ *  wall by `depth` metres (along local +Z, the wall direction). Use when
+ *  the underlying builder centres its meshes at z=0; without the shift,
+ *  half the prop clips inside the wall. The outer group's position is
+ *  overwritten by the placement code, so we offset an inner wrapper. */
+export function offsetFromWall(build: Builder, depth: number): Builder {
+  return (prop) => {
+    const wrapper = new THREE.Group();
+    const inner = build(prop) as THREE.Object3D;
+    inner.position.z -= depth;
+    wrapper.add(inner);
+    return wrapper;
+  };
+}
+
 /** Deterministic PRNG seeded by an integer. Same seed → same sequence.
  *  Used by builders that want per-prop visual variation (whiteboard
  *  scribbles, bookshelf book widths, bulletin notes) without networked
