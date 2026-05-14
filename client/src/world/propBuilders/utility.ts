@@ -2,19 +2,20 @@
 import * as THREE from "three";
 import { Basic, M, type Builder } from "./_common";
 
+// Wall-mounted fuse box BODY only — interactive door + levers are
+// rendered by the FuseBoxes manager (outside static-merge so each
+// fuse box's door/lever pivots remain addressable for animation +
+// click toggling).
 const buildFuseBox: Builder = () => {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.7, 0.15), M(0xd8d8c8));
   body.position.set(0, 1.35, -0.075);
   g.add(body);
-  const cover = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.62, 0.03), M(0xeeeee0));
-  cover.position.set(0, 1.35, 0.01);
-  g.add(cover);
-  for (const x of [-0.12, 0.12]) {
-    const sw = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.04), M(0xd03030));
-    sw.position.set(x, 1.35, 0.04);
-    g.add(sw);
-  }
+  // Recessed interior (darker) so when the door is open the cavity reads
+  // as inset, not flat. The actual lever meshes sit in front of this.
+  const cavity = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.60, 0.02), M(0x202024));
+  cavity.position.set(0, 1.35, -0.01);
+  g.add(cavity);
   return g;
 };
 

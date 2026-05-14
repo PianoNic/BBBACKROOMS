@@ -1,7 +1,8 @@
-/** Toilet fixtures: stalls (with bowl inside), urinals, sinks (+ mirror). */
+/** Toilet fixtures: stall shells + fixtures (interactive cabin doors
+ *  are handled separately by ToiletStallDoors), urinals, sinks. */
 import * as THREE from "three";
 import { materials } from "../../rendering/materials";
-import type { Builder } from "./_common";
+import { M, offsetFromWall, type Builder } from "./_common";
 
 const STALL_BACK = new THREE.BoxGeometry(1.0, 2.0, 0.05);
 const STALL_SIDE = new THREE.BoxGeometry(0.05, 2.0, 1.0);
@@ -42,6 +43,14 @@ function buildToiletFixture(g: THREE.Group): void {
   const seat = new THREE.Mesh(SEAT, materials.toiletSeat);
   seat.position.set(0, 0.4, 0.05);
   g.add(seat);
+  // Hole through the seat — a dark cavity inset just below the seat
+  // surface so the toilet actually looks usable.
+  const hole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.13, 0.18, 14),
+    M(0x080a0c),
+  );
+  hole.position.set(0, 0.32, 0.05);
+  g.add(hole);
   const lid = new THREE.Mesh(LID, materials.toiletSeat);
   lid.position.set(0, 0.6, 0.22);
   lid.rotation.x = -Math.PI / 4;
@@ -66,6 +75,19 @@ const buildUrinal: Builder = () => {
   const pipe = new THREE.Mesh(URINAL_PIPE, materials.faucet);
   pipe.position.set(0, 1.25, -0.02);
   g.add(pipe);
+  // Inner cavity — a dark inset that reads as the bowl opening / drain.
+  const cavity = new THREE.Mesh(
+    new THREE.BoxGeometry(0.26, 0.4, 0.04),
+    M(0x141416),
+  );
+  cavity.position.set(0, 0.93, -0.28);
+  g.add(cavity);
+  const drain = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12),
+    M(0x080a0c),
+  );
+  drain.position.set(0, 0.62, -0.20);
+  g.add(drain);
   return g;
 };
 
@@ -89,8 +111,12 @@ const buildSink: Builder = () => {
   return g;
 };
 
+// Stall back panel is at z=+0.475 in local coords; sides extend the stall
+// 1m forward. Shift the whole stall ~0.5m so the back is at the wall.
+// Urinal and sink already place their meshes on the room side (-Z),
+// so they don't need wrapping.
 export const TOILET_BUILDERS: Record<string, Builder> = {
-  toilet_stall: buildToiletStall,
+  toilet_stall: offsetFromWall(buildToiletStall, 0.5),
   urinal: buildUrinal,
   sink: buildSink,
 };

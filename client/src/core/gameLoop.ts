@@ -19,6 +19,8 @@ import type { Chairs } from "../gameplay/chairs";
 import type { Pickups } from "../gameplay/pickups";
 import type { Lockers } from "../gameplay/lockers";
 import type { Doors } from "../gameplay/doors";
+import type { ToiletStallDoors } from "../gameplay/toiletStallDoors";
+import type { FuseBoxes } from "../gameplay/fuseBoxes";
 import type { Corpses } from "../gameplay/corpses";
 import type { InventoryHud } from "../ui/inventory";
 import type { TaskCompass } from "../ui/compass";
@@ -47,6 +49,8 @@ export type GameDeps = {
   pickups: Pickups;
   lockers: Lockers;
   doors: Doors;
+  toiletStallDoors: ToiletStallDoors;
+  fuseBoxes: FuseBoxes;
   corpses: Corpses;
   inventory: InventoryHud;
   compass: TaskCompass;
@@ -98,6 +102,8 @@ export function runGameLoop(d: GameDeps): void {
     d.pickups.update(elapsed);
     d.lockers.update(dt);
     d.doors.update(dt);
+    d.toiletStallDoors.update(dt);
+    d.fuseBoxes.update(dt);
     if (d.state.extracted) {
       d.spectator.update();
     } else {
@@ -109,6 +115,8 @@ export function runGameLoop(d: GameDeps): void {
         ...d.pickups.getInteractTargets(),
         ...d.lockers.getInteractTargets(),
         ...d.doors.getInteractTargets(),
+        ...d.toiletStallDoors.getInteractTargets(),
+        ...d.fuseBoxes.getInteractTargets(),
         ...d.corpses.getInteractTargets(d.inventory.hasMedkit()),
       ]);
     }

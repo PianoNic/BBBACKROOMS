@@ -1,6 +1,6 @@
 /** Cafeteria / break-room appliances: vending, coffee, microwave, counter. */
 import * as THREE from "three";
-import { Basic, M, type Builder } from "./_common";
+import { Basic, M, offsetFromWall, type Builder } from "./_common";
 
 // All wall props face local -Z (project convention). The vending
 // machine's glass front, shelves, brand panel and tray sit on the -Z
@@ -93,41 +93,44 @@ const buildCoffeeMachine: Builder = () => {
   return g;
 };
 
-// Microwave door + control panel face -Z (room interior).
+// Microwave door + control panel face -Z (room interior). Sits ON a
+// counter's counter_top — all geometry is offset up so the microwave's
+// bottom rests on the counter surface.
 const buildMicrowave: Builder = () => {
   const g = new THREE.Group();
+  const T = 0.9;   // counter_top height (counter top mesh at y=0.875)
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.32, 0.40), M(0x303034));
-  body.position.y = 0.16;
+  body.position.y = T + 0.16;
   g.add(body);
   const door = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.26, 0.02), M(0x141418));
-  door.position.set(-0.06, 0.16, -0.21);
+  door.position.set(-0.06, T + 0.16, -0.21);
   g.add(door);
   const window_ = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.20), Basic(0x2a2a30));
-  window_.position.set(-0.06, 0.16, -0.221);
+  window_.position.set(-0.06, T + 0.16, -0.221);
   g.add(window_);
   const bulb = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.06), Basic(0xe8c44a));
-  bulb.position.set(-0.14, 0.22, -0.222);
+  bulb.position.set(-0.14, T + 0.22, -0.222);
   g.add(bulb);
   const panel = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.26, 0.02), M(0x1a1a1e));
-  panel.position.set(0.20, 0.16, -0.21);
+  panel.position.set(0.20, T + 0.16, -0.21);
   g.add(panel);
   const display = new THREE.Mesh(new THREE.PlaneGeometry(0.10, 0.04), Basic(0x4adef0));
-  display.position.set(0.20, 0.25, -0.222);
+  display.position.set(0.20, T + 0.25, -0.222);
   g.add(display);
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < 2; c++) {
       const btn = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.01), M(0x4a4a52));
-      btn.position.set(0.17 + c * 0.05, 0.18 - r * 0.05, -0.222);
+      btn.position.set(0.17 + c * 0.05, T + 0.18 - r * 0.05, -0.222);
       g.add(btn);
     }
   }
   const handle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.18, 0.04), M(0xb8b8c0));
-  handle.position.set(0.13, 0.16, -0.232);
+  handle.position.set(0.13, T + 0.16, -0.232);
   g.add(handle);
-  // Roof vents stay on top — they have no "front/back" orientation.
+  // Roof vents stay on top.
   for (let i = 0; i < 5; i++) {
     const slat = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.005, 0.02), M(0x141418));
-    slat.position.set(-0.05, 0.323, -0.12 + i * 0.04);
+    slat.position.set(-0.05, T + 0.323, -0.12 + i * 0.04);
     g.add(slat);
   }
   return g;
@@ -172,9 +175,108 @@ const buildCounter: Builder = () => {
   return g;
 };
 
+// Wall-prop wrappers shift each builder's contents away from the wall
+// so the prop's back face sits at the wall plane instead of half-clipping.
+// Depths match the body geometry: vending 0.65, coffee 0.45, counter 0.65.
+// Microwave is on_top (stacks on counter) — no wall offset.
+// Tall white fridge, two-door look. Wall prop. Body depth 0.65 → wrap.
+const buildFridge: Builder = () => {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.75, 0.65), M(0xeeeeea));
+  body.position.y = 0.875;
+  g.add(body);
+  const gap = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.03, 0.66), M(0x404048));
+  gap.position.y = 1.05;
+  g.add(gap);
+  for (const dy of [0.45, 1.45]) {
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.35, 0.04), M(0x808088));
+    handle.position.set(0.30, dy, -0.34);
+    g.add(handle);
+  }
+  const vent = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.02), M(0x303034));
+  vent.position.set(0, 0.06, -0.34);
+  g.add(vent);
+  return g;
+};
+
+// Small office printer that sits ON a side_table (table_top y ≈ 0.75).
+// Output tray and slot face local -Z (room side).
+const buildPrinter: Builder = () => {
+  const g = new THREE.Group();
+  const T = 0.75;  // table_top height — printer rests on this
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 0.38), M(0x2a2a2e));
+  base.position.y = T + 0.11;
+  g.add(base);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.03, 0.40), M(0xc8c8cc));
+  top.position.y = T + 0.225;
+  g.add(top);
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.015, 0.14), M(0xf0f0ec));
+  tray.position.set(0, T + 0.13, -0.13);
+  g.add(tray);
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.015, 0.004), M(0x101012));
+  slot.position.set(0, T + 0.21, -0.191);
+  g.add(slot);
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(0.10, 0.05), Basic(0x4adef0));
+  panel.position.set(0.14, T + 0.20, -0.191);
+  g.add(panel);
+  return g;
+};
+
+// Small square 1m x 1m side table. Top at y=0.75. Centre placement; offers
+// the table_top layer so a printer (or anything else) can stack on it.
+const buildSideTable: Builder = () => {
+  const g = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.04, 0.95), M(0x6a4a2a));
+  top.position.y = 0.73;
+  g.add(top);
+  for (const [dx, dz] of [[0.42, 0.42], [-0.42, 0.42], [0.42, -0.42], [-0.42, -0.42]] as const) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.71, 0.05), M(0x3a2a1a));
+    leg.position.set(dx, 0.355, dz);
+    g.add(leg);
+  }
+  return g;
+};
+
+// Two-seater sofa. Cushioned back, soft armrests. Wall prop; front faces
+// local -Z (into the room).
+const buildSofa: Builder = () => {
+  const g = new THREE.Group();
+  const fabric = M(0x5a6a85);
+  const cushion = M(0x4a5a75);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.4, 0.85), fabric);
+  base.position.y = 0.2;
+  g.add(base);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.55, 0.18), fabric);
+  back.position.set(0, 0.65, 0.33);
+  g.add(back);
+  for (const dx of [-0.6, 0.6]) {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.12, 0.7), cushion);
+    seat.position.set(dx, 0.46, -0.06);
+    g.add(seat);
+  }
+  for (const dx of [-0.92, 0.92]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.8), fabric);
+    arm.position.set(dx, 0.45, -0.02);
+    g.add(arm);
+  }
+  for (const dx of [-0.85, 0.85]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.06), M(0x303034));
+    leg.position.set(dx, 0.04, -0.3);
+    g.add(leg);
+    const leg2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.06), M(0x303034));
+    leg2.position.set(dx, 0.04, 0.3);
+    g.add(leg2);
+  }
+  return g;
+};
+
 export const APPLIANCE_BUILDERS: Record<string, Builder> = {
-  vending_machine: buildVendingMachine,
-  coffee_machine: buildCoffeeMachine,
+  vending_machine: offsetFromWall(buildVendingMachine, 0.305),
+  coffee_machine: offsetFromWall(buildCoffeeMachine, 0.205),
   microwave: buildMicrowave,
-  counter: buildCounter,
+  counter: offsetFromWall(buildCounter, 0.32),
+  fridge: offsetFromWall(buildFridge, 0.325),
+  printer: buildPrinter,
+  side_table: buildSideTable,
+  sofa: offsetFromWall(buildSofa, 0.425),
 };

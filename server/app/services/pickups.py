@@ -11,7 +11,7 @@ from app.domain.lobby import Lobby, PlayerConn
 from app.services.broadcast import broadcast
 from app.world.geom import within_radius
 
-PICKUP_RADIUS = 1.5
+PICKUP_RADIUS = 3.0
 POTION_DURATION = 8.0
 POTION_FACTOR = 1.5  # speed multiplier while haste active
 

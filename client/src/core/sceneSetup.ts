@@ -29,6 +29,8 @@ import { Corpses } from "../gameplay/corpses";
 import { Pickups } from "../gameplay/pickups";
 import { Lockers } from "../gameplay/lockers";
 import { Doors } from "../gameplay/doors";
+import { ToiletStallDoors } from "../gameplay/toiletStallDoors";
+import { FuseBoxes } from "../gameplay/fuseBoxes";
 import { ProximityVoice } from "../gameplay/proximityVoice";
 import { LaptopOverlay } from "../ui/laptop/index";
 import { InventoryHud } from "../ui/inventory";
@@ -112,8 +114,12 @@ export function buildScene(
   ctx.scene.add(pickups.group);
   const lockers = new Lockers(init.lockers ?? []);
   ctx.scene.add(lockers.group);
-  const doors = new Doors(init.doors ?? []);
+  const doors = new Doors(init.doors ?? [], propColliders);
   ctx.scene.add(doors.group);
+  const toiletStallDoors = new ToiletStallDoors(init.props);
+  ctx.scene.add(toiletStallDoors.group);
+  const fuseBoxes = new FuseBoxes(init.props);
+  ctx.scene.add(fuseBoxes.group);
   const inventory = new InventoryHud();
   inventory.set(
     init.inventory?.medkits ?? 0,
@@ -146,7 +152,7 @@ export function buildScene(
   return {
     state, player, remotes, quests, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
-    laptop, chairs, pickups, lockers, doors, inventory, reviveBar, compass,
-    heartbeat, lights, proximityVoice,
+    laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
+    inventory, reviveBar, compass, heartbeat, lights, proximityVoice,
   };
 }

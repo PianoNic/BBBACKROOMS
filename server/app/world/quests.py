@@ -80,15 +80,34 @@ def _front_spot(p: Prop, dist: float = 0.9) -> Spot:
     yaw to point the picture into the room), so the spot offset has to flip
     for paintings. Whiteboards render on local +z and use the default sign.
 
-    The UI anchor is set to the prop's own world position at display height
-    so the [E] prompt visually overlays the painting/whiteboard itself."""
-    # Wall-mounted props whose front face is on local -z need the offset
-    # flipped — same trick as paintings.
-    flip = p.type in ("painting", "bulletin_board")
-    sign = -1.0 if flip else 1.0
+    Floor props (plants) get a zero offset — the marker hovers directly
+    above the prop. The UI anchor is set to the prop's own world position
+    at display height so the [E] prompt overlays the prop itself."""
+    # Plants are floor props; the watering can should sit on top of them,
+    # not 0.9m off to one side along the prop's arbitrary yaw.
+    if p.type == "plant":
+        return Spot(
+            x=p.x, z=p.z, yaw=p.yaw, done=False,
+            anchor_x=p.x, anchor_y=1.4, anchor_z=p.z,
+        )
+    # Almost every wall-mounted prop has its visible front on local -Z
+    # (the project's wall-prop convention — wall_yaw rotates local -Z
+    # into the room). The "in front of prop" direction in world coords
+    # is therefore rotate((0,0,-1), yaw) = (-sin yaw, -cos yaw).
+    #
+    # The lone exception in this set is `server_rack`: its builder flips
+    # the front face to local +Z so racks face away from the wall behind
+    # them, so for racks the spot goes the opposite way.
+    front_faces_plus_z = p.type == "server_rack"
+    sign = 1.0 if front_faces_plus_z else -1.0
     fx = math.sin(p.yaw) * sign
     fz = math.cos(p.yaw) * sign
-    anchor_y = 1.7 if flip else 1.4 if p.type == "fuse_box" else 1.6
+    anchor_y = (
+        1.95 if p.type == "bulletin_board"
+        else 1.7 if p.type == "painting"
+        else 1.4 if p.type == "fuse_box"
+        else 1.6
+    )
     return Spot(
         x=p.x + fx * dist, z=p.z + fz * dist, yaw=p.yaw, done=False,
         anchor_x=p.x, anchor_y=anchor_y, anchor_z=p.z,
@@ -141,7 +160,7 @@ def _interact_objective(
         interact=True,
         item=item,
         spots=spots,
-        radius=2.5,
+        radius=4.5,
     )
 
 
@@ -157,7 +176,7 @@ def _casino_objective(props: list[Prop]) -> Objective | None:
         interact=False,
         item=None,
         spots=spots,
-        radius=2.0,
+        radius=4.0,
     )
 
 

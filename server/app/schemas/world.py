@@ -64,6 +64,16 @@ PropType = Literal[
     "pylon",
     "mop_bucket",
     "server_rack",
+    # Teacher-room additions:
+    "printer",
+    "sofa",
+    "fridge",
+    "side_table",
+    # Classroom variety:
+    "map",
+    "chalkboard",
+    "coat_rack",
+    "microscope",
 ]
 
 

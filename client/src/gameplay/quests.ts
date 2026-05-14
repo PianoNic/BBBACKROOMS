@@ -39,11 +39,26 @@ export class Quests {
     // floating marker
     const isArrow = !o.item; // casino spots have no item — show a "look down here" arrow
     const inner = o.item ? buildItemModel(o.item) : this.downArrow();
+    // Items that stay upright (vs. lying flat for top-down read).
+    // Note: "papers" needs the default rotation.x=π/2 — its geometry is
+    // built as flat sheets in the XZ plane, so the rotation actually
+    // stands them up vertically against the postit board.
+    const upright =
+      o.item === "eye" ||
+      o.item === "watering_can" ||
+      o.item === "sponge";
     if (!isArrow) {
-      // Other items lie flat so they read from above; the magnifying glass
-      // stands upright facing the camera.
-      if (o.item !== "eye") inner.rotation.x = Math.PI / 2;
-      inner.scale.setScalar(1.7);
+      if (!upright) inner.rotation.x = Math.PI / 2;
+      // Per-item scale: smaller when it sits on a wall prop, larger
+      // when it floats over open space.
+      const scaleByItem: Record<string, number> = {
+        eye: 0.75,
+        sponge: 0.9,
+        papers: 0.75,
+        watering_can: 1.3,
+      };
+      inner.scale.setScalar(scaleByItem[o.item as string] ?? 1.7);
+      if (o.item === "eye") inner.rotation.x = (20 * Math.PI) / 180;
     }
     const marker = new THREE.Group();
     marker.add(inner);
@@ -55,7 +70,34 @@ export class Quests {
       const back = 0.25;
       mx = s.anchor_x - Math.sin(s.yaw) * back;
       mz = s.anchor_z - Math.cos(s.yaw) * back;
-      baseY = s.anchor_y ?? 1.7;
+      baseY = (s.anchor_y ?? 1.7) + 0.25;
+      marker.rotation.y = s.yaw + Math.PI;
+    }
+    // Watering can hovers directly above the plant.
+    if (o.item === "watering_can" && s.anchor_x != null && s.anchor_z != null) {
+      mx = s.anchor_x;
+      mz = s.anchor_z;
+      baseY = s.anchor_y ?? 1.1;
+    }
+    // Sponge: hover the marker right in front of the whiteboard face.
+    // Compute room-direction from the prop yaw — whiteboards face local
+    // -Z, so the world room-direction is rotate((0,0,-1), yaw) =
+    // (-sin yaw, -cos yaw).
+    if (o.item === "sponge" && s.anchor_x != null && s.anchor_z != null) {
+      const forward = 0.30;
+      mx = s.anchor_x - Math.sin(s.yaw) * forward;
+      mz = s.anchor_z - Math.cos(s.yaw) * forward;
+      baseY = 1.55;
+    }
+    // Bulletin board pin task: a small floating papers marker right in
+    // front of the cork board (anchor_x/z = board position, with the
+    // standard wall-clearance offset). The board faces local -Z (like
+    // paintings) so we offset in the same direction painting anchors do.
+    if (o.item === "papers" && s.anchor_x != null && s.anchor_z != null) {
+      const back = 0.2;
+      mx = s.anchor_x - Math.sin(s.yaw) * back;
+      mz = s.anchor_z - Math.cos(s.yaw) * back;
+      baseY = (s.anchor_y ?? 1.95);
       marker.rotation.y = s.yaw + Math.PI;
     }
     marker.position.set(mx, baseY, mz);
@@ -64,14 +106,19 @@ export class Quests {
     marker.visible = !s.done;
     this.group.add(marker);
 
-    // doodle drawing on the whiteboard face for wipe-quest spots
+    // Doodle drawing on the whiteboard face for wipe-quest spots. Pin
+    // it to the anchor (= whiteboard position) and offset along the
+    // room-direction (-sin yaw, -cos yaw) so it always sits just in
+    // front of the board's face, independent of the spot's location.
     let extra: THREE.Object3D | undefined;
-    if (o.item === "sponge") {
+    if (o.item === "sponge" && s.anchor_x != null && s.anchor_z != null) {
       const doodle = buildWhiteboardDoodle();
-      // spot is 0.9m in front of the whiteboard along forward = (sin yaw, cos yaw).
-      // The face sits ~0.1m in front of the prop centre; place doodle just in front of face.
-      const back = 0.78;
-      doodle.position.set(s.x - Math.sin(s.yaw) * back, 1.6, s.z - Math.cos(s.yaw) * back);
+      const forward = 0.08;
+      doodle.position.set(
+        s.anchor_x - Math.sin(s.yaw) * forward,
+        1.6,
+        s.anchor_z - Math.cos(s.yaw) * forward,
+      );
       doodle.rotation.y = s.yaw + Math.PI; // face the player (away from wall)
       doodle.visible = !s.done;
       this.group.add(doodle);

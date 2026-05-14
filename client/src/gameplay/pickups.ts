@@ -6,7 +6,7 @@ import type { PickupInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { buildPickupModel, pickupLabel } from "./pickupModels";
 
-const Y = 1.0;
+const Y = 0.45;
 const PICKUP_RADIUS = 1.5;
 
 type Entry = {
