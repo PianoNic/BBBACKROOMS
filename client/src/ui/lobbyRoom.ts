@@ -27,7 +27,8 @@ export function showLobbyRoom(
     hasPassword: initial.hasPassword,
     selectedTeachers: initial.selectedTeachers,
     roster: initial.roster,
-    mapSize: initial.mapSize ?? 120,
+    mapSize: initial.mapSize ?? 60,
+    mapSeed: initial.mapSeed ?? null,
     objectiveCount: initial.objectiveCount ?? 6,
   };
 

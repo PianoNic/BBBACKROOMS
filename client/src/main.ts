@@ -51,8 +51,13 @@ async function main(): Promise<void> {
   const webcam = createWebcamMesh(conn.lobby.selfId, conn.client);
   webcam.setPeers(conn.lobby.players.map((p) => p.id));
   const room = showLobbyRoom(conn.lobby, conn.client, webcam);
-  const init = await conn.waitForWorld();
-  room.dismount();
+  let genStarted = false;
+  const init = await conn.waitForWorld(() => {
+    genStarted = true;
+    room.dismount();
+    showLoading("generating map…");
+  });
+  if (!genStarted) room.dismount();
 
   showLoading("building world…");
   await yieldToPaint();

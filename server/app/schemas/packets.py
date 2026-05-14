@@ -133,6 +133,8 @@ class LobbySettingsPkt(BaseModel):
     selectedTeachers: list[str] | None = None
     selectAllTeachers: bool = False
     mapSize: int | None = None
+    mapSeed: int | None = None
+    clearMapSeed: bool = False
     objectiveCount: int | None = None
 
 

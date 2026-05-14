@@ -54,6 +54,9 @@ export function handleLobbyPacket(
       state.hasPassword = pkt.hasPassword;
       state.selectedTeachers = pkt.selectedTeachers;
       if (pkt.mapSize != null) state.mapSize = pkt.mapSize;
+      // mapSeed can legitimately become null (admin cleared it → random).
+      // Use `in` to distinguish "field present in payload" from "absent".
+      if ("mapSeed" in pkt) state.mapSeed = pkt.mapSeed ?? null;
       if (pkt.objectiveCount != null) state.objectiveCount = pkt.objectiveCount;
       cb.refreshAdmin();
       cb.renderPlayers();
