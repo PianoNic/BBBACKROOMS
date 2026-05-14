@@ -177,6 +177,63 @@
     }
     input[type="number"] { width: 84px; }
     input[type="text"] { flex: 1; min-width: 160px; }
+
+    // Terminal-style range slider: thin amber track, square handle, no
+    // chrome. Targets WebKit + Firefox separately because they refuse to
+    // share a selector for the slider parts.
+    input[type="range"] {
+      flex: 1; min-width: 160px;
+      appearance: none;
+      background: transparent;
+      height: 18px;
+      padding: 0;
+      box-shadow: none;
+      cursor: pointer;
+
+      &::-webkit-slider-runnable-track {
+        height: 4px;
+        background: rgba(106, 98, 88, 0.55);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+      }
+      &::-moz-range-track {
+        height: 4px;
+        background: rgba(106, 98, 88, 0.55);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+      }
+      &::-webkit-slider-thumb {
+        appearance: none;
+        width: 14px; height: 14px;
+        margin-top: -5px;
+        background: $accent;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 0;
+        cursor: pointer;
+      }
+      &::-moz-range-thumb {
+        width: 14px; height: 14px;
+        background: $accent;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 0;
+        cursor: pointer;
+      }
+      &:hover:not(:disabled) {
+        &::-webkit-slider-thumb { background: $accent-bright; }
+        &::-moz-range-thumb { background: $accent-bright; }
+      }
+      &:disabled { opacity: 0.45; cursor: not-allowed; }
+    }
+  }
+
+  .set-value {
+    display: inline-block;
+    min-width: 2ch; text-align: center;
+    color: $accent;
+    font-family: $font-mono; font-size: 14px;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    box-shadow: inset 0 0 0 1px rgba(106, 98, 88, 0.45);
   }
   .teachers-row { align-items: flex-start; }
 

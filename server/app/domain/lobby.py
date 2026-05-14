@@ -159,7 +159,13 @@ class Lobby:
     # — picking the same one repeatedly is allowed and intentional.
     selected_teacher_images: list[str] | None = None
     # Cells per side of the square map grid. Admin-tunable in the lobby room.
-    map_size: int = 120
+    map_size: int = 60
+    # Admin-supplied worldgen seed. None = pick a fresh random one each
+    # round (the default — most lobbies want a different map every time).
+    map_seed: int | None = None
+    # The seed actually used for the last started round (so the lobby UI
+    # can echo it back; admins like to know what was rolled).
+    last_seed: int | None = None
     # How many objectives the admin wants per round (clamped to the
     # generator's pool, see quests.build_objectives).
     objective_count: int = 6

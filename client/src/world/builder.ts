@@ -22,7 +22,7 @@ export function buildWorld(grid: Grid): World {
   const ceilGeom = new THREE.PlaneGeometry(cellSize, cellSize).rotateX(Math.PI / 2);
   const ceils = new THREE.InstancedMesh(ceilGeom, materials.ceiling, floorCount);
 
-  // count walls: any non-floor cell adjacent (4-neighbours) to a floor cell
+  // Count walls: any non-floor cell adjacent (4-neighbours) to a floor cell.
   const isFloor = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === FLOOR;
   const wallSet = new Set<number>();
@@ -34,8 +34,22 @@ export function buildWorld(grid: Grid): World {
       }
     }
   }
+  // Map-edge virtual walls: for every FLOOR cell sitting on the grid
+  // boundary, place an extra wall cube just outside the grid so rooms
+  // flush against the edge don't show void on that side.
+  const boundary: [number, number][] = [];
+  for (let y = 0; y < height; y++) {
+    if (isFloor(0, y)) boundary.push([-1, y]);
+    if (isFloor(width - 1, y)) boundary.push([width, y]);
+  }
+  for (let x = 0; x < width; x++) {
+    if (isFloor(x, 0)) boundary.push([x, -1]);
+    if (isFloor(x, height - 1)) boundary.push([x, height]);
+  }
   const wallGeom = new THREE.BoxGeometry(cellSize, WALL_HEIGHT, cellSize);
-  const walls = new THREE.InstancedMesh(wallGeom, materials.wall, wallSet.size);
+  const walls = new THREE.InstancedMesh(
+    wallGeom, materials.wall, wallSet.size + boundary.length,
+  );
 
   const dummy = new THREE.Object3D();
   let fIdx = 0;
@@ -60,10 +74,27 @@ export function buildWorld(grid: Grid): World {
       }
     }
   }
+  for (const [bx, by] of boundary) {
+    const cx = (bx + 0.5) * cellSize;
+    const cz = (by + 0.5) * cellSize;
+    dummy.position.set(cx, WALL_HEIGHT / 2, cz);
+    dummy.updateMatrix();
+    walls.setMatrixAt(wIdx, dummy.matrix);
+    wIdx++;
+  }
   floors.instanceMatrix.needsUpdate = true;
   ceils.instanceMatrix.needsUpdate = true;
   walls.instanceMatrix.needsUpdate = true;
   group.add(floors, ceils, walls);
+
+  // PERF: world geometry is fully static. Skip per-frame matrix updates
+  // on every InstancedMesh so the renderer doesn't recompute matrices
+  // for the entire grid every frame.
+  group.updateMatrixWorld(true);
+  group.traverse((o) => {
+    o.matrixAutoUpdate = false;
+    o.matrixWorldAutoUpdate = false;
+  });
 
   return {
     group,

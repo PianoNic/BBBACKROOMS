@@ -9,11 +9,12 @@ from __future__ import annotations
 import random
 
 from app.domain.lobby import Locker
-from app.world.constants import MAP_SIZES
+from app.world.constants import SCALE_REFERENCE_CELLS
 
-# Per-pickup spawn rules. `base` = count on a MEDIUM (120²) map; the actual
-# count scales with the map's cell-area but is clamped to [floor, hard_cap]
-# so a tiny map gets at least one of each and a huge map can't drown in items.
+# Per-pickup spawn rules. `base` = count on the reference-size (120²) map;
+# the actual count scales with the map's cell-area but is clamped to
+# [floor, hard_cap] so a tiny map gets at least one of each and a huge
+# map can't drown in items.
 SPAWN_RULES: dict[str, dict[str, int]] = {
     "medkit":  {"base": 3, "floor": 1, "hard_cap": 5},
     "potion":  {"base": 2, "floor": 1, "hard_cap": 4},
@@ -25,7 +26,7 @@ SPAWN_RULES: dict[str, dict[str, int]] = {
 
 
 def _scaled_count(rule: dict[str, int], side: int) -> int:
-    scaled = round(rule["base"] * side / MAP_SIZES["medium"])
+    scaled = round(rule["base"] * side / SCALE_REFERENCE_CELLS)
     return max(rule["floor"], min(rule["hard_cap"], scaled))
 
 

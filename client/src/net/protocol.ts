@@ -210,6 +210,7 @@ export type LobbyStatePkt = {
   players: LobbyPlayer[];
   chat: ChatMessage[];
   mapSize?: number;
+  mapSeed?: number | null;
   objectiveCount?: number;
 };
 export type LobbySettingsPkt = {
@@ -218,6 +219,7 @@ export type LobbySettingsPkt = {
   hasPassword: boolean;
   selectedTeachers: string[] | null;
   mapSize?: number;
+  mapSeed?: number | null;
   objectiveCount?: number;
 };
 export type LobbyPlayerJoinPkt = { type: "lobby_player_join" } & LobbyPlayer;
@@ -419,7 +421,10 @@ export type ServerPacket =
   | LockerOpenedPkt
   | DoorStatePkt
   | ReviveProgressPkt
-  | PlayerRevivedPkt;
+  | PlayerRevivedPkt
+  | WorldGenStartPkt;
+
+export type WorldGenStartPkt = { type: "world_gen_start" };
 
 export type ClientMovePkt = { type: "move"; x: number; z: number; yaw: number };
 export type ClientSetAvatarPkt = { type: "set_avatar"; avatar: string };
@@ -460,6 +465,8 @@ export type ClientLobbySettingsPkt = {
   selectedTeachers?: string[];
   selectAllTeachers?: boolean;
   mapSize?: number;
+  mapSeed?: number;
+  clearMapSeed?: boolean;
   objectiveCount?: number;
 };
 

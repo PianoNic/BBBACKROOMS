@@ -88,7 +88,7 @@ export function runGameLoop(d: GameDeps): void {
 
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted) d.player.update(dt);
-    d.lights.update(elapsed);
+    d.lights.update(elapsed, d.player.position.x, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
     d.portal.update(elapsed);
