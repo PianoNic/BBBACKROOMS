@@ -1,7 +1,13 @@
+/** Per-player voxel renderer, footstep audio, and live-video swapping.
+ *  Mesh material factories live in `remotePlayerMaterials.ts`. */
 import * as THREE from "three";
 import type { RemotePlayer } from "../net/protocol";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { withinRadiusXZ } from "../core/geom";
+import {
+  disposeMaterial, makeAvatarMaterials, makeColorMaterial,
+  makeVideoMaterials,
+} from "./remotePlayerMaterials";
 
 const BOX = new THREE.BoxGeometry(0.6, 1.7, 0.6);
 const Y = 0.85;
@@ -10,9 +16,6 @@ const REF_DISTANCE = 2.5;
 const MAX_DISTANCE = 25;
 const ROLLOFF = 1.8;
 const FOOTSTEP_URLS = [1, 2, 3, 4, 5].map((i) => `/sounds/footsteps/step-${i}.ogg`);
-// BoxGeometry face groups: 0=+X, 1=-X, 2=+Y, 3=-Y, 4=+Z, 5=-Z.
-// A player facing yaw=0 walks toward -Z, so others see their -Z face → put avatar there.
-const FRONT_FACE = 5;
 
 type Entry = {
   mesh: THREE.Mesh;
@@ -22,65 +25,10 @@ type Entry = {
   audio: THREE.PositionalAudio | null;
   lastStepX: number;
   lastStepZ: number;
-  /** Static avatar bytes — kept so we can revert when video stream ends. */
   avatarUrl: string | null;
-  /** Live cam video element + texture, if a stream is wired. */
   video: HTMLVideoElement | null;
   videoTex: THREE.VideoTexture | null;
 };
-
-function loadImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("image load failed"));
-    img.src = url;
-  });
-}
-
-function sampleCorner(img: HTMLImageElement): THREE.Color {
-  const c = document.createElement("canvas");
-  c.width = c.height = 1;
-  const cx = c.getContext("2d")!;
-  cx.drawImage(img, img.width - 1, img.height - 1, 1, 1, 0, 0, 1, 1);
-  const [r, g, b] = cx.getImageData(0, 0, 1, 1).data;
-  return new THREE.Color(r / 255, g / 255, b / 255);
-}
-
-function makeColorMaterial(color: THREE.ColorRepresentation): THREE.MeshLambertMaterial {
-  return new THREE.MeshLambertMaterial({ color: new THREE.Color(color) });
-}
-
-/** Box with `front` material on the player-facing face and `sideColor` on the
- *  other five faces. Shared by static avatar and live webcam paths. */
-function makeFaceMaterials(
-  front: THREE.MeshLambertMaterial, sideColor: THREE.Color,
-): THREE.MeshLambertMaterial[] {
-  const side = () => new THREE.MeshLambertMaterial({ color: sideColor });
-  const mats: THREE.MeshLambertMaterial[] = [side(), side(), side(), side(), side(), side()];
-  mats[FRONT_FACE] = front;
-  return mats;
-}
-
-async function makeAvatarMaterials(dataUrl: string): Promise<THREE.MeshLambertMaterial[]> {
-  const img = await loadImage(dataUrl);
-  const tex = new THREE.Texture(img);
-  tex.needsUpdate = true;
-  tex.magFilter = THREE.NearestFilter;
-  tex.minFilter = THREE.NearestFilter;
-  return makeFaceMaterials(
-    new THREE.MeshLambertMaterial({ map: tex }), sampleCorner(img),
-  );
-}
-
-function disposeMaterial(m: THREE.Material | THREE.Material[]): void {
-  const list = Array.isArray(m) ? m : [m];
-  for (const x of list) {
-    (x as THREE.MeshLambertMaterial).map?.dispose();
-    x.dispose();
-  }
-}
 
 export class RemotePlayers {
   readonly group = new THREE.Group();
@@ -107,12 +55,8 @@ export class RemotePlayers {
     for (const url of FOOTSTEP_URLS) {
       try {
         const res = await fetch(url);
-        const data = await res.arrayBuffer();
-        const buf = await ctx.decodeAudioData(data);
-        this.buffers.push(buf);
-      } catch {
-        // skip missing
-      }
+        this.buffers.push(await ctx.decodeAudioData(await res.arrayBuffer()));
+      } catch { /* skip missing */ }
     }
     this.buffersLoaded = true;
   }
@@ -136,16 +80,12 @@ export class RemotePlayers {
     }
 
     this.entries.set(p.id, {
-      mesh,
-      color: p.color,
+      mesh, color: p.color,
       target: new THREE.Vector3(p.x, Y, p.z),
-      targetYaw: p.yaw,
-      audio,
-      lastStepX: p.x,
-      lastStepZ: p.z,
+      targetYaw: p.yaw, audio,
+      lastStepX: p.x, lastStepZ: p.z,
       avatarUrl: p.avatar ?? null,
-      video: null,
-      videoTex: null,
+      video: null, videoTex: null,
     });
     if (p.avatar) this.applyAvatar(p.id, p.avatar);
   }
@@ -155,8 +95,7 @@ export class RemotePlayers {
     if (!e) return;
     e.target.set(x, Y, z);
     e.targetYaw = yaw;
-    // Trigger a footstep sample when the remote has actually walked
-    // a full stride — avoids stuttery sub-step retriggers from network jitter.
+    // Footstep when the remote walks a full stride; ignore sub-step jitter.
     if (!withinRadiusXZ(x, z, e.lastStepX, e.lastStepZ, STEP_DISTANCE)) {
       e.lastStepX = x;
       e.lastStepZ = z;
@@ -176,8 +115,7 @@ export class RemotePlayers {
   setAvatar(id: string, avatar: string): void {
     const e = this.entries.get(id);
     if (e) e.avatarUrl = avatar;
-    // If a live cam is showing, leave it — it takes precedence.
-    if (e?.video) return;
+    if (e?.video) return; // live cam takes precedence
     this.applyAvatar(id, avatar);
   }
 
@@ -187,7 +125,7 @@ export class RemotePlayers {
     try {
       const mats = await makeAvatarMaterials(avatar);
       const still = this.entries.get(id);
-      if (still !== e || e.video) return;  // video took over while we loaded
+      if (still !== e || e.video) return; // video took over while we loaded
       const old = e.mesh.material;
       e.mesh.material = mats;
       disposeMaterial(old);
@@ -202,60 +140,35 @@ export class RemotePlayers {
     const e = this.entries.get(id);
     if (!e) return;
     if (stream) {
-      let video = e.video;
-      if (!video) {
-        video = document.createElement("video");
-        video.autoplay = true;
-        video.muted = true;
-        video.playsInline = true;
-        e.video = video;
-      }
-      video.srcObject = stream;
-      video.play().catch(() => { /* user gesture not required, autoplay-muted */ });
-      const tex = new THREE.VideoTexture(video);
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const mats = makeFaceMaterials(
-        new THREE.MeshLambertMaterial({ map: tex }), new THREE.Color(e.color),
+      const { mats, video, tex } = makeVideoMaterials(
+        stream, e.video, new THREE.Color(e.color),
       );
+      e.video = video;
       const old = e.mesh.material;
       e.mesh.material = mats;
       e.videoTex?.dispose();
       e.videoTex = tex;
       disposeMaterial(old);
     } else {
-      if (e.video) {
-        e.video.srcObject = null;
-        e.video = null;
-      }
+      if (e.video) { e.video.srcObject = null; e.video = null; }
       e.videoTex?.dispose();
       e.videoTex = null;
-      if (e.avatarUrl) {
-        void this.applyAvatar(id, e.avatarUrl);
-      } else {
-        const old = e.mesh.material;
-        e.mesh.material = makeColorMaterial(e.color);
-        disposeMaterial(old);
-      }
+      if (e.avatarUrl) { void this.applyAvatar(id, e.avatarUrl); return; }
+      const old = e.mesh.material;
+      e.mesh.material = makeColorMaterial(e.color);
+      disposeMaterial(old);
     }
   }
 
-  /** Lay the player's voxel flat on the ground as a corpse — stops updating. */
+  /** Lay the player's voxel flat on the ground as a corpse. */
   markDead(id: string, x?: number, z?: number): void {
     const e = this.entries.get(id);
     if (!e) return;
-    if (x !== undefined && z !== undefined) {
-      e.mesh.position.set(x, Y, z);
-      e.target.set(x, Y, z);
-    }
-    // Tip the voxel onto its side and sink it to the floor.
+    if (x !== undefined && z !== undefined) { e.mesh.position.set(x, Y, z); e.target.set(x, Y, z); }
     e.mesh.rotation.x = Math.PI / 2;
-    e.mesh.position.y = 0.3;
-    e.target.y = 0.3;
-    this.entries.delete(id); // stop updating its transform
+    e.mesh.position.y = e.target.y = 0.3;
     e.mesh.userData.dead = true;
-    // Keep the mesh in the group as the corpse.
+    this.entries.delete(id);
   }
 
   remove(id: string): void {
@@ -270,19 +183,11 @@ export class RemotePlayers {
 
   positions(): { x: number; z: number; color: string }[] {
     return [...this.entries.values()].map((e) => ({
-      x: e.mesh.position.x,
-      z: e.mesh.position.z,
-      color: e.color,
+      x: e.mesh.position.x, z: e.mesh.position.z, color: e.color,
     }));
   }
-
-  ids(): string[] {
-    return [...this.entries.keys()];
-  }
-
-  getMesh(id: string): THREE.Mesh | null {
-    return this.entries.get(id)?.mesh ?? null;
-  }
+  ids(): string[] { return [...this.entries.keys()]; }
+  getMesh(id: string): THREE.Mesh | null { return this.entries.get(id)?.mesh ?? null; }
 
   update(dt: number): void {
     const lerp = Math.min(1, dt * 12);

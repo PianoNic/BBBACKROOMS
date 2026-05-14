@@ -6,12 +6,12 @@ player then has to interact AGAIN to actually claim it — no more silent
 auto-collect that the user can't see happen."""
 from __future__ import annotations
 
-import math
 import secrets
 
 from app.domain.lobby import Lobby, Pickup, PlayerConn
+from app.services._helpers import is_active
 from app.services.broadcast import broadcast
-from app.world.geom import within_radius_xz
+from app.world.geom import wall_forward, within_radius_xz
 
 LOCKER_OPEN_RADIUS = 3.5
 # Distance from the locker's wall-mount position to the centre of its
@@ -21,7 +21,7 @@ LOCKER_CAVITY_OFFSET = 0.20
 
 
 async def handle_open(lobby: Lobby, me: PlayerConn, locker_id: str) -> None:
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     lk = lobby.lockers.get(locker_id)
     if lk is None or lk.opened:
@@ -35,8 +35,9 @@ async def handle_open(lobby: Lobby, me: PlayerConn, locker_id: str) -> None:
         # player claims it with a second interact press. Offset along
         # the locker's open direction (local -Z) so the item sits in
         # the cavity, not embedded in the wall behind it.
-        px = lk.x - LOCKER_CAVITY_OFFSET * math.sin(lk.yaw)
-        pz = lk.z - LOCKER_CAVITY_OFFSET * math.cos(lk.yaw)
+        dx, dz = wall_forward(lk.yaw, LOCKER_CAVITY_OFFSET)
+        px = lk.x + dx
+        pz = lk.z + dz
         spawned = Pickup(id=secrets.token_hex(3), kind=lk.item, x=px, z=pz)
         lobby.pickups[spawned.id] = spawned
         lk.item = None

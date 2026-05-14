@@ -1,0 +1,143 @@
+@use "variables" as *;
+@forward "laptop-app-teams-content";
+
+// =========================================================================
+// TEAMS shell — left rail, channel sidebar, main pane chrome.
+// Content widgets (chat stream, file list, call list, composer) live in
+// `_laptop-app-teams-content.scss` to keep each file under the size cap.
+// =========================================================================
+$teams-purple: #6264A7;
+$teams-purple-dim: #4f52a3;
+$teams-sidebar: #2d2c2c;
+$teams-sidebar-2: #3b3a39;
+$teams-bg: #f5f5f5;
+$teams-text: #242424;
+$teams-text-dim: #605e5c;
+$teams-rail-bg: #1f1f1f;
+$teams-divider: #e1dfdd;
+
+.teams-app {
+  display: flex; flex: 1 1 auto;
+  font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+  color: $teams-text;
+  background: $teams-bg;
+  min-height: 540px;
+}
+
+.teams-rail {
+  width: 68px;
+  background: $teams-rail-bg;
+  display: flex; flex-direction: column; align-items: stretch;
+  padding-top: 6px;
+
+  .rail-item {
+    padding: 8px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: #d0d0d0; cursor: pointer;
+    border-left: 3px solid transparent;
+    &:hover { background: rgba(255,255,255,0.04); }
+    &.active {
+      color: #fff;
+      border-left-color: $teams-purple;
+      background: rgba(98,100,167,0.18);
+    }
+    .rail-icon { font-size: 20px; line-height: 1; }
+    .rail-label { font-size: 10px; }
+  }
+}
+
+.teams-sidebar {
+  width: 270px;
+  background: #f0f0f0;
+  border-right: 1px solid $teams-divider;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+
+  .sidebar-head {
+    padding: 12px 14px; border-bottom: 1px solid $teams-divider;
+    .sidebar-title { font-weight: 700; font-size: 18px; }
+  }
+
+  .team-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; cursor: pointer; font-size: 13px;
+    &:hover { background: #e6e6e6; }
+    &.open { font-weight: 600; }
+    .team-emblem {
+      width: 28px; height: 28px; border-radius: 4px;
+      background: $teams-purple; color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px;
+    }
+    .team-label { flex: 1; }
+  }
+
+  .channel-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px 6px 38px; cursor: pointer; font-size: 13px;
+    color: $teams-text-dim;
+    &:hover { background: #e6e6e6; }
+    &.selected { background: #e1dfdd; color: $teams-text; font-weight: 600; }
+    .channel-hash { color: $teams-text-dim; }
+  }
+
+  .dm-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; cursor: pointer;
+    &:hover { background: #e6e6e6; }
+    &.selected { background: #e1dfdd; }
+    .dm-text { flex: 1; min-width: 0; }
+    .dm-name { font-size: 13px; font-weight: 600; }
+    .dm-preview {
+      font-size: 12px; color: $teams-text-dim;
+      white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+    }
+  }
+}
+
+.teams-main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  background: #fff;
+  overflow: hidden;
+
+  .chat-header, .channel-header {
+    padding: 10px 16px; border-bottom: 1px solid $teams-divider;
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+    .chat-header-text { flex: 1; }
+    .chat-header-name { font-weight: 600; }
+    .chat-header-sub { font-size: 11px; color: $teams-text-dim; }
+    .channel-title { font-weight: 700; font-size: 18px; }
+  }
+  .channel-header {
+    flex-direction: column; align-items: stretch; gap: 8px;
+    .channel-tabs {
+      display: flex; gap: 18px; margin-top: 6px;
+      .channel-tab {
+        font-size: 13px; color: $teams-text-dim;
+        padding-bottom: 6px; cursor: pointer;
+        &.active {
+          color: $teams-purple; font-weight: 600;
+          border-bottom: 2px solid $teams-purple;
+        }
+      }
+    }
+  }
+}
+
+.teams-app .avatar {
+  border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.teams-main .task-bar {
+  background: #fff4ce; border-bottom: 1px solid #e8c66b;
+  color: #604c0e; padding: 8px 16px;
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+  .task-pin {
+    display: inline-flex; align-items: center; line-height: 0;
+    color: #604c0e;
+  }
+}

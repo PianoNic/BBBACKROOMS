@@ -1,16 +1,8 @@
 /** Interactive fuse boxes. Each `fuse_box` prop gets a hinged door + a
- *  grid of levers managed here, outside the static-merge path so the
- *  pivots stay addressable.
- *
- *  Gameplay loop:
- *    1. Approach a fuse box → "open fuse box" prompt.
- *    2. Press E → door swings open, revealing levers.
- *    3. Each lever exposes its own "flip lever" prompt.
- *    4. Flip ALL levers → manager fires the standard quest `interact`
- *       packet for the player, completing the fuse-box quest spot.
- *
- *  State is client-local — other players see all closed/down until they
- *  open the box themselves. Quest completion is the only thing synced. */
+ *  2x3 grid of levers managed here, outside the static-merge path so
+ *  pivots stay addressable. Open the door, flip every lever, the manager
+ *  fires the standard quest `interact` packet. State is client-local
+ *  apart from the final quest completion. */
 import * as THREE from "three";
 import type { NetClient } from "../net/client";
 import type { Prop } from "../net/protocol";
@@ -19,7 +11,6 @@ import { M } from "../world/propBuilders/_common";
 
 const LEVER_ROWS = 2;
 const LEVER_COLS = 3;
-const LEVERS_PER_BOX = LEVER_ROWS * LEVER_COLS;
 const DOOR_W = 0.50;
 const DOOR_H = 0.62;
 const DOOR_T = 0.025;
@@ -27,7 +18,7 @@ const DOOR_Y = 1.35;
 const DOOR_OPEN_ANGLE = -Math.PI / 2 + 0.05;  // swing left, ~85°
 const DOOR_OPEN_SPEED = 5.0;
 const LEVER_FLIP_SPEED = 14.0;
-const LEVER_DOWN = 0.45;                       // radians (lever tilted "off")
+const LEVER_DOWN = 0.45;                       // lever tilted "off"
 const LEVER_UP = -0.45;                        // lever tilted "on"
 const REACH_DOOR = 1.8;
 const REACH_LEVER = 1.6;

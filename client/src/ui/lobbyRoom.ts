@@ -1,6 +1,4 @@
-import type {
-  LobbyStatePkt, LobbyPlayer, ChatMessage,
-} from "../net/protocol";
+import type { LobbyStatePkt, LobbyPlayer, ChatMessage } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { WebcamMesh } from "../gameplay/webcam";
 import { el } from "./dom";

@@ -1,8 +1,5 @@
 /** Admin-only settings panel (max players, password, map size, teacher pick).
- *
- *  Built detached and mounted into the lobby-admin overlay on demand.
- *  Returns the root element plus tiny re-render / disable hooks for the
- *  caller to invoke when lobby state changes. */
+ *  Built detached and mounted into the lobby-admin overlay on demand. */
 import type { NetClient } from "../net/client";
 import type { RosterEntry } from "../net/protocol";
 import { el } from "./dom";
@@ -49,12 +46,7 @@ export function buildAdminPanel(state: AdminPanelState, client: NetClient): Admi
 
   function refresh(): void {
     const isAdmin = state.selfId === state.adminId;
-    mp.refresh(isAdmin);
-    pw.refresh(isAdmin);
-    ms.refresh(isAdmin);
-    sd.refresh(isAdmin);
-    oc.refresh(isAdmin);
-    tc.refresh(isAdmin);
+    for (const r of [mp, pw, ms, sd, oc, tc]) r.refresh(isAdmin);
   }
   refresh();
 

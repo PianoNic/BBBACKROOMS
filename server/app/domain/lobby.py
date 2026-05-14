@@ -19,13 +19,12 @@ GAMES = (
 
 @dataclass
 class Chair:
+    """Resting (home_*) + current (x/z/yaw) pose. Equal while idle;
+    diverge after a drop."""
     id: str
-    # Resting pose (where the chair sits when nobody is holding it).
     home_x: float
     home_z: float
     home_yaw: float
-    # Current pose. Equals the home pose while idle; updated when dropped
-    # at a new location.
     x: float
     z: float
     yaw: float
@@ -51,10 +50,8 @@ class Laptop:
     z: float
     yaw: float
     game: str
-    # For challenge games (teams_*, moodle_*) this holds the per-laptop random
-    # state: the list of options shown to the player plus the correct answer.
-    # Casino games (slots/dice/coinflip) leave this empty — they roll fresh
-    # results each play.
+    # teams_*/moodle_*: per-laptop random state (options + correct answer).
+    # Casino games (slots/dice/coinflip) leave this empty — they roll fresh.
     challenge: dict = field(default_factory=dict)
 
 
@@ -81,18 +78,14 @@ class Door:
 
 @dataclass
 class Locker:
-    """A school locker. Items hide inside until a player opens it.
-
-    `item` is the pickup kind stored inside, or None for an empty locker.
-    Opening either auto-collects the item (if the player has inventory
-    space) or drops it as a regular `Pickup` at the locker's position so
-    a teammate can grab it later."""
+    """School locker. `item` is the hidden pickup kind, or None for empty.
+    Opening drops it as a regular `Pickup` at the locker's position."""
     id: str
     x: float
     z: float
     yaw: float
     opened: bool = False
-    item: str | None = None  # "medkit" | "potion" | "compass" | "tracker" | "goggles" | "gps" | None
+    item: str | None = None  # PickupKind | None
 
 
 @dataclass
@@ -118,8 +111,7 @@ class PlayerConn:
     z: float = 0.0
     yaw: float = 0.0
     avatar: str | None = None
-    # Debuff timestamps (monotonic seconds). Server pushes the deltas to the
-    # client; the client respects them so movement stays smooth.
+    # Debuff timestamps (monotonic seconds); deltas pushed to the client.
     slow_until: float = 0.0
     slow_factor: float = 1.0
     stun_until: float = 0.0
@@ -129,9 +121,8 @@ class PlayerConn:
     trackers: int = 0
     goggles: int = 0
     gps: int = 0
-    # Thermal goggles state: reveal teacher outlines for `goggles_until` and
-    # cannot be triggered again until `goggles_cooldown_until` (both are
-    # monotonic seconds).
+    # Thermal goggles: reveal teacher outlines until `goggles_until`; can
+    # only retrigger after `goggles_cooldown_until` (both monotonic).
     goggles_until: float = 0.0
     goggles_cooldown_until: float = 0.0
     haste_until: float = 0.0

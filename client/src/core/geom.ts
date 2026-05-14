@@ -4,20 +4,10 @@
  *  ("are these two within radius?") and remove the chance of forgetting to
  *  square the radius. */
 
-export type XZ = { x: number; z: number };
-
-export function distanceSquared(a: XZ, b: XZ): number {
-  return (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
-}
-
 export function distanceSquaredXZ(
   ax: number, az: number, bx: number, bz: number,
 ): number {
   return (ax - bx) ** 2 + (az - bz) ** 2;
-}
-
-export function withinRadius(a: XZ, b: XZ, radius: number): boolean {
-  return distanceSquared(a, b) <= radius * radius;
 }
 
 export function withinRadiusXZ(

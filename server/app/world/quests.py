@@ -1,19 +1,19 @@
 """Per-lobby objective generation: find items, wipe whiteboards, inspect paintings."""
 from __future__ import annotations
 
-import math
 import random
 import secrets
 
 from app.schemas.world import ItemType, Objective, Prop, Spot
+from app.world._quest_items import FALLBACK, ITEMS_BY_ARCHETYPE
 from app.world.constants import CELL_SIZE
+from app.world.geom import wall_forward
 from app.world.layout import Layout
 
 FIND_COUNT = 4
 
 # Per-prop interact-objective config. Each tuple defines a possible quest:
-# (prop_type, required_item, template, target_count). The objective is
-# only added if the world actually contains enough props of that type.
+# (prop_type, required_item, template, target_count).
 INTERACT_QUESTS: list[tuple[str, ItemType, str, int]] = [
     ("whiteboard",     "sponge",        "Wipe {n} whiteboards",              3),
     ("painting",       "eye",           "Inspect {n} paintings",             3),
@@ -22,51 +22,6 @@ INTERACT_QUESTS: list[tuple[str, ItemType, str, int]] = [
     ("fuse_box",       "key",           "Reset {n} fuse boxes",              2),
     ("server_rack",    "hdd",           "Swap HDD in {n} server racks",      4),
 ]
-
-ItemEntry = tuple[str, ItemType]
-
-ITEMS_BY_ARCHETYPE: dict[str, list[ItemEntry]] = {
-    "classroom": [
-        ("lost notebook", "notebook"),
-        ("stolen pencil case", "pencil_case"),
-        ("missing exam papers", "papers"),
-        ("broken calculator", "calculator"),
-        ("graffitied textbook", "textbook"),
-    ],
-    "teacher_room": [
-        ("secret memo", "papers"),
-        ("Herr Walker's coffee mug", "mug"),
-        ("the substitute schedule", "papers"),
-        ("the master key", "key"),
-        ("a confiscated phone", "phone"),
-    ],
-    "toilet": [
-        ("blocked drain report", "papers"),
-        ("missing toilet paper", "toilet_paper"),
-        ("the cleaner's gloves", "gloves"),
-    ],
-    "gym": [
-        ("a forgotten phone", "phone"),
-        ("a coach's notebook", "notebook"),
-        ("a sports textbook", "textbook"),
-    ],
-    "cafeteria": [
-        ("a hijacked coffee mug", "mug"),
-        ("an unread envelope", "envelope"),
-        ("scattered exam papers", "papers"),
-    ],
-    "janitor_room": [
-        ("the spare master key", "key"),
-        ("a damp pair of gloves", "gloves"),
-        ("a cleaning report", "papers"),
-    ],
-    "server_room": [
-        ("the admin password note", "papers"),
-        ("a stolen laptop charger", "phone"),
-        ("the encryption key", "key"),
-    ],
-}
-FALLBACK: list[ItemEntry] = [("a sealed envelope", "envelope")]
 
 
 def _spot(x: float, z: float, yaw: float = 0.0) -> Spot:
@@ -98,10 +53,12 @@ def _front_spot(p: Prop, dist: float = 0.9) -> Spot:
     # The lone exception in this set is `server_rack`: its builder flips
     # the front face to local +Z so racks face away from the wall behind
     # them, so for racks the spot goes the opposite way.
-    front_faces_plus_z = p.type == "server_rack"
-    sign = 1.0 if front_faces_plus_z else -1.0
-    fx = math.sin(p.yaw) * sign
-    fz = math.cos(p.yaw) * sign
+    # `wall_forward` returns the standard "into the room" offset (local -Z).
+    # `server_rack` flips its front face to local +Z, so for racks we go
+    # the opposite direction.
+    fx, fz = wall_forward(p.yaw, 1.0)
+    if p.type == "server_rack":
+        fx, fz = -fx, -fz
     anchor_y = (
         1.95 if p.type == "bulletin_board"
         else 1.7 if p.type == "painting"
