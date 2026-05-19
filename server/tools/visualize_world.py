@@ -373,10 +373,10 @@ def _draw_legends(draw, img_w: int) -> None:
         y += 20
 
 
-def render(seed: int, size: int, out_path: Path) -> None:
+def render(seed: int, size: int, out_path: Path, style: str = "baseline") -> None:
     _dec_mod.reset_grid_capture()
     world, layout = generate(seed=seed, width=size, height=size,
-                             objective_count=5)
+                             objective_count=5, style=style)
     grids = list(_dec_mod.LAST_GRIDS)
     px_per_cell = int(CELL_SIZE * PIXELS_PER_METRE)
     pad_px = PAD_CELLS * px_per_cell
@@ -427,8 +427,12 @@ def _crop_to_content(img: Image.Image, layout, px_per_cell: int) -> Image.Image:
 def main() -> None:
     seed = int(sys.argv[1]) if len(sys.argv) > 1 else 42
     size = int(sys.argv[2]) if len(sys.argv) > 2 else 60
-    out = Path(__file__).parent / "world.png"
-    render(seed, size, out)
+    styles = sys.argv[3].split(",") if len(sys.argv) > 3 else [
+        "baseline", "hallway", "bsp", "tentacle",
+    ]
+    for style in styles:
+        out = Path(__file__).parent / f"world_{style}.png"
+        render(seed, size, out, style=style)
 
 
 if __name__ == "__main__":

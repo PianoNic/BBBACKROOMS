@@ -15,9 +15,9 @@ GRID_W = 120
 GRID_H = 120
 ATRIUM_SIZE = 8
 
-ROOM_BUFFER = 2  # forces a 4-cell gap between rooms (2+2 buffers touching)
+ROOM_BUFFER = 4  # 2-cell safe radius outside every room wall (2+2 buffers touching)
 ATRIUM_GAP = 4   # rooms adjacent to atrium sit 4 cells away
-ROOM_GAP = 4     # rooms adjacent to other rooms sit 4 cells away
+ROOM_GAP = 6     # rooms adjacent to other rooms sit 6 cells away (room buffer fits inside)
 
 NEIGHBOR_TRIES = 8
 MAX_BFS_ROOMS = 200
