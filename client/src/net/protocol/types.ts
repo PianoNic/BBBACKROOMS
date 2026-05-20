@@ -85,6 +85,7 @@ export type ItemType =
 
 export type Spot = {
   x: number; z: number; yaw: number; done: boolean;
+  tag?: string | null;
   anchor_x?: number | null;
   anchor_y?: number | null;
   anchor_z?: number | null;
