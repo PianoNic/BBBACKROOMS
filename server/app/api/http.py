@@ -36,7 +36,7 @@ async def get_lobbies() -> list[dict]:
             "hasPassword": l.password is not None,
             "status": l.status,
         }
-        for l in list_lobbies() if l.status == "waiting"
+        for l in list_lobbies()
     ]
 
 

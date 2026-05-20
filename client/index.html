@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=VT323&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
       /* Bare-bones first-paint defaults so the page is dark + monospace
          before the SCSS bundle finishes loading. Real styling lives in src/styles. */
@@ -20,6 +21,11 @@
         font-family: "VT323", monospace;
         overflow: hidden;
       }
+      /* Elements with the `hidden` class must stay hidden during first
+         paint too — the SCSS bundle defines this rule, but loads later.
+         Without this, the [E] interact prompt flashes before the title
+         screen mounts. */
+      .hidden { display: none !important; }
     </style>
   </head>
   <body>
