@@ -6,6 +6,7 @@ type LobbyInfo = {
   id: string; name: string;
   players: number; maxPlayers: number;
   hasPassword: boolean;
+  status?: "waiting" | "running" | "ended";
 };
 
 const API = import.meta.env.VITE_SERVER_URL ?? "";
@@ -126,22 +127,37 @@ export function buildServerScreen(
         list.appendChild(el("li", "empty", "no active lobbies — create one"));
         return;
       }
-      for (const l of lobbies) {
-        const li = el<HTMLLIElement>("li", "lobby-row");
+      // (rows rendered below)
+
+      const joinable = lobbies.filter((l) => (l.status ?? "waiting") === "waiting");
+      const inProgress = lobbies.filter((l) => l.status === "running" || l.status === "ended");
+      const renderRow = (l: LobbyInfo, locked: boolean) => {
+        const li = el<HTMLLIElement>("li", locked ? "lobby-row locked" : "lobby-row");
         const lockTxt = l.hasPassword ? "🔒 " : "";
         li.appendChild(el("span", "lobby-name", `${lockTxt}${l.name}`));
         li.appendChild(el("span", "lobby-dots"));
-        li.appendChild(el("span", "lobby-count", `${l.players}/${l.maxPlayers}`));
-        li.onclick = () => {
-          if (l.hasPassword) {
-            const pwd = prompt(`Password for "${l.name}":`);
-            if (pwd == null) return;
-            onPick(l.id, pwd);
-          } else {
-            onPick(l.id);
-          }
-        };
+        const tag = l.status === "running" ? "IN GAME"
+          : l.status === "ended" ? "ENDED" : `${l.players}/${l.maxPlayers}`;
+        li.appendChild(el("span", "lobby-count", tag));
+        if (locked) {
+          li.title = "Game in progress — cannot join";
+        } else {
+          li.onclick = () => {
+            if (l.hasPassword) {
+              const pwd = prompt(`Password for "${l.name}":`);
+              if (pwd == null) return;
+              onPick(l.id, pwd);
+            } else {
+              onPick(l.id);
+            }
+          };
+        }
         list.appendChild(li);
+      };
+      for (const l of joinable) renderRow(l, false);
+      if (inProgress.length) {
+        list.appendChild(el("li", "list-section", "IN PROGRESS"));
+        for (const l of inProgress) renderRow(l, true);
       }
     } catch {
       list.replaceChildren(el("li", "empty", "could not reach server"));

@@ -64,6 +64,20 @@
       align-self: center; height: 0;
     }
     .lobby-count { color: $dim; letter-spacing: 0.1em; }
+
+    &.locked {
+      cursor: not-allowed;
+      color: $dim;
+      .lobby-count { color: $red-rec; }
+      &:hover { color: $dim; }
+      &:hover::before { opacity: 0; }
+    }
+  }
+  .lobby-list .list-section {
+    list-style: none; padding: 14px 4px 4px;
+    font-size: 13px; letter-spacing: 0.22em; color: $dim;
+    text-transform: uppercase;
+    border-top: 1px dashed rgba(106,98,88,0.18); margin-top: 6px;
   }
 
   // Server screen: lobbies + profile flush together, with an empty
