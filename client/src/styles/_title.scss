@@ -17,7 +17,7 @@
 
   .sysbar {
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 14px; letter-spacing: 0.2em; color: $dim;
+    font-size: 14px; letter-spacing: 0.2em; color: $ink;
     margin-bottom: 4vh; padding-bottom: 8px;
     border-bottom: 1px solid rgba(106, 98, 88, 0.25);
 
@@ -86,7 +86,7 @@
     &.primary { font-size: clamp(26px, 4.5vh, 44px); }
     &.wide { width: 100%; text-align: left; padding-left: 22px; }
     &.back {
-      font-size: 18px; color: $dim;
+      font-size: 18px; color: $ink;
       margin-top: 14px; padding-left: 24px;
       &::before { content: "<"; }
       &:hover { color: $accent; }
@@ -103,7 +103,7 @@
     margin-bottom: 18px;
     label {
       display: block; font-family: $font-mono;
-      font-size: 16px; letter-spacing: 0.2em; color: $dim;
+      font-size: 16px; letter-spacing: 0.2em; color: $ink;
       margin-bottom: 8px; text-transform: uppercase;
     }
   }
@@ -122,7 +122,7 @@
     &:hover { background: rgba(200,162,90,0.18); }
   }
   .file-name {
-    color: $dim; font-size: 14px;
+    color: $ink; font-size: 14px;
     letter-spacing: 0.12em; font-family: $font-mono;
     text-transform: uppercase;
   }
@@ -137,7 +137,22 @@
   .footnote {
     position: fixed; left: 16px; bottom: 12px;
     font-family: $font-mono; font-size: 14px;
-    color: $dim; letter-spacing: 0.15em;
+    color: $ink; letter-spacing: 0.15em;
     z-index: 1;
+  }
+
+  .social-links {
+    position: fixed; right: 16px; bottom: 12px;
+    display: flex; gap: 16px; z-index: 2;
+  }
+  .social-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: $ink;
+    font-family: $font-mono; font-size: 14px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.12s, transform 0.12s;
+    &:hover { color: $accent-bright; transform: translateY(-1px); }
+    svg { width: 24px; height: 24px; display: block; }
   }
 }

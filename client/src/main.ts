@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     // resume hint so the reload lands on the title menu, not in an
     // infinite "couldn't join" loop.
     sessionStorage.removeItem("bbb_lobby_resume");
-    alert(`Couldn't join: ${(e as Error).message}`);
+    console.warn(`Couldn't join: ${(e as Error).message}`);
     window.location.reload();
     return;
   }

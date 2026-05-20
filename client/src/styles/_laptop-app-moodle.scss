@@ -20,50 +20,59 @@ $moodle-border: #dee2e6;
 }
 
 .moodle-nav {
-  background: $moodle-red;
-  color: #fff;
-  display: flex; align-items: center; gap: 18px;
-  padding: 0 18px; height: 56px;
+  background: #fff;
+  color: $moodle-text;
+  display: flex; align-items: stretch; gap: 28px;
+  padding: 0 22px; height: 64px;
   flex-shrink: 0;
-  .moodle-nav-left { display: flex; align-items: center; gap: 10px; }
-  .moodle-logo {
-    background: #fff; color: $moodle-red;
-    padding: 4px 10px; border-radius: 4px;
-    font-weight: 900; font-size: 14px; letter-spacing: 1px;
+  border-bottom: 1px solid $moodle-border;
+
+  .moodle-nav-left { display: flex; align-items: center; }
+  .moodle-logo-img {
+    height: 44px; width: auto; display: block;
   }
-  .moodle-brand { font-weight: 600; font-size: 14px; }
 
   .moodle-nav-center {
-    display: flex; gap: 4px;
+    display: flex; align-items: stretch; gap: 24px;
     .moodle-nav-item {
-      padding: 6px 12px; border-radius: 4px;
-      font-size: 13px; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px;
-      &:hover { background: rgba(255,255,255,0.12); }
-      &.active { background: rgba(255,255,255,0.18); font-weight: 600; }
-    }
-    .moodle-nav-icon {
-      display: inline-flex; align-items: center; line-height: 0;
+      display: inline-flex; align-items: center;
+      padding: 0 2px;
+      font-size: 16px; font-weight: 500; cursor: pointer;
+      color: $moodle-text;
+      border-bottom: 3px solid transparent;
+      transition: color 120ms, border-color 120ms;
+      &:hover { color: $moodle-red; }
+      &.active {
+        color: $moodle-text;
+        border-bottom-color: $moodle-red;
+      }
     }
   }
 
   .moodle-nav-right {
-    margin-left: auto; display: flex; align-items: center; gap: 10px;
-    .moodle-search {
-      background: rgba(255,255,255,0.92); color: $moodle-text;
-      border-radius: 16px; padding: 5px 12px;
-      display: flex; align-items: center; gap: 6px;
-      min-width: 240px; font-size: 12px;
-      .moodle-search-icon {
-        display: inline-flex; align-items: center; line-height: 0;
-        color: $moodle-muted;
-      }
-      .moodle-search-ph { color: $moodle-muted; }
+    margin-left: auto; display: flex; align-items: center; gap: 18px;
+    .moodle-icon-btn {
+      position: relative;
+      color: #495057; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      &:hover { color: $moodle-text; }
+    }
+    .moodle-icon-badge {
+      position: absolute; top: -2px; right: -4px;
+      min-width: 16px; height: 16px; padding: 0 4px;
+      background: $moodle-red; color: #fff;
+      border-radius: 8px;
+      font-size: 10px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
     }
     .moodle-user {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(255,255,255,0.18); color: #fff;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #2f3e2f; color: #fff;
       display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+      box-shadow: 0 0 0 2px #fff, 0 0 0 3px $moodle-border;
+      cursor: pointer;
     }
   }
 }
@@ -80,10 +89,15 @@ $moodle-border: #dee2e6;
 }
 
 .moodle-main {
-  flex: 1 1 auto; padding: 24px 32px;
+  flex: 1 1 auto; padding: 32px 48px;
   overflow-y: auto;
+  background: #fff;
+  .moodle-h1 {
+    font-size: 28px; font-weight: 700; margin: 0;
+    line-height: 1.2;
+  }
   .moodle-h2 {
-    font-size: 22px; font-weight: 700; margin: 0 0 16px;
+    font-size: 24px; font-weight: 700; margin: 28px 0 18px;
   }
   .moodle-meta { color: $moodle-muted; font-size: 13px; margin: 0 0 18px; }
   .moodle-crumbs {
@@ -92,28 +106,62 @@ $moodle-border: #dee2e6;
   }
 }
 
+.moodle-greet {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
+  .moodle-wave { font-size: 28px; }
+}
+
+.moodle-search-row {
+  display: flex; max-width: 420px; margin: 0 auto 24px;
+  height: 44px;
+  .moodle-search-input {
+    flex: 1; min-width: 0;
+    border: 1px solid $moodle-border;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    padding: 0 14px;
+    font-size: 14px; color: $moodle-text;
+    background: #fff;
+    outline: none;
+    &::placeholder { color: $moodle-muted; }
+  }
+  .moodle-search-btn {
+    width: 56px;
+    background: $moodle-red; color: #fff;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    &:hover { background: $moodle-red-2; }
+  }
+}
+
 .course-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  display: flex; flex-direction: column;
+  gap: 0;
   .course-card {
-    background: #fff; border: 1px solid $moodle-border; border-radius: 6px;
-    overflow: hidden; cursor: pointer; transition: box-shadow 120ms;
-    &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    &.ok { border-color: #357a32; background: #e7f5e3; }
-    &.bad { border-color: $moodle-red; background: #fde7e9; }
-    .course-image {
-      height: 96px; color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 22px; letter-spacing: 2px;
+    background: #fff;
+    border: 1px solid $moodle-border;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    overflow: hidden; cursor: pointer;
+    transition: box-shadow 120ms, border-color 120ms;
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-color: #c8ccd1;
     }
-    .course-body { padding: 12px 14px; }
-    .coursename { font-weight: 600; font-size: 14px; line-height: 1.3; }
-    .course-code {
-      color: $moodle-muted; font-size: 12px; margin-top: 2px;
-      font-family: 'Consolas', monospace;
+    &.ok { border-color: #357a32; background: #f1f9ef; }
+    &.bad { border-color: $moodle-red; background: #fdf1f3; }
+
+    .course-body { padding: 16px 20px; }
+    .coursename {
+      font-weight: 600; font-size: 15px;
+      color: $moodle-red;
+      letter-spacing: 0.2px;
     }
     .course-summary {
-      color: $moodle-muted; font-size: 11px; margin-top: 6px;
+      color: $moodle-text; font-size: 14px; margin-top: 6px;
     }
   }
 }

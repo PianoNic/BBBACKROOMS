@@ -20,7 +20,7 @@ export class MoodleFileApp implements LaptopApp {
 
   constructor(challenge: LaptopChallenge, send: SendFn) {
     this.el = el<HTMLDivElement>("div", "moodle-app");
-    this.el.appendChild(buildMoodleNav("courses"));
+    this.el.appendChild(buildMoodleNav("calendar"));
 
     const course = challenge.course ?? { name: "Kurs", code: "M000" };
     const files = challenge.files ?? [];
