@@ -77,6 +77,7 @@ const SECTIONS: Section[] = [
   {
     title: "Tips",
     bullets: [
+      "Umsehen geht mit der Maus ODER den Pfeiltasten (↑↓←→) — wie in Roblox. In den Einstellungen kannst du die Pfeiltasten-Geschwindigkeit anpassen.",
       "Bleibt zusammen - Wiederbeleben ist viel zuverlässiger als alleine zu spielen.",
       "Hört euch im Proximity-Chat: Lehrer-Schritte sind hörbar bevor ihr sie seht.",
       "Schliessfächer liegen verstreut in der Schule und können Items enthalten.",
