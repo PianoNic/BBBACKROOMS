@@ -124,7 +124,7 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
     teacher_stuns: (p) => {
       for (const t of p.teachers) d.teachers.setStun(t.id, t.ms);
     },
-    spot_relocked: () => { /* server already broadcasts the spot/objective change */ },
+    spot_relocked: (p) => { if (p.tag) d.quests.relockSpot(p.id, p.tag); },
     player_killed: (p) => handleKilled(d, p),
     inventory: (p) => {
       d.inventory.set(p.medkits, p.potions, p.compasses, p.trackers, p.goggles, p.gps);
