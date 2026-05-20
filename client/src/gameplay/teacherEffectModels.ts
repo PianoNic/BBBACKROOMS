@@ -59,3 +59,76 @@ export function buildFlask(): Projectile {
     dispose: () => { glassMat.dispose(); corkMat.dispose(); haloMat.dispose(); },
   };
 }
+
+export function buildScissors(): Projectile {
+  // Two crossed silver blades + tiny dark handles.
+  const g = new THREE.Group();
+  const bladeMat = new THREE.MeshLambertMaterial({ color: 0xd0d4dc });
+  const handleMat = new THREE.MeshLambertMaterial({ color: 0x222226 });
+  const bladeGeo = new THREE.BoxGeometry(0.04, 0.18, 0.01);
+  const handleGeo = new THREE.TorusGeometry(0.04, 0.012, 6, 12);
+  for (const side of [-1, 1]) {
+    const blade = new THREE.Mesh(bladeGeo, bladeMat);
+    blade.position.x = 0.02 * side;
+    blade.rotation.z = 0.18 * side;
+    g.add(blade);
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.position.set(0.05 * side, -0.10, 0);
+    g.add(handle);
+  }
+  return {
+    obj: g,
+    dispose: () => {
+      bladeMat.dispose(); handleMat.dispose();
+      bladeGeo.dispose(); handleGeo.dispose();
+    },
+  };
+}
+
+export function buildPlate(): Projectile {
+  // White ceramic disc.
+  const mat = new THREE.MeshLambertMaterial({ color: 0xf2eee5 });
+  const geo = new THREE.CylinderGeometry(0.14, 0.14, 0.012, 16);
+  const disc = new THREE.Mesh(geo, mat);
+  disc.rotation.x = Math.PI / 2;
+  return { obj: disc, dispose: () => { mat.dispose(); geo.dispose(); } };
+}
+
+export function buildWrench(): Projectile {
+  // Heavy chrome wrench: shaft + jaw.
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color: 0x9aa0a8 });
+  const shaftGeo = new THREE.BoxGeometry(0.04, 0.24, 0.025);
+  const jawGeo = new THREE.BoxGeometry(0.10, 0.06, 0.025);
+  const shaft = new THREE.Mesh(shaftGeo, mat);
+  g.add(shaft);
+  const jaw = new THREE.Mesh(jawGeo, mat);
+  jaw.position.y = 0.13;
+  g.add(jaw);
+  return {
+    obj: g,
+    dispose: () => { mat.dispose(); shaftGeo.dispose(); jawGeo.dispose(); },
+  };
+}
+
+export function buildBowl(color: number): Projectile {
+  // Half-sphere bowl (soup or oil) — used for soup_splash / oil_slick.
+  const liquidMat = new THREE.MeshLambertMaterial({
+    color, transparent: true, opacity: 0.85,
+  });
+  const bowlMat = new THREE.MeshLambertMaterial({ color: 0x33332e });
+  const g = new THREE.Group();
+  const bowl = new THREE.Mesh(
+    new THREE.SphereGeometry(0.14, 14, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    bowlMat,
+  );
+  g.add(bowl);
+  const top = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), liquidMat);
+  top.rotation.x = -Math.PI / 2;
+  top.position.y = 0.001;
+  g.add(top);
+  return {
+    obj: g,
+    dispose: () => { liquidMat.dispose(); bowlMat.dispose(); },
+  };
+}
