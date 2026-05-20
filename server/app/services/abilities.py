@@ -17,10 +17,11 @@ import time as _time
 
 from app.domain.lobby import Lobby, PlayerConn
 from app.services._abilities_effects import (
+    CIRCUIT_STUN_DURATION,
     FINE_SLOW_DURATION, FINE_SLOW_FACTOR,
     LAWSUIT_THROW_TRAVEL_MS,
     POTION_DURATION, POTION_RADIUS, POTION_SLOW_FACTOR, POTION_TRAVEL_MS,
-    STUN_DURATION, THROWS, VENT_LOCK_DURATION,
+    PUDDLES, STUN_DURATION, THROWS, VENT_LOCK_DURATION,
     delayed_puddle, delayed_slow, delayed_stun,
 )
 from app.services.broadcast import broadcast
@@ -122,6 +123,29 @@ async def apply_ability_events(
             pkt["payload"] = {
                 "targetX": tgt.x, "targetZ": tgt.z, "travelMs": travel_ms,
             }
+
+        elif ev.ability in PUDDLES and ev.target_id:
+            tgt = _find_player(lobby, ev.target_id)
+            if tgt is None:
+                continue
+            radius, duration, factor, travel_ms = PUDDLES[ev.ability]
+            travel = travel_ms / 1000.0
+            asyncio.create_task(delayed_puddle(
+                lobby, tgt.x, tgt.z, radius, duration, factor, travel,
+            ))
+            pkt["payload"] = {
+                "fromX": ev.x, "fromZ": ev.z,
+                "targetX": tgt.x, "targetZ": tgt.z,
+                "radius": radius, "duration": duration,
+                "travelMs": travel_ms,
+            }
+
+        elif ev.ability == "circuit_overload" and ev.target_id:
+            tgt = _find_player(lobby, ev.target_id)
+            if tgt is None:
+                continue
+            tgt.stun_until = now + CIRCUIT_STUN_DURATION
+            pkt["payload"] = {"stunDuration": CIRCUIT_STUN_DURATION}
 
         elif ev.ability == "fine_slow" and ev.target_id:
             tgt = _find_player(lobby, ev.target_id)
