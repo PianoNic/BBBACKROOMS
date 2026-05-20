@@ -80,14 +80,25 @@
       #e8e8e2;
     border: 1px solid #888;
   }
+  // El Tony Mate can: silver lid strip on top, navy body, two gold bands
+  // hugging the top and bottom of the label area.
   .icon.pot {
-    background: linear-gradient(180deg, transparent 0 25%, #6ad6b8 25% 100%);
-    border: 1px solid #2a3a2a;
-    border-radius: 2px 2px 4px 4px;
+    background:
+      linear-gradient(#c8ccd2 0 2px, transparent 2px 100%),
+      linear-gradient(transparent 0 3px, #f2c130 3px 4px, transparent 4px 12px,
+                      #f2c130 12px 13px, transparent 13px 100%),
+      #2f3f57;
+    border: 1px solid #1a2335;
+    border-radius: 2px;
   }
+  // Pocket compass: brass case with a red/white diamond needle pointing up.
+  // The two stacked conic-gradients build the diamond shape (red north,
+  // white south) inside the dark dial.
   .icon.comp {
     background:
-      linear-gradient(#e8c44a, #e8c44a) center/3px 12px no-repeat,
+      conic-gradient(from 0deg at 50% 50%,
+                     transparent 0 60deg, #d03030 60deg 120deg, transparent 120deg 240deg,
+                     #e8e6dc 240deg 300deg, transparent 300deg 360deg),
       #1a1a1a;
     border: 2px solid #c8a25a;
     border-radius: 50%;
@@ -108,14 +119,30 @@
     border: 1px solid #101012;
     border-radius: 50%;
   }
+  // Two red lenses + a temple arm extending out either side (mirrors the
+  // new 3D model with proper glasses temples instead of a headstrap).
   .icon.goggles {
     background:
+      linear-gradient(#252a30 0 50%, transparent 50% 60%, #252a30 60% 64%, transparent 64% 100%)
+        0 50%/2px 16px no-repeat,
+      linear-gradient(#252a30, #252a30) right 50% / 2px 2px no-repeat,
+      linear-gradient(#252a30, #252a30) left  50% / 2px 2px no-repeat,
       radial-gradient(circle at 28% 50%, #ff5a3a 0 4px, transparent 5px),
       radial-gradient(circle at 72% 50%, #ff5a3a 0 4px, transparent 5px),
       #252a30;
     border: 1px solid #101012;
     border-radius: 3px;
+    position: relative;
   }
+  // Temple arms — two short ticks at the outer edges, like glasses sticks.
+  .icon.goggles::before,
+  .icon.goggles::after {
+    content: ""; position: absolute; top: 50%;
+    width: 6px; height: 2px; background: #252a30;
+    transform: translateY(-1px);
+  }
+  .icon.goggles::before { left: -5px; }
+  .icon.goggles::after  { right: -5px; }
   #inv-goggles.active .icon.goggles {
     box-shadow: 0 0 8px 2px rgba(255,90,58,0.85);
   }
