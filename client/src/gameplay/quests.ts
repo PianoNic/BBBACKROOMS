@@ -41,6 +41,24 @@ export class Quests {
     for (const fn of this.listeners) fn();
   }
 
+  /** Re-open a previously-completed spot (server relocked it via a teacher
+   *  ability). Find by tag rather than index since the relock packet only
+   *  carries the spot's tag. */
+  relockSpot(id: string, tag: string): void {
+    const e = this.entries.get(id);
+    if (!e) return;
+    const idx = e.obj.spots.findIndex((s) => s.tag === tag);
+    if (idx < 0) return;
+    const sObj = e.obj.spots[idx];
+    const vis = e.spots[idx];
+    if (!sObj.done) return;
+    sObj.done = false;
+    e.obj.done = false;
+    vis.marker.visible = true;
+    if (vis.extra) vis.extra.visible = true;
+    for (const fn of this.listeners) fn();
+  }
+
   complete(id: string): void {
     const e = this.entries.get(id);
     if (!e || e.obj.done) return;

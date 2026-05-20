@@ -63,9 +63,15 @@ export class FuseBoxes {
   }
 
   private add(id: string, p: Prop): void {
+    // Boxes mount with their door facing away from the spawner direction,
+    // so the lever face points *into* the room. Add π once and use this
+    // local yaw for both rendering and the world-space lever coords —
+    // otherwise the interact-prompt range would check the opposite side
+    // from where the levers actually render.
+    const yaw = p.yaw + Math.PI;
     const root = new THREE.Group();
     root.position.set(p.x, 0, p.z);
-    root.rotation.y = p.yaw;
+    root.rotation.y = yaw;
     this.group.add(root);
 
     // Hinged door on the LEFT edge of the cover so opening reveals the
@@ -91,8 +97,8 @@ export class FuseBoxes {
     const levers: Lever[] = [];
     const colX = [-0.16, 0, 0.16];
     const rowY = [DOOR_Y + 0.16, DOOR_Y - 0.10];
-    const sinY = Math.sin(p.yaw);
-    const cosY = Math.cos(p.yaw);
+    const sinY = Math.sin(yaw);
+    const cosY = Math.cos(yaw);
     for (let r = 0; r < LEVER_ROWS; r++) {
       for (let c = 0; c < LEVER_COLS; c++) {
         const lx = colX[c];

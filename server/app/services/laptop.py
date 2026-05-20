@@ -88,6 +88,14 @@ async def mark_laptop_done(lobby: Lobby, laptop_id: str, player_id: str) -> None
             await broadcast(
                 lobby, {"type": "objective_done", "id": obj.id, "by": player_id},
             )
+            # Casino is excluded from try_complete_spots' escape-phase check,
+            # so when it's the last objective to finish we have to flip the
+            # phase here. Otherwise the game stays in tasks forever.
+            if lobby.phase == "tasks" and all(
+                o.done for o in lobby.world.objectives
+            ):
+                lobby.phase = "escape"
+                await broadcast(lobby, {"type": "phase_change", "phase": "escape"})
         break
 
 
