@@ -10,7 +10,10 @@ import {
   corruptTasks, fakePing, flashOverlay, flickerWorldLights, flipGravity,
   frenchifyTasks, screenFilter, showMathPopup,
 } from "./teacherEffectHelpers";
-import { buildBall, buildFlask, buildLawbook, type Projectile } from "./teacherEffectModels";
+import {
+  buildBall, buildBowl, buildFlask, buildLawbook,
+  buildPlate, buildScissors, buildWrench, type Projectile,
+} from "./teacherEffectModels";
 
 const PUDDLE_GEO = new THREE.CircleGeometry(1, 24);
 
@@ -136,12 +139,80 @@ export class TeacherEffects {
       case "short_teleport":
         // Movement-only — TeachersState packet updates position.
         break;
+      case "scissor_throw":
+      case "plate_smash":
+      case "wrench_throw": {
+        const proj =
+          pkt.ability === "scissor_throw" ? buildScissors() :
+          pkt.ability === "plate_smash"   ? buildPlate() :
+          /* wrench */                       buildWrench();
+        this.throwArc(
+          proj,
+          new THREE.Vector3(pkt.x, 1.4, pkt.z),
+          new THREE.Vector3(payload.targetX, 1.2, payload.targetZ),
+          payload.travelMs ?? 600,
+        );
+        if (targeted) {
+          const msg =
+            pkt.ability === "scissor_throw" ? `${teacherName}: SCHNIPP!` :
+            pkt.ability === "plate_smash"   ? `${teacherName}: SERVICE!` :
+            /* wrench */                       `${teacherName}: TOOL TIME!`;
+          showBanner(msg, 2000);
+          setTimeout(() => flashOverlay("rgba(200,80,40,0.4)", 200), payload.travelMs ?? 600);
+        }
+        break;
+      }
+      case "soup_splash":
+      case "oil_slick": {
+        const isOil = pkt.ability === "oil_slick";
+        const radius = payload.radius ?? (isOil ? 2.4 : 1.8);
+        const duration = payload.duration ?? (isOil ? 8 : 4);
+        const targetX = payload.targetX;
+        const targetZ = payload.targetZ;
+        const travelMs = payload.travelMs ?? 650;
+        this.throwArc(
+          buildBowl(isOil ? 0x222018 : 0xcd9b4a),
+          new THREE.Vector3(pkt.x, 1.4, pkt.z),
+          new THREE.Vector3(targetX, 0.2, targetZ),
+          travelMs,
+          () => this.spawnPuddle(targetX, targetZ, radius, duration, isOil ? 0x222018 : 0xcd9b4a),
+        );
+        if (targeted) {
+          const msg = isOil
+            ? `${teacherName}: ÖL-PFÜTZE!`
+            : `${teacherName}: HEISSE SUPPE!`;
+          showBanner(msg, 2000);
+        }
+        break;
+      }
+      case "circuit_overload":
+        if (targeted) {
+          flashOverlay("rgba(120,160,255,0.55)", 350);
+          showBanner(`${teacherName}: STROMSCHLAG!`, 2200);
+        }
+        break;
+      case "truck_horn":
+        if (targeted) {
+          screenFilter("blur(2px) saturate(1.2)", 1600, `${teacherName}: HUUUUP!`);
+        } else {
+          showBanner(`${teacherName}: HUUUUP!`, 1500);
+        }
+        break;
+      case "gear_jam":
+        if (targeted) screenFilter("contrast(1.4) hue-rotate(15deg)", 2200, `${teacherName}: GETRIEBE-STAU!`);
+        break;
+      case "makeup_blur":
+        if (targeted) screenFilter("blur(4px) brightness(1.2) saturate(1.5)", 3500, `${teacherName}: STAUB INS GESICHT!`);
+        break;
     }
   }
 
-  private spawnPuddle(x: number, z: number, radius: number, durationS: number): void {
+  private spawnPuddle(
+    x: number, z: number, radius: number, durationS: number,
+    color = 0x6fcf3a,
+  ): void {
     const mat = new THREE.MeshBasicMaterial({
-      color: 0x6fcf3a, transparent: true, opacity: 0.55, depthWrite: false,
+      color, transparent: true, opacity: 0.55, depthWrite: false,
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(PUDDLE_GEO, mat);

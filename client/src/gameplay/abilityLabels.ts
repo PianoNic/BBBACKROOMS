@@ -32,6 +32,16 @@ export const ABILITY_COPY: Record<string, AbilityCopy> = {
   // Standalone
   taunt_shout:      { label: "Taunt", desc: "Sees you from very far away." },
   gravity_flip:     { label: "Gravity Flip", desc: "Inverts the world briefly." },
+  // Trade abilities (Coiffeur / Köch / Restaurant / Automobil / Elektronik / …)
+  scissor_throw:    { label: "Schere", desc: "Wirft eine Schere — kurzer Stun." },
+  plate_smash:      { label: "Tellerwurf", desc: "Zerschmettert einen Teller an dir — Stun." },
+  wrench_throw:     { label: "Schraubenschlüssel", desc: "Schwerer Wurf — Stun + Slow." },
+  soup_splash:      { label: "Suppen-Splash", desc: "Heisse Suppe — bremst dich kurz." },
+  oil_slick:        { label: "Ölfleck", desc: "Lässt eine rutschige Pfütze zurück." },
+  truck_horn:       { label: "Lastwagen-Hupe", desc: "Lautes Hupen — verwirrt dich kurz." },
+  circuit_overload: { label: "Stromschlag", desc: "Stromstoss aus der Ferne — Stun." },
+  gear_jam:         { label: "Getriebe-Stau", desc: "Bildschirm-Glitch für ein paar Sekunden." },
+  makeup_blur:      { label: "Make-up-Blur", desc: "Schminkstaub vernebelt die Sicht." },
 };
 
 export function abilityCopy(id: string): AbilityCopy {
