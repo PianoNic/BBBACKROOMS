@@ -57,7 +57,18 @@ export class Player {
   update(dt: number): void {
     const m = this.input.consumeMouse();
     this.yaw += m.yaw;
-    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch + m.pitch));
+    let pitch = this.pitch + m.pitch;
+
+    // Arrow-key camera control: an alternative to the mouse, scaled by dt
+    // so the turn speed feels the same regardless of framerate. Rate is
+    // user-tunable in Settings (`arrowTurnRate`, rad/s).
+    // Sign matches mouse: right → yaw decreases, up → pitch increases.
+    const step = getSettings().arrowTurnRate * dt;
+    if (this.input.keys.has("ArrowLeft"))  this.yaw += step;
+    if (this.input.keys.has("ArrowRight")) this.yaw -= step;
+    if (this.input.keys.has("ArrowUp"))    pitch += step;
+    if (this.input.keys.has("ArrowDown"))  pitch -= step;
+    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
 
     let fx = 0;
     let fz = 0;

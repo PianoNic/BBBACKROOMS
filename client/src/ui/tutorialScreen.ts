@@ -64,6 +64,7 @@ const SECTIONS: Section[] = [
     title: "Controls",
     bullets: [
       "WASD - Bewegung, Shift - Sprint, Space - Springen, C - Ducken.",
+      "Maus - Umsehen. Alternativ Pfeiltasten (↑↓←→) zum Drehen der Kamera, wie in Roblox.",
       "E - Interagieren / Aufheben / Wiederbeleben (halten).",
       "Q - Trank trinken (Speed-Boost).",
       "F - Wärmebild-Brille aktivieren (3s Reveal, 30s Cooldown).",

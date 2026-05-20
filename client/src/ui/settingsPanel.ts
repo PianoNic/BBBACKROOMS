@@ -101,6 +101,8 @@ export function buildSettingsList(): SettingsList {
 
   root.appendChild(el("div", "set-section", "INPUT"));
   root.appendChild(rangeRow("Mouse sensitivity", "mouseSensitivity", 0.2, 3.0, 0.05, (v) => `${v.toFixed(2)}x`));
+  root.appendChild(rangeRow("Arrow-key turn speed", "arrowTurnRate", 0.5, 6.0, 0.1,
+    (v) => `${Math.round(v * (180 / Math.PI))}°/s`));
 
   root.appendChild(el("div", "set-section", "AUDIO"));
   root.appendChild(rangeRow("Music", "musicVolume", 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`));
