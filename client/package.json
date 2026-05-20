@@ -1,7 +1,7 @@
 {
   "name": "bbbackrooms-client",
   "private": true,
-  "version": "1.0.2-alpha",
+  "version": "1.0.3-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",

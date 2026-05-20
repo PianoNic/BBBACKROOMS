@@ -10,6 +10,7 @@ export type Settings = {
   jumpscareVolume: number;  // 0..1, separate so players can tame the scream
   showFps: boolean;
   mouseSensitivity: number;  // 0.2..3.0 multiplier on base look speed
+  arrowTurnRate: number;     // 0.5..6.0 rad/s — arrow-key camera turn speed
   /** PS1-style lo-fi voice filter intensity. 0 = clean, 1 = full bit-crush. */
   ps1VoiceAmount: number;    // 0..1
   /** "" means "use browser default device". */
@@ -38,6 +39,7 @@ export const DEFAULTS: Settings = {
   jumpscareVolume: 0.6,
   showFps: true,
   mouseSensitivity: 1.0,
+  arrowTurnRate: 2.5,
   ps1VoiceAmount: 0.6,
   cameraDeviceId: "",
   micDeviceId: "",
