@@ -14,7 +14,13 @@ export class InputState {
   locked = false;
 
   constructor(private readonly target: HTMLElement) {
-    addEventListener("keydown", (e) => this.keys.add(e.code));
+    addEventListener("keydown", (e) => {
+      this.keys.add(e.code);
+      // Arrow keys are an alternative camera-control input (like Roblox).
+      // Stop them scrolling the page while the pointer is locked into the
+      // game so they don't fight a scroll viewport behind the canvas.
+      if (this.locked && e.code.startsWith("Arrow")) e.preventDefault();
+    });
     addEventListener("keyup", (e) => this.keys.delete(e.code));
     addEventListener("blur", () => this.keys.clear());
 
