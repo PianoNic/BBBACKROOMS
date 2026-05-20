@@ -26,7 +26,7 @@ def generate(
     width: int = DEFAULT_MAP_CELLS,
     height: int = DEFAULT_MAP_CELLS,
     objective_count: int = 6,
-    style: str = "baseline",
+    style: str = "tentacle",
 ) -> tuple[WorldInit, Layout]:
     rng = random.Random(seed)
     layout = _LAYOUT_BUILDERS[style](rng, width, height)
