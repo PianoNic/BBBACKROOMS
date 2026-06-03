@@ -12,6 +12,9 @@ export default defineConfig({
       "/lobbies": { target: DEV_BACKEND, changeOrigin: true },
       "/healthz": { target: DEV_BACKEND, changeOrigin: true },
       "/version": { target: DEV_BACKEND, changeOrigin: true },
+      "/auth": { target: DEV_BACKEND, changeOrigin: true },
+      "/shop": { target: DEV_BACKEND, changeOrigin: true },
+      "/turn-credentials": { target: DEV_BACKEND, changeOrigin: true },
     },
   },
 });

@@ -59,6 +59,76 @@ export async function makeAvatarMaterials(
   );
 }
 
+/** Procedural cosmetic hat, attached as a child of the voxel so it inherits
+ *  position + yaw and survives material swaps. The cube's local top is +0.85
+ *  (height 1.7, centred), so hats sit a little above that. */
+export function buildHat(key: string): THREE.Object3D | null {
+  const group = new THREE.Group();
+  const GOLD = 0xffd24a, DARK = 0x222222, PARTY = 0xff5fa2;
+  if (key === "cone") {
+    const m = new THREE.Mesh(
+      new THREE.ConeGeometry(0.26, 0.5, 16),
+      new THREE.MeshLambertMaterial({ color: PARTY }),
+    );
+    m.position.y = 1.12; group.add(m);
+  } else if (key === "halo") {
+    const m = new THREE.Mesh(
+      new THREE.TorusGeometry(0.22, 0.045, 8, 24),
+      new THREE.MeshBasicMaterial({ color: GOLD }),
+    );
+    m.rotation.x = Math.PI / 2; m.position.y = 1.18; group.add(m);
+  } else if (key === "gradcap") {
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 0.05, 0.55),
+      new THREE.MeshLambertMaterial({ color: DARK }),
+    );
+    board.position.y = 0.95; group.add(board);
+    const tassel = new THREE.Mesh(
+      new THREE.SphereGeometry(0.04, 8, 8),
+      new THREE.MeshLambertMaterial({ color: GOLD }),
+    );
+    tassel.position.set(0.22, 0.9, 0); group.add(tassel);
+  } else if (key === "crown") {
+    const band = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.25, 0.14, 16, 1, true),
+      new THREE.MeshLambertMaterial({ color: GOLD, side: THREE.DoubleSide }),
+    );
+    band.position.y = 0.98; group.add(band);
+    for (let i = 0; i < 4; i++) {
+      const spike = new THREE.Mesh(
+        new THREE.ConeGeometry(0.05, 0.12, 6),
+        new THREE.MeshLambertMaterial({ color: GOLD }),
+      );
+      const a = (i / 4) * Math.PI * 2;
+      spike.position.set(Math.cos(a) * 0.19, 1.08, Math.sin(a) * 0.19);
+      group.add(spike);
+    }
+  } else {
+    return null;
+  }
+  return group;
+}
+
+export function disposeHat(hat: THREE.Object3D): void {
+  hat.traverse((o) => {
+    const m = o as THREE.Mesh;
+    m.geometry?.dispose?.();
+    if (m.material) disposeMaterial(m.material as THREE.Material);
+  });
+}
+
+/** Face-pattern materials from a catalog texture path. Resolves to null on a
+ *  missing/404 asset so the caller falls back to the body colour. */
+export async function makeFacePatternMaterials(
+  url: string,
+): Promise<THREE.MeshLambertMaterial[] | null> {
+  try {
+    return await makeAvatarMaterials(url);
+  } catch {
+    return null;
+  }
+}
+
 export function disposeMaterial(m: THREE.Material | THREE.Material[]): void {
   const list = Array.isArray(m) ? m : [m];
   for (const x of list) {

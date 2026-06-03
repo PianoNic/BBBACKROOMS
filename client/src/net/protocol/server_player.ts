@@ -1,9 +1,20 @@
 /** Server → client packets for the local player and other connected
  *  players: presence, status effects, inventory, world-interaction
  *  acknowledgements, chair physics, WebRTC signalling. */
-import type { PickupInfo, PickupKind, RemotePlayer } from "./types";
+import type { EquippedCosmetics, PickupInfo, PickupKind, RemotePlayer } from "./types";
 
 export type PlayerJoinPkt = { type: "player_join" } & RemotePlayer;
+
+export type PlayerCosmeticPkt = {
+  type: "player_cosmetic"; id: string; equipped: EquippedCosmetics;
+};
+export type ShopResultPkt = {
+  type: "shop_result";
+  cosmeticId: string;
+  ok: boolean;
+  balance: number;
+  reason: "ok" | "owned" | "insufficient" | "guest" | "unknown" | "error";
+};
 export type PlayerStatePkt = {
   type: "player_state"; id: string; x: number; z: number; yaw: number;
 };

@@ -110,6 +110,10 @@ class PlayerConn:
     # Linked account (OAuth login) or None for guests. Set at connect time from
     # a verified WS ticket; drives whether round rewards are persisted.
     account_id: int | None = None
+    # Cosmetics cache, seeded at connect (account rows, or free defaults for
+    # guests). `equipped_cosmetics` is {category: cosmetic_id}.
+    owned_cosmetics: set[str] = field(default_factory=set)
+    equipped_cosmetics: dict[str, str] = field(default_factory=dict)
     x: float = 0.0
     z: float = 0.0
     yaw: float = 0.0

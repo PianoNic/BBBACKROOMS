@@ -30,6 +30,12 @@ export type ClientReviveStartPkt = { type: "revive_start"; targetId: string };
 export type ClientReviveCancelPkt = { type: "revive_cancel" };
 export type ClientLockerOpenPkt = { type: "locker_open"; lockerId: string };
 export type ClientDoorTogglePkt = { type: "door_toggle"; doorId: string };
+export type ClientSetCosmeticPkt = {
+  type: "set_cosmetic";
+  category: "body" | "facePattern" | "hat" | "title";
+  cosmeticId: string | null;
+};
+export type ClientBuyCosmeticPkt = { type: "buy_cosmetic"; cosmeticId: string };
 
 export type ClientLobbySettingsPkt = {
   type: "lobby_settings";
@@ -66,4 +72,6 @@ export type ClientPacket =
   | ClientReviveStartPkt
   | ClientReviveCancelPkt
   | ClientLockerOpenPkt
-  | ClientDoorTogglePkt;
+  | ClientDoorTogglePkt
+  | ClientSetCosmeticPkt
+  | ClientBuyCosmeticPkt;
