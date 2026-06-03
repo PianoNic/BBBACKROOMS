@@ -61,9 +61,6 @@ function fillAccountWidget(wrap: HTMLElement): void {
 function buildHeader(root: HTMLElement): void {
   const sysbar = el<HTMLDivElement>("div", "sysbar");
   sysbar.appendChild(el("span", "sysbar-label", "SYS://ROOM_INDEX"));
-  const account = el<HTMLDivElement>("div", "account-widget");
-  fillAccountWidget(account);
-  sysbar.appendChild(account);
   sysbar.appendChild(el("span", "rec", "REC"));
   root.appendChild(sysbar);
   root.appendChild(el("h1", undefined, "BBBACKROOMS"));
@@ -140,6 +137,9 @@ function buildMainMenu(
   const tutBtn = el<HTMLButtonElement>("button", "menu-btn", "TUTORIAL");
   tutBtn.onclick = onTutorial;
   menu.append(playBtn, shopBtn, optBtn, tutBtn);
+  const account = el<HTMLDivElement>("div", "account-widget");
+  fillAccountWidget(account);
+  menu.appendChild(account);
   root.appendChild(menu);
 }
 

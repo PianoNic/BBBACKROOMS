@@ -16,7 +16,7 @@
   *::-webkit-scrollbar { display: none; }
 
   .sysbar {
-    display: flex; justify-content: flex-start; align-items: center; gap: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
     font-size: 14px; letter-spacing: 0.2em; color: $ink;
     margin-bottom: 4vh; padding-bottom: 8px;
     border-bottom: 1px solid rgba(106, 98, 88, 0.25);
@@ -94,10 +94,12 @@
     }
   }
 
-  // Account widget lives in the sysbar, pushed to the right (before REC).
+  // Account widget sits at the bottom of the main menu, under the menu items
+  // and aligned with their labels.
   .account-widget {
-    margin-left: auto;
-    display: flex; align-items: center; gap: 10px;
+    margin-top: 3.2vh;
+    padding-left: 36px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     letter-spacing: 0.08em;
   }
   .acc-note.error { color: $red-rec; font-size: 12px; text-transform: uppercase; }
