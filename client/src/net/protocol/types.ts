@@ -101,6 +101,19 @@ export type Objective = {
   done: boolean;
 };
 
+export type CosmeticCategory = "body" | "facePattern" | "hat" | "title";
+export type EquippedCosmetics = Partial<Record<CosmeticCategory, string>>;
+export type CatalogItem = {
+  id: string;
+  category: CosmeticCategory;
+  name: string;
+  price: number;
+  rarity: string;
+  assetRef: string;
+  default: boolean;
+};
+export type SelfCosmetics = { owned: string[]; equipped: EquippedCosmetics };
+
 export type RemotePlayer = {
   id: string;
   color: string;
@@ -108,6 +121,7 @@ export type RemotePlayer = {
   z: number;
   yaw: number;
   avatar?: string | null;
+  equipped?: EquippedCosmetics;
 };
 
 export type TeacherInfo = {
@@ -183,6 +197,7 @@ export type CorpseInfo = { id: string; x: number; z: number };
 
 export type LobbyPlayer = {
   id: string; name: string; color: string; avatar?: string | null;
+  equipped?: EquippedCosmetics;
 };
 
 export type ChatMessage = { id: string; author: string; text: string; ts: number };

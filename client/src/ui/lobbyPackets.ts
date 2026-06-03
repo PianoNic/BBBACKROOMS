@@ -2,19 +2,28 @@
  *
  *  Mirrors the in-game `gamePackets.ts` split. Owns nothing — receives
  *  the lobby state, webcam, and render callbacks and dispatches. */
-import type { ServerPacket, LobbyPlayer, ChatMessage } from "../net/protocol";
+import type {
+  ServerPacket, LobbyPlayer, ChatMessage, EquippedCosmetics, ShopResultPkt,
+} from "../net/protocol";
 import type { WebcamMesh } from "../gameplay/webcam";
 import type { AdminPanelState } from "./lobbyAdminPanel";
+
+export type SelfCosmetics = { owned: Set<string>; equipped: EquippedCosmetics };
 
 export type LobbyState = AdminPanelState & {
   players: Map<string, LobbyPlayer>;
   chat: ChatMessage[];
+  selfId: string;
+  selfCosmetics: SelfCosmetics;
 };
 
 export type LobbyCallbacks = {
   renderPlayers: () => void;
   refreshAdmin: () => void;
   appendChatLine: (m: ChatMessage) => void;
+  /** Notify an open shop panel of a purchase result / equip change. */
+  onShopResult?: (pkt: ShopResultPkt) => void;
+  onCosmeticChange?: () => void;
 };
 
 export function handleLobbyPacket(
@@ -23,9 +32,26 @@ export function handleLobbyPacket(
 ): void {
   switch (pkt.type) {
     case "lobby_player_join":
-      state.players.set(pkt.id, { id: pkt.id, name: pkt.name, color: pkt.color, avatar: pkt.avatar });
+      state.players.set(pkt.id, {
+        id: pkt.id, name: pkt.name, color: pkt.color,
+        avatar: pkt.avatar, equipped: pkt.equipped,
+      });
       webcam?.addPeer(pkt.id);
       cb.renderPlayers();
+      return;
+    case "player_cosmetic": {
+      const p = state.players.get(pkt.id);
+      if (p) p.equipped = pkt.equipped;
+      if (pkt.id === state.selfId) {
+        state.selfCosmetics.equipped = pkt.equipped;
+        cb.onCosmeticChange?.();
+      }
+      cb.renderPlayers();
+      return;
+    }
+    case "shop_result":
+      if (pkt.ok) state.selfCosmetics.owned.add(pkt.cosmeticId);
+      cb.onShopResult?.(pkt);
       return;
     case "player_leave":
       state.players.delete(pkt.id);

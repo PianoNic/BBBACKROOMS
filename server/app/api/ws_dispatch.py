@@ -12,7 +12,7 @@ from app.schemas.packets import (
     GamblePlayPkt, LobbySettingsPkt, LockerOpenPkt, MovePkt, SetAvatarPkt,
     SetNamePkt, StartGamePkt, WebRTCSignalPkt, WebcamStatePkt,
     PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
-    UseGogglesPkt, BackToLobbyPkt,
+    UseGogglesPkt, BackToLobbyPkt, SetCosmeticPkt, BuyCosmeticPkt,
 )
 from app.services.broadcast import broadcast
 from app.services.laptop import handle_gamble_open, handle_gamble_play
@@ -25,6 +25,7 @@ from app.services.pickups import handle_collect, handle_use_goggles, handle_use_
 from app.services.revive import handle_revive_cancel, handle_revive_start
 from app.services.quests import check_extraction, try_complete_spots
 from app.services.signaling import broadcast_webcam_state, relay_signal
+from app.services.shop import handle_buy_cosmetic, handle_set_cosmetic
 from app.services.teacher_loop import ensure_teacher_loop
 
 
@@ -54,6 +55,13 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
     if isinstance(pkt, SetAvatarPkt):
         me.avatar = pkt.avatar
         await broadcast(lobby, {"type": "player_avatar", "id": me.id, "avatar": pkt.avatar})
+        return
+    # Cosmetics: equip works for everyone (incl. in-game); buy needs an account.
+    if isinstance(pkt, SetCosmeticPkt):
+        await handle_set_cosmetic(lobby, me, pkt.category, pkt.cosmeticId)
+        return
+    if isinstance(pkt, BuyCosmeticPkt):
+        await handle_buy_cosmetic(lobby, me, pkt.cosmeticId)
         return
     if isinstance(pkt, WebRTCSignalPkt):
         await relay_signal(lobby, me, pkt.to, pkt.kind, pkt.data)

@@ -16,6 +16,7 @@ import { makeGamePacketHandler } from "./net/gamePackets";
 import { installGameInput } from "./core/gameInput";
 import { buildScene } from "./core/sceneSetup";
 import { getSettings, onSettingsChange, updateSetting } from "./core/settings";
+import { ensureCatalog } from "./gameplay/cosmetics";
 
 
 async function main(): Promise<void> {
@@ -68,6 +69,7 @@ async function main(): Promise<void> {
   await yieldToPaint();
   const ctx = createRenderContext(mount);
   const audioListener = new THREE.AudioListener();
+  await ensureCatalog();  // so equipped cosmetics resolve when seeding players
   const s = buildScene(init, ctx, net, audioListener, webcam);
 
   const reviveState = { active: false };

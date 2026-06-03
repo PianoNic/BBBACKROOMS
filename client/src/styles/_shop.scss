@@ -1,0 +1,73 @@
+@use "variables" as *;
+
+.shop-overlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.78);
+  font-family: $font-mono; color: $ink;
+}
+
+.shop-panel {
+  width: min(720px, 92vw); max-height: 86vh;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 22px;
+}
+
+.shop-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  .shop-balance { color: #ffd24a; letter-spacing: 0.1em; }
+}
+
+.shop-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.shop-tab {
+  background: transparent; color: $dim; border: none;
+  box-shadow: inset 0 0 0 1px $dim;
+  padding: 6px 14px; font-family: $font-mono; font-size: 13px;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  transition: color 0.12s, box-shadow 0.12s;
+  &:hover { color: $accent; }
+  &.active { color: $accent-bright; box-shadow: inset 0 0 0 1px $accent; }
+}
+
+.shop-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px; overflow-y: auto; padding: 2px;
+}
+
+.shop-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px; box-shadow: inset 0 0 0 1px rgba(217, 210, 196, 0.25);
+  &.rarity-rare { box-shadow: inset 0 0 0 1px #5aa9e6; }
+  &.rarity-epic { box-shadow: inset 0 0 0 1px #b06ae6; }
+  &.rarity-legendary { box-shadow: inset 0 0 0 1px #ffd24a; }
+  .shop-card-name { font-size: 14px; letter-spacing: 0.06em; }
+  .shop-card-rarity {
+    font-size: 11px; color: $dim; text-transform: uppercase; letter-spacing: 0.12em;
+  }
+}
+
+.shop-action {
+  margin-top: auto;
+  background: transparent; color: $accent; border: none;
+  box-shadow: inset 0 0 0 1px $accent;
+  padding: 7px 0; font-family: $font-mono; font-size: 13px;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  transition: background 0.12s;
+  &:hover:not(:disabled) { background: rgba(200, 162, 90, 0.18); }
+  &.is-equipped { color: $accent-bright; box-shadow: inset 0 0 0 1px $accent-bright; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.shop-note { min-height: 16px; font-size: 12px; color: $dim; letter-spacing: 0.08em; }
+
+.shop-close {
+  align-self: flex-start;
+  background: transparent; color: $ink; border: none;
+  box-shadow: inset 0 0 0 1px $dim;
+  padding: 8px 18px; font-family: $font-mono; font-size: 14px;
+  letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer;
+  transition: color 0.12s, box-shadow 0.12s;
+  &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
+}
