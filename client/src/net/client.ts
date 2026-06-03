@@ -15,7 +15,10 @@ export type NetClient = {
 export type LobbyConnection = {
   client: NetClient;
   lobby: LobbyStatePkt;
-  waitForWorld(): Promise<WorldInit>;
+  /** Resolves with the WorldInit. If `onGenStart` is supplied, it fires
+   *  the moment the server announces gen has begun — used to swap the
+   *  lobby UI for a loading screen while worldgen runs server-side. */
+  waitForWorld(onGenStart?: () => void): Promise<WorldInit>;
 };
 
 /** Connect to a lobby. Returns immediately with the lobby room state.
@@ -59,17 +62,22 @@ export async function connect(lobbyId: string, password?: string): Promise<Lobby
     close: () => ws.close(),
   };
 
-  const waitForWorld = (): Promise<WorldInit> => new Promise((resolve) => {
-    const prev = activeHandler;
-    client.onPacket((pkt) => {
-      if (pkt.type === "world_init") {
-        client.onPacket(prev ?? (() => undefined));
-        resolve(pkt);
-      } else if (prev) {
-        prev(pkt);
-      }
+  const waitForWorld = (onGenStart?: () => void): Promise<WorldInit> =>
+    new Promise((resolve) => {
+      const prev = activeHandler;
+      client.onPacket((pkt) => {
+        if (pkt.type === "world_init") {
+          client.onPacket(prev ?? (() => undefined));
+          resolve(pkt);
+          return;
+        }
+        if (pkt.type === "world_gen_start") {
+          onGenStart?.();
+          return;
+        }
+        if (prev) prev(pkt);
+      });
     });
-  });
 
   return { client, lobby, waitForWorld };
 }

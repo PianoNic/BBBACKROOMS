@@ -4,11 +4,16 @@ CELL_SIZE = 2.0  # world units per cell
 
 # Admin-selectable map sizes (cells per side, square).
 MAP_SIZES = {
-    "small": 60,
-    "medium": 120,
-    "large": 180,
+    "small": 40,
+    "medium": 60,
+    "large": 80,
+    "xlarge": 120,
 }
 DEFAULT_MAP_CELLS = MAP_SIZES["medium"]
+# Reference size for any "scale relative to" math (pickup counts, etc.).
+# Picked once and held constant so changing MAP_SIZES never silently
+# rescales the world budget.
+SCALE_REFERENCE_CELLS = 120
 
 HALL_THICKNESS = 2
 CLASSROOM_DEPTH_MIN = 4

@@ -12,12 +12,13 @@ import secrets
 import time as _time
 
 from app.domain.lobby import ChairProjectile, Lobby, PlayerConn
+from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.world.constants import CELL_SIZE
 from app.world.geom import within_radius, within_radius_xz
 
 
-PICKUP_RADIUS = 1.8           # m — must be this close to grab
+PICKUP_RADIUS = 3.0           # m — must be this close to grab
 THROW_SPEED = 14.0            # m/s — flat ground-plane velocity
 THROW_LIFETIME = 1.6          # s — auto-land if nothing hit
 TEACHER_HIT_RADIUS = 0.85     # m
@@ -44,7 +45,7 @@ def _player_holding(lobby: Lobby, player_id: str) -> str | None:
 
 
 async def handle_pickup(lobby: Lobby, me: PlayerConn, chair_id: str) -> None:
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     chair = lobby.chairs.get(chair_id)
     if chair is None or chair.held_by is not None:

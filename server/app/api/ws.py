@@ -1,6 +1,7 @@
 """WebSocket connection lifecycle: accept, validate password, spawn dispatcher."""
 from __future__ import annotations
 
+import asyncio
 import json
 import secrets
 
@@ -13,6 +14,19 @@ from app.schemas.packets import ClientPacketAdapter
 from app.services.broadcast import broadcast
 from app.services.lobby_service import lobby_room_state
 from app.services.revive import cancel_revives_for
+
+
+# How long an empty lobby is kept around after the last player leaves, so
+# everyone gets a chance to reload back in after Back-to-Lobby. After that
+# the lobby is deleted regardless of `had_game`.
+EMPTY_LOBBY_GRACE_S = 60.0
+
+
+async def _delete_if_still_empty(lobby_id: str) -> None:
+    await asyncio.sleep(EMPTY_LOBBY_GRACE_S)
+    lobby = get_lobby(lobby_id)
+    if lobby is not None and not lobby.conns:
+        delete_lobby(lobby_id)
 
 
 router = APIRouter()
@@ -71,8 +85,11 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
             lobby.admin_id = next(iter(lobby.conns), None)
             if lobby.admin_id:
                 await broadcast(lobby, {"type": "lobby_admin_changed", "adminId": lobby.admin_id})
-        # Auto-delete only brand-new empty lobbies. Once a round has been
-        # started (had_game=True), keep the lobby parked so everyone can
-        # reload back into it after "Back to lobby".
-        if not lobby.conns and lobby.status == "waiting" and not lobby.had_game:
-            delete_lobby(lobby.id)
+        # Fresh empty lobbies that never started a round die immediately.
+        # Parked ones (had_game) get a short grace period so players can
+        # reload back in after Back-to-Lobby, then they're cleaned up too.
+        if not lobby.conns:
+            if lobby.status == "waiting" and not lobby.had_game:
+                delete_lobby(lobby.id)
+            else:
+                asyncio.create_task(_delete_if_still_empty(lobby.id))

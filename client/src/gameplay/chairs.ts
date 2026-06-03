@@ -3,37 +3,13 @@ import type { ChairInit, ChairStatePkt, ChairThrowStartPkt, ChairHitPkt } from "
 import type { NetClient } from "../net/client";
 import type { RemotePlayers } from "./remotePlayers";
 import type { InteractTarget } from "../ui/interactPrompt";
-import { materials } from "../rendering/materials";
 import { distanceSquaredXZ } from "../core/geom";
+import { buildChairMesh } from "./chairMesh";
+
+export { buildChairMesh };
 
 const PICKUP_RADIUS = 1.8;
 const THROW_LIFETIME_MS = 1600;
-
-// Chair geometry (matches props.ts buildChair so picked-up world chairs match
-// the in-hand model). Centered at floor level y=0.
-const G = {
-  seat: new THREE.BoxGeometry(0.5, 0.05, 0.5),
-  back: new THREE.BoxGeometry(0.5, 0.4, 0.04),
-  leg: new THREE.BoxGeometry(0.04, 0.4, 0.04),
-};
-
-export function buildChairMesh(): THREE.Group {
-  const g = new THREE.Group();
-  const seat = new THREE.Mesh(G.seat, materials.deskWood);
-  seat.position.y = 0.4225;
-  g.add(seat);
-  const back = new THREE.Mesh(G.back, materials.deskWood);
-  back.position.set(0, 0.65, -0.23);
-  g.add(back);
-  for (const [dx, dz] of [
-    [0.22, 0.22], [-0.22, 0.22], [0.22, -0.22], [-0.22, -0.22],
-  ] as const) {
-    const leg = new THREE.Mesh(G.leg, materials.deskLeg);
-    leg.position.set(dx, 0.2, dz);
-    g.add(leg);
-  }
-  return g;
-}
 
 type Entry = {
   state: ChairInit;
@@ -203,13 +179,8 @@ export class Chairs {
     for (const [id, e] of this.chairs) {
       if (e.state.heldBy !== null) continue;
       out.push({
-        x: e.state.x,
-        z: e.state.z,
-        radius: PICKUP_RADIUS,
-        label: "pick up chair",
-        kind: "chair",
-        chairId: id,
-        anchorY: 0.6,
+        x: e.state.x, z: e.state.z, radius: PICKUP_RADIUS,
+        label: "pick up chair", kind: "chair", chairId: id, anchorY: 0.6,
       });
     }
     return out;
@@ -218,12 +189,10 @@ export class Chairs {
   requestPickup(net: NetClient, chairId: string): void {
     net.send({ type: "chair_pickup", chairId });
   }
-
   requestThrow(net: NetClient, dirX: number, dirZ: number): void {
     if (this.heldChairId === null) return;
     net.send({ type: "chair_throw", dirX, dirZ });
   }
-
   requestDrop(net: NetClient): void {
     if (this.heldChairId === null) return;
     net.send({ type: "chair_drop" });

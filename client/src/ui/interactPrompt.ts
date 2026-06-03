@@ -13,12 +13,15 @@ export type InteractTarget = {
   z: number;
   radius: number;
   label: string;
-  kind: "quest" | "laptop" | "chair" | "pickup" | "corpse" | "locker" | "door";
+  kind: "quest" | "laptop" | "chair" | "pickup" | "corpse" | "locker" | "door" | "toilet_stall" | "fuse_box_door" | "fuse_box_lever";
   chairId?: string;
   pickupId?: string;
   corpseId?: string;
   lockerId?: string;
   doorId?: string;
+  stallId?: string;
+  fuseBoxId?: string;
+  leverIdx?: number;
   // Optional screen-projection anchor (e.g. the painting itself, so the [E]
   // label hovers on the prop instead of the wall behind the interact spot).
   anchorX?: number;

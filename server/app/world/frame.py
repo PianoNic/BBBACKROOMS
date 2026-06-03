@@ -31,30 +31,33 @@ class Frame:
 def make_frame(room: Room) -> Frame:
     r = room.rect
     cs = CELL_SIZE
+    # Prop-builder convention: a wall prop's visible front is at LOCAL
+    # -Z. wall_yaw rotates the model so that direction points INTO the
+    # room. Centre-piece props (desks, tables) use front_yaw directly.
     if room.front_dir == "N":
         fx, fz = (r.x + r.w / 2) * cs, r.y * cs
         return Frame(
             lambda d, w: (fx + w, fz + d),
-            0.0, math.pi / 2, -math.pi / 2,
+            math.pi, math.pi / 2, -math.pi / 2,
             r.h * cs, r.w * cs, room.door_w,
         )
     if room.front_dir == "S":
         fx, fz = (r.x + r.w / 2) * cs, (r.y + r.h) * cs
         return Frame(
             lambda d, w: (fx + w, fz - d),
-            math.pi, math.pi / 2, -math.pi / 2,
+            0.0, math.pi / 2, -math.pi / 2,
             r.h * cs, r.w * cs, room.door_w,
         )
     if room.front_dir == "W":
         fx, fz = r.x * cs, (r.y + r.h / 2) * cs
         return Frame(
             lambda d, w: (fx + d, fz + w),
-            math.pi / 2, 0.0, math.pi,
+            -math.pi / 2, 0.0, math.pi,
             r.w * cs, r.h * cs, room.door_w,
         )
     fx, fz = (r.x + r.w) * cs, (r.y + r.h / 2) * cs
     return Frame(
         lambda d, w: (fx - d, fz + w),
-        -math.pi / 2, 0.0, math.pi,
+        math.pi / 2, 0.0, math.pi,
         r.w * cs, r.h * cs, room.door_w,
     )

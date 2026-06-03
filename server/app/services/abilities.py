@@ -5,6 +5,8 @@ Each ability falls into one of:
 - Movement/state change on the teacher (teleport, hop)
 - World-state change (laptop relock, vent lockout)
 - Pure client-side VFX (math_popup, gravity_flip, ...)
+
+Delayed effects + tuning constants live in `_abilities_effects.py`.
 """
 from __future__ import annotations
 
@@ -14,68 +16,19 @@ import random
 import time as _time
 
 from app.domain.lobby import Lobby, PlayerConn
+from app.services._abilities_effects import (
+    CIRCUIT_STUN_DURATION,
+    FINE_SLOW_DURATION, FINE_SLOW_FACTOR,
+    LAWSUIT_THROW_TRAVEL_MS,
+    POTION_DURATION, POTION_RADIUS, POTION_SLOW_FACTOR, POTION_TRAVEL_MS,
+    PUDDLES, STUN_DURATION, THROWS, VENT_LOCK_DURATION,
+    delayed_puddle, delayed_slow, delayed_stun,
+)
 from app.services.broadcast import broadcast
 from app.world.constants import CELL_SIZE
 from app.world.geom import distance_squared
 from app.world.teachers import AbilityEvent, TeacherState
 
-
-# Ability tuning ---------------------------------------------------------------
-POTION_RADIUS = 2.0
-POTION_DURATION = 6.0
-POTION_SLOW_FACTOR = 0.5
-POTION_TRAVEL_MS = 750
-STUN_DURATION = 1.0
-FINE_SLOW_DURATION = 2.5
-FINE_SLOW_FACTOR = 0.6
-LAWSUIT_THROW_TRAVEL_MS = 700
-VENT_LOCK_DURATION = 12.0
-
-# Per-throw tuning: (travelMs, stun_s, slow_s, slow_factor).
-THROWS: dict[str, tuple[int, float, float, float]] = {
-    "dodgeball_throw":  (450, 0.6, 0.0, 1.0),
-    "shotput_throw":    (900, 1.6, 2.0, 0.65),
-    "basketball_throw": (650, 0.4, 1.5, 0.7),
-}
-
-
-# Delayed effect tasks ---------------------------------------------------------
-
-async def _delayed_stun(
-    lobby: Lobby, player_id: str, duration: float, delay: float,
-) -> None:
-    await asyncio.sleep(delay)
-    p = lobby.conns.get(player_id)
-    if p is None or p.id in lobby.dead or p.id in lobby.extracted:
-        return
-    p.stun_until = _time.monotonic() + duration
-
-
-async def _delayed_slow(
-    lobby: Lobby, player_id: str, factor: float, duration: float, delay: float,
-) -> None:
-    await asyncio.sleep(delay)
-    p = lobby.conns.get(player_id)
-    if p is None or p.id in lobby.dead or p.id in lobby.extracted:
-        return
-    now = _time.monotonic()
-    p.slow_until = max(p.slow_until, now + duration)
-    if p.slow_factor > factor:
-        p.slow_factor = factor
-
-
-async def _delayed_puddle(
-    lobby: Lobby, x: float, z: float, radius: float,
-    duration: float, factor: float, delay: float,
-) -> None:
-    await asyncio.sleep(delay)
-    if lobby.status != "running":
-        return
-    until = _time.monotonic() + duration
-    lobby.potion_puddles.append((x, z, radius, until, factor))
-
-
-# Helpers ---------------------------------------------------------------------
 
 def _pick_random_room_point(
     lobby: Lobby, rng: random.Random,
@@ -114,8 +67,6 @@ def _find_player(lobby: Lobby, pid: str) -> PlayerConn | None:
     return lobby.conns.get(pid)
 
 
-# Public entry point ----------------------------------------------------------
-
 async def apply_ability_events(
     lobby: Lobby, events: list[AbilityEvent], rng: random.Random,
 ) -> None:
@@ -125,11 +76,8 @@ async def apply_ability_events(
 
     for ev in events:
         pkt: dict = {
-            "type": "teacher_ability",
-            "id": ev.teacher_id,
-            "ability": ev.ability,
-            "x": ev.x,
-            "z": ev.z,
+            "type": "teacher_ability", "id": ev.teacher_id,
+            "ability": ev.ability, "x": ev.x, "z": ev.z,
         }
         if ev.target_id:
             pkt["targetId"] = ev.target_id
@@ -139,7 +87,7 @@ async def apply_ability_events(
             if tgt is None:
                 continue
             travel = POTION_TRAVEL_MS / 1000.0
-            asyncio.create_task(_delayed_puddle(
+            asyncio.create_task(delayed_puddle(
                 lobby, tgt.x, tgt.z, POTION_RADIUS,
                 POTION_DURATION, POTION_SLOW_FACTOR, travel,
             ))
@@ -155,7 +103,7 @@ async def apply_ability_events(
             if tgt is None:
                 continue
             travel = LAWSUIT_THROW_TRAVEL_MS / 1000.0
-            asyncio.create_task(_delayed_stun(lobby, tgt.id, STUN_DURATION, travel))
+            asyncio.create_task(delayed_stun(lobby, tgt.id, STUN_DURATION, travel))
             pkt["payload"] = {
                 "targetX": tgt.x, "targetZ": tgt.z,
                 "travelMs": LAWSUIT_THROW_TRAVEL_MS,
@@ -169,13 +117,35 @@ async def apply_ability_events(
             travel_ms, stun_s, slow_s, slow_f = THROWS[ev.ability]
             travel = travel_ms / 1000.0
             if stun_s > 0:
-                asyncio.create_task(_delayed_stun(lobby, tgt.id, stun_s, travel))
+                asyncio.create_task(delayed_stun(lobby, tgt.id, stun_s, travel))
             if slow_s > 0:
-                asyncio.create_task(_delayed_slow(lobby, tgt.id, slow_f, slow_s, travel))
+                asyncio.create_task(delayed_slow(lobby, tgt.id, slow_f, slow_s, travel))
             pkt["payload"] = {
+                "targetX": tgt.x, "targetZ": tgt.z, "travelMs": travel_ms,
+            }
+
+        elif ev.ability in PUDDLES and ev.target_id:
+            tgt = _find_player(lobby, ev.target_id)
+            if tgt is None:
+                continue
+            radius, duration, factor, travel_ms = PUDDLES[ev.ability]
+            travel = travel_ms / 1000.0
+            asyncio.create_task(delayed_puddle(
+                lobby, tgt.x, tgt.z, radius, duration, factor, travel,
+            ))
+            pkt["payload"] = {
+                "fromX": ev.x, "fromZ": ev.z,
                 "targetX": tgt.x, "targetZ": tgt.z,
+                "radius": radius, "duration": duration,
                 "travelMs": travel_ms,
             }
+
+        elif ev.ability == "circuit_overload" and ev.target_id:
+            tgt = _find_player(lobby, ev.target_id)
+            if tgt is None:
+                continue
+            tgt.stun_until = now + CIRCUIT_STUN_DURATION
+            pkt["payload"] = {"stunDuration": CIRCUIT_STUN_DURATION}
 
         elif ev.ability == "fine_slow" and ev.target_id:
             tgt = _find_player(lobby, ev.target_id)
@@ -215,5 +185,4 @@ async def apply_ability_events(
             pkt["payload"] = {"duration": VENT_LOCK_DURATION}
 
         # else: pure client-side VFX — broadcast only.
-
         await broadcast(lobby, pkt)

@@ -9,23 +9,21 @@ from __future__ import annotations
 import time as _time
 
 from app.domain.lobby import Lobby, PlayerConn, Revive
+from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
 from app.world.geom import within_radius_xz
 
-REVIVE_RADIUS = 2.2
+REVIVE_RADIUS = 4.0
 REVIVE_MOVE_TOLERANCE = 1.4  # m — reviver must hold still
 REVIVE_DURATION = 3.0
 
 
 async def _push_progress(p: PlayerConn, progress: float) -> None:
-    try:
-        await p.ws.send_json({"type": "revive_progress", "progress": progress})
-    except Exception:
-        pass
+    await send_safe(p, {"type": "revive_progress", "progress": progress})
 
 
 async def handle_revive_start(lobby: Lobby, me: PlayerConn, target_id: str) -> None:
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     if me.medkits <= 0:
         return

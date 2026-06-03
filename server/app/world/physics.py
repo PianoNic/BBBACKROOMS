@@ -1,7 +1,7 @@
 """Gameplay distances. Mirrors client/src/core/constants.ts where relevant."""
 
 # Interaction
-LAPTOP_INTERACT_RADIUS = 2.0  # server is slightly more lenient than the visible client prompt
+LAPTOP_INTERACT_RADIUS = 4.0  # server is slightly more lenient than the visible client prompt
 
 # Teacher AI
 TEACHER_SPEED = 3.2           # m/s

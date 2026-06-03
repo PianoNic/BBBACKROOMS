@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     // resume hint so the reload lands on the title menu, not in an
     // infinite "couldn't join" loop.
     sessionStorage.removeItem("bbb_lobby_resume");
-    alert(`Couldn't join: ${(e as Error).message}`);
+    console.warn(`Couldn't join: ${(e as Error).message}`);
     window.location.reload();
     return;
   }
@@ -51,8 +51,13 @@ async function main(): Promise<void> {
   const webcam = createWebcamMesh(conn.lobby.selfId, conn.client);
   webcam.setPeers(conn.lobby.players.map((p) => p.id));
   const room = showLobbyRoom(conn.lobby, conn.client, webcam);
-  const init = await conn.waitForWorld();
-  room.dismount();
+  let genStarted = false;
+  const init = await conn.waitForWorld(() => {
+    genStarted = true;
+    room.dismount();
+    showLoading("generating map…");
+  });
+  if (!genStarted) room.dismount();
 
   showLoading("building world…");
   await yieldToPaint();
@@ -101,6 +106,8 @@ async function main(): Promise<void> {
     net, camera: ctx.camera, state: s.state, reviveState,
     interactPrompt: s.interactPrompt, laptop: s.laptop, chairs: s.chairs,
     spectator: s.spectator, inventory: s.inventory, reviveBar: s.reviveBar,
+    toiletStallDoors: s.toiletStallDoors,
+    fuseBoxes: s.fuseBoxes,
     voice: {
       isToggleOn: () => getSettings().voiceMode === "open",
       setActive: (on) => { voice.pttHeld = on; void voice.sync(); },
@@ -176,6 +183,7 @@ async function main(): Promise<void> {
     portal: s.portal, spectator: s.spectator, state: s.state,
     laptops: s.laptops, teachers: s.teachers, teacherEffects: s.teacherEffects,
     chairs: s.chairs, pickups: s.pickups, lockers: s.lockers, doors: s.doors,
+    toiletStallDoors: s.toiletStallDoors, fuseBoxes: s.fuseBoxes,
     corpses: s.corpses, inventory: s.inventory, compass: s.compass,
     heartbeat: s.heartbeat, proximityVoice: s.proximityVoice,
     gogglesState,
