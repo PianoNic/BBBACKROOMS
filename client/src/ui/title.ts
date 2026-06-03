@@ -3,6 +3,7 @@ import { el } from "./dom";
 import { buildSettingsList } from "./settingsPanel";
 import { buildServerScreen } from "./serverBrowser";
 import { buildTutorialScreen } from "./tutorialScreen";
+import { buildShopScreen } from "./shopScreen";
 import { getMe, getProviders, loginUrl, logout } from "../net/auth";
 
 export { getStoredName, getStoredAvatar, getStoredColor } from "./profilePanel";
@@ -23,12 +24,11 @@ function consumeLoginStatus(): "ok" | "error" | null {
 
 const loginStatus = consumeLoginStatus();
 
-/** Login buttons (logged out) or an account chip with sign-out (logged in).
- *  Rendered async; degrades to nothing if no provider is configured. */
-function buildAccountWidget(root: HTMLElement): void {
-  const wrap = el<HTMLDivElement>("div", "account-widget");
-  root.appendChild(wrap);
-
+/** Fill the given wrapper with login buttons (logged out) or an account chip
+ *  with sign-out (logged in). Rendered async; empty if no provider configured.
+ *  Lives in the sysbar (top-right) so it persists across title screens. */
+function fillAccountWidget(wrap: HTMLElement): void {
+  wrap.replaceChildren();
   void (async () => {
     const [account, providers] = await Promise.all([getMe(), getProviders()]);
     wrap.replaceChildren();
@@ -36,41 +36,34 @@ function buildAccountWidget(root: HTMLElement): void {
     if (account) {
       const chip = el<HTMLDivElement>("div", "account-chip");
       chip.appendChild(el("span", "acc-name", account.displayName || "Signed in"));
-      chip.appendChild(el("span", "acc-stats", `Lv ${account.level} · ${account.coins} coins`));
+      chip.appendChild(el("span", "acc-stats", `Lv ${account.level} · ${account.coins}₵`));
       const out = el<HTMLButtonElement>("button", "acc-signout", "Sign out");
-      out.onclick = async () => { await logout(); buildAccountWidget(root); wrap.remove(); };
+      out.onclick = async () => { await logout(); fillAccountWidget(wrap); };
       chip.appendChild(out);
       wrap.appendChild(chip);
       return;
     }
 
-    const anyProvider = providers.google || providers.microsoft;
-    if (!anyProvider) {
-      if (loginStatus === "error") {
-        wrap.appendChild(el("div", "acc-note error", "Sign-in failed. Try again."));
-      }
-      return;
-    }
-
     if (loginStatus === "error") {
-      wrap.appendChild(el("div", "acc-note error", "Sign-in failed. Try again."));
+      wrap.appendChild(el("span", "acc-note error", "Sign-in failed"));
     }
-    wrap.appendChild(el("div", "acc-note", "Sign in to save XP, levels & cosmetics"));
-    const row = el<HTMLDivElement>("div", "acc-buttons");
+    if (!providers.google && !providers.microsoft) return;
     const mk = (provider: "google" | "microsoft", label: string) => {
       const b = el<HTMLButtonElement>("button", `acc-login ${provider}`, label);
       b.onclick = () => { location.href = loginUrl(provider); };
       return b;
     };
-    if (providers.google) row.appendChild(mk("google", "Sign in with Google"));
-    if (providers.microsoft) row.appendChild(mk("microsoft", "Sign in with Microsoft"));
-    wrap.appendChild(row);
+    if (providers.google) wrap.appendChild(mk("google", "Sign in with Google"));
+    if (providers.microsoft) wrap.appendChild(mk("microsoft", "Sign in with Microsoft"));
   })();
 }
 
 function buildHeader(root: HTMLElement): void {
   const sysbar = el<HTMLDivElement>("div", "sysbar");
-  sysbar.appendChild(el("span", undefined, "SYS://ROOM_INDEX"));
+  sysbar.appendChild(el("span", "sysbar-label", "SYS://ROOM_INDEX"));
+  const account = el<HTMLDivElement>("div", "account-widget");
+  fillAccountWidget(account);
+  sysbar.appendChild(account);
   sysbar.appendChild(el("span", "rec", "REC"));
   root.appendChild(sysbar);
   root.appendChild(el("h1", undefined, "BBBACKROOMS"));
@@ -133,19 +126,21 @@ function buildSocialLinks(): void {
 function buildMainMenu(
   root: HTMLElement,
   onPlay: () => void,
+  onShop: () => void,
   onOptions: () => void,
   onTutorial: () => void,
 ): void {
   const menu = el<HTMLDivElement>("div", "menu");
   const playBtn = el<HTMLButtonElement>("button", "menu-btn primary", "PLAY");
   playBtn.onclick = onPlay;
+  const shopBtn = el<HTMLButtonElement>("button", "menu-btn", "SHOP");
+  shopBtn.onclick = onShop;
   const optBtn = el<HTMLButtonElement>("button", "menu-btn", "OPTIONS");
   optBtn.onclick = onOptions;
   const tutBtn = el<HTMLButtonElement>("button", "menu-btn", "TUTORIAL");
   tutBtn.onclick = onTutorial;
-  menu.append(playBtn, optBtn, tutBtn);
+  menu.append(playBtn, shopBtn, optBtn, tutBtn);
   root.appendChild(menu);
-  buildAccountWidget(root);
 }
 
 function buildOptionsScreen(root: HTMLElement, onBack: () => void): void {
@@ -193,8 +188,9 @@ export async function showTitleScreen(): Promise<TitleResult> {
       root.remove();
       resolve({ lobbyId: id, password });
     };
-    const showMain = () => render((r) => buildMainMenu(r, showServers, showOptions, showTutorial));
+    const showMain = () => render((r) => buildMainMenu(r, showServers, showShop, showOptions, showTutorial));
     const showServers = () => render((r) => buildServerScreen(r, pick, showMain));
+    const showShop = () => render((r) => buildShopScreen(r, showMain));
     const showOptions = () => render((r) => buildOptionsScreen(r, showMain));
     const showTutorial = () => render((r) => buildTutorialScreen(r, showMain));
     showMain();

@@ -16,10 +16,11 @@
   *::-webkit-scrollbar { display: none; }
 
   .sysbar {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: flex-start; align-items: center; gap: 14px;
     font-size: 14px; letter-spacing: 0.2em; color: $ink;
     margin-bottom: 4vh; padding-bottom: 8px;
     border-bottom: 1px solid rgba(106, 98, 88, 0.25);
+    .sysbar-label { white-space: nowrap; }
 
     .rec {
       color: $red-rec;
@@ -93,34 +94,30 @@
     }
   }
 
+  // Account widget lives in the sysbar, pushed to the right (before REC).
   .account-widget {
-    margin-top: 3vh;
-    display: flex; flex-direction: column;
-    align-items: flex-start; gap: 8px;
+    margin-left: auto;
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: 0.08em;
   }
-  .acc-note {
-    font-family: $font-mono; font-size: 13px; letter-spacing: 0.1em;
-    color: $dim; text-transform: uppercase;
-    &.error { color: $red-rec; }
-  }
-  .acc-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .acc-note.error { color: $red-rec; font-size: 12px; text-transform: uppercase; }
   .acc-login {
     background: transparent; color: $accent; border: none;
     box-shadow: inset 0 0 0 1px $accent;
-    padding: 8px 14px; font-family: $font-mono; font-size: 14px;
+    padding: 5px 12px; font-family: $font-mono; font-size: 12px;
     letter-spacing: 0.1em; cursor: pointer; text-transform: uppercase;
-    transition: background 0.12s;
+    white-space: nowrap; transition: background 0.12s;
     &:hover { background: rgba(200, 162, 90, 0.18); }
   }
   .account-chip {
-    display: flex; align-items: center; gap: 14px;
+    display: flex; align-items: center; gap: 10px;
     font-family: $font-mono; color: $ink;
-    .acc-name { color: $accent-bright; font-size: 15px; letter-spacing: 0.08em; }
-    .acc-stats { font-size: 13px; color: $dim; letter-spacing: 0.08em; }
+    .acc-name { color: $accent-bright; font-size: 13px; letter-spacing: 0.08em; }
+    .acc-stats { font-size: 12px; color: #ffd24a; letter-spacing: 0.08em; white-space: nowrap; }
     .acc-signout {
-      background: transparent; border: none; color: $ink;
-      box-shadow: inset 0 0 0 1px $dim; padding: 5px 10px;
-      font-family: $font-mono; font-size: 12px; letter-spacing: 0.1em;
+      background: transparent; border: none; color: $dim;
+      box-shadow: inset 0 0 0 1px $dim; padding: 4px 9px;
+      font-family: $font-mono; font-size: 11px; letter-spacing: 0.1em;
       cursor: pointer; text-transform: uppercase;
       transition: color 0.12s, box-shadow 0.12s;
       &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }

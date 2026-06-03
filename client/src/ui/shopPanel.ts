@@ -53,7 +53,7 @@ export function openShopPanel(
   const note = el<HTMLDivElement>("div", "shop-note");
   panel.appendChild(note);
 
-  const closeBtn = el<HTMLButtonElement>("button", "menu-btn back", "← CLOSE");
+  const closeBtn = el<HTMLButtonElement>("button", "shop-close", "← CLOSE");
   closeBtn.onclick = onClose;
   panel.appendChild(closeBtn);
   root.appendChild(panel);
