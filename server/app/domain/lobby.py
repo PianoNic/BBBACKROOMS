@@ -107,6 +107,9 @@ class PlayerConn:
     name: str
     color: str
     ws: WebSocket
+    # Linked account (OAuth login) or None for guests. Set at connect time from
+    # a verified WS ticket; drives whether round rewards are persisted.
+    account_id: int | None = None
     x: float = 0.0
     z: float = 0.0
     yaw: float = 0.0
