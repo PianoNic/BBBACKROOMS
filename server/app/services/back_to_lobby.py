@@ -31,6 +31,10 @@ def _reset_runtime_state(lobby: Lobby) -> None:
     lobby.potion_puddles.clear()
     lobby.extraction_locked_until = 0.0
     lobby.grace_until = 0.0
+    lobby.round_started_at = 0.0
+    lobby.round_ended_at = 0.0
+    lobby.round_rewards.clear()
+    lobby.rewards_applied = False
     lobby.world = None
     lobby.phase = "tasks"
     lobby.status = "waiting"
@@ -41,6 +45,8 @@ def _reset_runtime_state(lobby: Lobby) -> None:
         p.medkits = p.potions = p.compasses = 0
         p.trackers = p.goggles = p.gps = 0
         p.goggles_until = p.goggles_cooldown_until = 0.0
+        p.tasks_done = p.teachers_stunned = p.revives_done = p.items_collected = 0
+        p.death_t = p.extracted_t = 0.0
 
 
 async def handle_back_to_lobby(lobby: Lobby, me: PlayerConn) -> None:

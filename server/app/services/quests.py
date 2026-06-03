@@ -24,6 +24,7 @@ async def try_complete_spots(
             if within_radius(p, s, obj.radius):
                 s.done = True
                 changed = True
+                p.tasks_done += 1
                 await broadcast(lobby, {
                     "type": "spot_done", "id": obj.id, "spot": idx, "by": p.id,
                 })
@@ -46,10 +47,12 @@ async def check_extraction(lobby: Lobby, p: PlayerConn) -> None:
     if within_radius(p, ex, ex.radius):
         from app.services.chairs import release_chairs_held_by
         lobby.extracted.add(p.id)
+        p.extracted_t = _time.monotonic()
         await release_chairs_held_by(lobby, p.id)
         await broadcast(lobby, {"type": "player_extracted", "id": p.id})
         if lobby.conns and all(
             pid in lobby.extracted or pid in lobby.dead for pid in lobby.conns
         ):
+            from app.services.endgame import broadcast_endgame
             lobby.phase = "won"
-            await broadcast(lobby, {"type": "game_won"})
+            await broadcast_endgame(lobby, "won")

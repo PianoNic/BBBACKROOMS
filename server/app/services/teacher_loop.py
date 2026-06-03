@@ -46,6 +46,7 @@ async def _check_catches(lobby: Lobby) -> None:
                 continue
             if within_radius(t, p, TEACHER_CATCH_RADIUS):
                 lobby.dead.add(p.id)
+                p.death_t = now
                 lobby.corpses[p.id] = (p.x, p.z)
                 await broadcast(lobby, {
                     "type": "player_killed",
@@ -66,15 +67,16 @@ async def _check_game_over(lobby: Lobby) -> bool:
     all_done = all(
         pid in lobby.extracted or pid in lobby.dead for pid in lobby.conns
     )
+    from app.services.endgame import broadcast_endgame
     if all_dead:
         lobby.phase = "lost"
-        await broadcast(lobby, {"type": "game_lost"})
+        await broadcast_endgame(lobby, "lost")
         # NOTE: lobby is kept alive so players can press "Back to lobby".
         # Stale-cleanup happens on the last conn leaving (handled elsewhere).
         return True
     if lobby.phase == "escape" and all_done:
         lobby.phase = "won"
-        await broadcast(lobby, {"type": "game_won"})
+        await broadcast_endgame(lobby, "won")
     return False
 
 

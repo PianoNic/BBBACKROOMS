@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-bbb}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-bbb}
+      - POSTGRES_DB=${DB_NAME:-bbb}
+    volumes:
+      - bbb-pgdata:/var/lib/postgresql/data
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bbb} -d ${DB_NAME:-bbb}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
   backend:
     image: pianonic/bbbackrooms-backend:latest
     restart: unless-stopped
@@ -7,6 +25,26 @@ services:
     environment:
       - TURN_TOKEN_ID=${TURN_TOKEN_ID:-}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-bbb}
+      - DB_USER=${DB_USER:-bbb}
+      - DB_PASSWORD=${DB_PASSWORD:-bbb}
+      # Accounts / OAuth (optional — leave provider creds empty to disable login).
+      # Set OAUTH_REDIRECT_BASE + FRONTEND_URL to your public https URL in prod,
+      # and SESSION_COOKIE_SECURE=true once you're served over HTTPS.
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - MICROSOFT_TENANT=${MICROSOFT_TENANT:-common}
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
+      - OAUTH_REDIRECT_BASE=${OAUTH_REDIRECT_BASE:-http://localhost:8000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5367}
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app
     healthcheck:
@@ -30,3 +68,6 @@ services:
 networks:
   app:
     driver: bridge
+
+volumes:
+  bbb-pgdata:

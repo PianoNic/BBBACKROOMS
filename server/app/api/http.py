@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.domain.cosmetics import catalog_dto
 from app.domain.lobby_store import create_lobby, list_lobbies
 from app.services.turn import get_ice_servers
 from app.version import VERSION
@@ -38,6 +39,13 @@ async def get_lobbies() -> list[dict]:
         }
         for l in list_lobbies()
     ]
+
+
+@router.get("/shop/catalog")
+async def shop_catalog() -> list[dict]:
+    """Static cosmetic catalog (prices/categories). Ownership + balance arrive
+    over the WebSocket, tied to the authenticated session."""
+    return catalog_dto()
 
 
 @router.get("/turn-credentials")

@@ -12,4 +12,16 @@ if (Test-Path $envFile) {
   Write-Warning ".env not found at $envFile — TURN will fall back to STUN-only"
 }
 
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Apply pending DB migrations as a separate sync step (peewee-migrate is
+# synchronous and must not run inside the async event loop). Non-fatal: if the
+# database is down the game still runs, just without accounts/persistence.
+Write-Host "Applying database migrations..."
+python -m app.db.migrate run
+if ($LASTEXITCODE -ne 0) {
+  Write-Warning "Migrations failed (database down?) — starting without persistence."
+}
+
+# Launch via the ASGI entrypoint so the Windows Selector-loop fix is applied
+# before uvicorn creates its loop (psycopg3 async needs it). Reload is enabled
+# inside app/asgi.py's __main__.
+python -m app.asgi

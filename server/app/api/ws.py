@@ -8,6 +8,11 @@ import secrets
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.api.ws_dispatch import dispatch
+from app.auth import tokens
+from app.db import cosmetics_repo
+from app.db.accounts_repo import get_account
+from app.db.engine import db_available
+from app.domain.cosmetics import default_equipped, default_ids
 from app.domain.lobby import PlayerConn
 from app.domain.lobby_store import delete_lobby, get_lobby
 from app.schemas.packets import ClientPacketAdapter
@@ -54,7 +59,26 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
     pid = secrets.token_hex(3)
     color = f"#{secrets.token_hex(3)}"
     name = f"player-{pid[:4]}"
-    me = PlayerConn(id=pid, name=name, color=color, ws=ws)
+    # Optional account link: the client passes a short-lived ws-ticket from
+    # /auth/ws-ticket. Guests send no token and are unaffected.
+    account_id = tokens.read_account_id(ws.query_params.get("token"), "ws")
+    linked_account_id: int | None = None
+    if account_id is not None and db_available():
+        acct = await get_account(account_id)
+        if acct is not None:
+            linked_account_id = acct.id
+            if acct.display_name:
+                name = acct.display_name
+    me = PlayerConn(id=pid, name=name, color=color, ws=ws, account_id=linked_account_id)
+    # Seed cosmetics: the account's owned/equipped, or the free defaults.
+    if linked_account_id is not None and db_available():
+        try:
+            me.owned_cosmetics = await cosmetics_repo.get_owned(linked_account_id)
+            me.equipped_cosmetics = await cosmetics_repo.get_equipped(linked_account_id)
+        except Exception:
+            me.owned_cosmetics, me.equipped_cosmetics = default_ids(), default_equipped()
+    else:
+        me.owned_cosmetics, me.equipped_cosmetics = default_ids(), default_equipped()
     lobby.conns[pid] = me
     if lobby.admin_id is None:
         lobby.admin_id = pid
@@ -62,7 +86,10 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
     await ws.send_json(lobby_room_state(lobby, pid))
     await broadcast(
         lobby,
-        {"type": "lobby_player_join", "id": pid, "name": name, "color": color, "avatar": None},
+        {
+            "type": "lobby_player_join", "id": pid, "name": name, "color": color,
+            "avatar": None, "equipped": me.equipped_cosmetics,
+        },
         exclude=pid,
     )
 

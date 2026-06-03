@@ -1,4 +1,5 @@
 import type { ClientPacket, LobbyStatePkt, ServerPacket, WorldInit } from "./protocol";
+import { getWsTicket } from "./auth";
 
 const HTTP_BASE = import.meta.env.VITE_SERVER_URL ?? "";
 const WS_ORIGIN = HTTP_BASE
@@ -24,7 +25,14 @@ export type LobbyConnection = {
 /** Connect to a lobby. Returns immediately with the lobby room state.
     Call `waitForWorld()` after the admin starts to get the world_init. */
 export async function connect(lobbyId: string, password?: string): Promise<LobbyConnection> {
-  const url = password ? `${BASE_URL}/${lobbyId}?pwd=${encodeURIComponent(password)}` : `${BASE_URL}/${lobbyId}`;
+  // Fetch a WS ticket so a signed-in player links to their account; guests get
+  // null and connect anonymously, exactly as before.
+  const ticket = await getWsTicket();
+  const params = new URLSearchParams();
+  if (password) params.set("pwd", password);
+  if (ticket) params.set("token", ticket);
+  const qs = params.toString();
+  const url = qs ? `${BASE_URL}/${lobbyId}?${qs}` : `${BASE_URL}/${lobbyId}`;
   const ws = new WebSocket(url);
 
   let activeHandler: ((pkt: ServerPacket) => void) | null = null;

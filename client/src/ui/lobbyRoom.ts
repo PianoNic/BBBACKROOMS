@@ -7,6 +7,7 @@ import { buildAdminPanel } from "./lobbyAdminPanel";
 import { openAdminModal } from "./lobbyAdminModal";
 import { createLobbyMediaControls } from "./lobbyMediaControls";
 import { handleLobbyPacket, type LobbyState } from "./lobbyPackets";
+import { openShopPanel, type ShopHandle } from "./shopPanel";
 
 type State = LobbyState;
 
@@ -28,6 +29,10 @@ export function showLobbyRoom(
     mapSize: initial.mapSize ?? 60,
     mapSeed: initial.mapSeed ?? null,
     objectiveCount: initial.objectiveCount ?? 6,
+    selfCosmetics: {
+      owned: new Set(initial.selfCosmetics?.owned ?? []),
+      equipped: initial.selfCosmetics?.equipped ?? {},
+    },
   };
 
   const root = el<HTMLDivElement>("div");
@@ -78,9 +83,18 @@ export function showLobbyRoom(
   const startBtn = el<HTMLButtonElement>("button", "menu-btn primary", "START GAME");
   const settingsBtn = el<HTMLButtonElement>("button", "menu-btn", "SETTINGS");
   settingsBtn.onclick = () => openAdminModal(adminPanel.root);
+  let shop: ShopHandle | null = null;
+  const shopBtn = el<HTMLButtonElement>("button", "menu-btn", "SHOP");
+  shopBtn.onclick = () => {
+    if (shop) return;
+    shop = openShopPanel(client, state.selfCosmetics, () => {
+      shop?.dismount();
+      shop = null;
+    });
+  };
   const leaveBtn = el<HTMLButtonElement>("button", "menu-btn back", "← LEAVE");
   const adminNote = el<HTMLDivElement>("note", "admin-note");
-  footer.append(adminNote, startBtn, settingsBtn, media.micBtn, media.camBtn, leaveBtn);
+  footer.append(adminNote, startBtn, settingsBtn, shopBtn, media.micBtn, media.camBtn, leaveBtn);
   panel.appendChild(footer);
 
   const remoteStreams = new Map<string, MediaStream>();
@@ -193,7 +207,9 @@ export function showLobbyRoom(
 
   client.onPacket((pkt) => handleLobbyPacket(pkt, state, webcam, remoteStreams, {
     renderPlayers, refreshAdmin: adminPanel.refresh, appendChatLine,
+    onShopResult: (p) => shop?.handleResult(p),
+    onCosmeticChange: () => shop?.onCosmetic(),
   }));
 
-  return { dismount: () => { media.dispose(); root.remove(); } };
+  return { dismount: () => { shop?.dismount(); media.dispose(); root.remove(); } };
 }
