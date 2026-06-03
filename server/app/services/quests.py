@@ -53,8 +53,6 @@ async def check_extraction(lobby: Lobby, p: PlayerConn) -> None:
         if lobby.conns and all(
             pid in lobby.extracted or pid in lobby.dead for pid in lobby.conns
         ):
-            from app.services.scoreboard import build_scoreboard
+            from app.services.endgame import broadcast_endgame
             lobby.phase = "won"
-            await broadcast(lobby, {
-                "type": "game_won", "scoreboard": build_scoreboard(lobby, "won"),
-            })
+            await broadcast_endgame(lobby, "won")
