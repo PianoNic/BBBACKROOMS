@@ -72,6 +72,28 @@
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
+  .scoreboard {
+    margin-top: 4px; max-height: 50vh; overflow-y: auto;
+    table { border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 4px 12px; text-align: right; white-space: nowrap; }
+    th:first-child, td.name { text-align: left; }
+    thead th {
+      opacity: 0.55; font-weight: normal;
+      border-bottom: 1px solid currentColor;
+    }
+    tbody tr.self { background: rgba(255, 255, 255, 0.08); }
+    .swatch {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 2px; margin-right: 6px; vertical-align: middle;
+    }
+    td.ok { color: $extract; }
+    td.bad { color: $danger; }
+    tfoot td {
+      border-top: 1px solid currentColor;
+      font-weight: bold; opacity: 0.85;
+    }
+  }
+
   &.lost { color: $danger; }
   &.lost button { color: $danger; border-color: $danger; }
 }

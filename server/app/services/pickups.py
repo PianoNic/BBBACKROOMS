@@ -66,6 +66,7 @@ async def handle_collect(lobby: Lobby, me: PlayerConn, pickup_id: str) -> None:
         # Already at the cap — leave the pickup in the world for someone else.
         return
     setattr(me, attr, getattr(me, attr) + 1)
+    me.items_collected += 1
     lobby.pickups.pop(pickup_id, None)
     await broadcast(lobby, {"type": "pickup_taken", "id": pickup_id, "by": me.id})
     await send_inventory(me)

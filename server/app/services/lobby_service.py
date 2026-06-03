@@ -87,6 +87,8 @@ def start_lobby(lobby: Lobby) -> None:
     lobby.status = "running"
     lobby.had_game = True
     lobby.grace_until = _time.monotonic() + START_GRACE_S
+    lobby.round_started_at = _time.monotonic()
+    lobby.round_ended_at = 0.0
 
 
 def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
@@ -183,4 +185,11 @@ def world_init_payload(lobby: Lobby, me: PlayerConn) -> dict:
         "compasses": me.compasses, "trackers": me.trackers,
         "goggles": me.goggles, "gps": me.gps,
     }
+    # Reconnecting into an already-decided round: ship the scoreboard so the
+    # client can render the end screen on resume.
+    if lobby.phase in ("won", "lost"):
+        from app.services.scoreboard import build_scoreboard
+        init_payload["scoreboard"] = build_scoreboard(lobby, lobby.phase)
+    else:
+        init_payload["scoreboard"] = None
     return init_payload

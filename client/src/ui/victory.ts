@@ -8,6 +8,7 @@
  *   - "Exit to title screen" → clears the resume hint and reloads to the
  *                            title menu. */
 import type { NetClient } from "../net/client";
+import type { ScoreboardData } from "../net/protocol";
 
 function releaseLock(): void {
   if (document.pointerLockElement) document.exitPointerLock();
@@ -16,7 +17,77 @@ function releaseLock(): void {
 type Endgame = "won" | "lost";
 let active: Endgame | null = null;
 
-function buildOverlay(kind: Endgame, net: NetClient | null): HTMLDivElement {
+function fmtTime(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(s / 60);
+  return `${m}:${(s % 60).toString().padStart(2, "0")}`;
+}
+
+function buildScoreboard(sb: ScoreboardData, selfId: string | null): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.className = "scoreboard";
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  thead.innerHTML =
+    "<tr><th>Player</th><th>Tasks</th><th>Stuns</th><th>Revives</th>" +
+    "<th>Items</th><th>Survived</th><th>Status</th></tr>";
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  // Survivors first, then by tasks completed — most useful read order.
+  const rows = [...sb.players].sort(
+    (a, b) => Number(b.extracted) - Number(a.extracted) || b.tasks - a.tasks,
+  );
+  for (const pl of rows) {
+    const tr = document.createElement("tr");
+    if (pl.id === selfId) tr.classList.add("self");
+
+    const nameTd = document.createElement("td");
+    nameTd.className = "name";
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = pl.color;
+    // textContent (not innerHTML) — player names are untrusted input.
+    nameTd.append(swatch, document.createTextNode(pl.name || "player"));
+    tr.appendChild(nameTd);
+
+    for (const v of [pl.tasks, pl.stuns, pl.revives, pl.items, fmtTime(pl.survivalMs)]) {
+      const td = document.createElement("td");
+      td.textContent = String(v);
+      tr.appendChild(td);
+    }
+
+    const st = document.createElement("td");
+    st.textContent = pl.extracted ? "ESCAPED" : pl.died ? "CAUGHT" : "—";
+    if (pl.extracted) st.classList.add("ok");
+    else if (pl.died) st.classList.add("bad");
+    tr.appendChild(st);
+
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  const tfoot = document.createElement("tfoot");
+  const t = sb.team;
+  const foot = document.createElement("tr");
+  foot.innerHTML =
+    `<td class="name">Team (${t.extracted}/${t.total} out)</td>` +
+    `<td>${t.tasks}</td><td>${t.stuns}</td><td>${t.revives}</td>` +
+    `<td>${t.items}</td><td>${fmtTime(sb.durationMs)}</td><td></td>`;
+  tfoot.appendChild(foot);
+  table.appendChild(tfoot);
+
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function buildOverlay(
+  kind: Endgame,
+  net: NetClient | null,
+  scoreboard: ScoreboardData | null,
+  selfId: string | null,
+): HTMLDivElement {
   const root = document.createElement("div");
   root.id = "victory";
   if (kind === "lost") root.classList.add("lost");
@@ -53,22 +124,32 @@ function buildOverlay(kind: Endgame, net: NetClient | null): HTMLDivElement {
   };
 
   buttons.append(backBtn, exitBtn);
-  root.append(h, sub, buttons);
+  root.append(h, sub);
+  if (scoreboard) root.append(buildScoreboard(scoreboard, selfId));
+  root.append(buttons);
   return root;
 }
 
-export function showVictory(net: NetClient | null = null): void {
+export function showVictory(
+  net: NetClient | null = null,
+  scoreboard: ScoreboardData | null = null,
+  selfId: string | null = null,
+): void {
   if (document.getElementById("victory")) return;
   releaseLock();
   active = "won";
-  document.body.appendChild(buildOverlay("won", net));
+  document.body.appendChild(buildOverlay("won", net, scoreboard, selfId));
 }
 
-export function showGameOver(net: NetClient | null = null): void {
+export function showGameOver(
+  net: NetClient | null = null,
+  scoreboard: ScoreboardData | null = null,
+  selfId: string | null = null,
+): void {
   if (document.getElementById("victory")) return;
   releaseLock();
   active = "lost";
-  document.body.appendChild(buildOverlay("lost", net));
+  document.body.appendChild(buildOverlay("lost", net, scoreboard, selfId));
 }
 
 export function isEndgameVisible(): boolean {

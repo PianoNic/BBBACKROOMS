@@ -130,6 +130,9 @@ async def tick_projectiles(lobby: Lobby, dt: float) -> None:
         for t in lobby.teachers:
             if within_radius_xz(t.x, t.z, nx, nz, TEACHER_HIT_RADIUS):
                 t.stun_until = max(t.stun_until, now + TEACHER_STUN_S)
+                owner = lobby.conns.get(proj.owner_id)
+                if owner is not None:
+                    owner.teachers_stunned += 1
                 hit_id, hit_kind = t.id, "teacher"
                 break
 
