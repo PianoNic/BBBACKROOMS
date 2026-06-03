@@ -123,6 +123,17 @@ class WebcamStatePkt(BaseModel):
     on: bool
 
 
+class SetCosmeticPkt(BaseModel):
+    type: Literal["set_cosmetic"]
+    category: Literal["body", "facePattern", "hat", "title"]
+    cosmeticId: str | None = Field(default=None, max_length=64)
+
+
+class BuyCosmeticPkt(BaseModel):
+    type: Literal["buy_cosmetic"]
+    cosmeticId: str = Field(max_length=64)
+
+
 class LobbySettingsPkt(BaseModel):
     """Admin-only update from the lobby room. Any field left as None means
     "don't change". `password` accepts an empty string to clear the password."""
@@ -146,6 +157,7 @@ ClientPacket = Annotated[
         WebRTCSignalPkt, WebcamStatePkt,
         PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
         UseGogglesPkt, BackToLobbyPkt, LockerOpenPkt, DoorTogglePkt,
+        SetCosmeticPkt, BuyCosmeticPkt,
     ],
     Field(discriminator="type"),
 ]

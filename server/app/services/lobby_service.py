@@ -94,6 +94,7 @@ def start_lobby(lobby: Lobby) -> None:
 def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
     """Snapshot of a lobby's waiting room for a freshly connected player."""
     from app.world.teachers import TEACHER_ROSTER
+    me = lobby.conns.get(self_id)
     return {
         "type": "lobby_state",
         "id": lobby.id,
@@ -112,9 +113,16 @@ def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
             for (img, name, subj, ab) in TEACHER_ROSTER
         ],
         "players": [
-            {"id": p.id, "name": p.name, "color": p.color, "avatar": p.avatar}
+            {
+                "id": p.id, "name": p.name, "color": p.color, "avatar": p.avatar,
+                "equipped": p.equipped_cosmetics,
+            }
             for p in lobby.conns.values()
         ],
+        "selfCosmetics": {
+            "owned": sorted(me.owned_cosmetics) if me else [],
+            "equipped": me.equipped_cosmetics if me else {},
+        },
         "chat": [
             {"id": m.id, "author": m.author, "text": m.text, "ts": m.ts}
             for m in lobby.chat
@@ -140,9 +148,16 @@ def world_init_payload(lobby: Lobby, me: PlayerConn) -> dict:
     init_payload["selfId"] = me.id
     init_payload["selfColor"] = me.color
     init_payload["players"] = [
-        {"id": p.id, "color": p.color, "x": p.x, "z": p.z, "yaw": p.yaw, "avatar": p.avatar}
+        {
+            "id": p.id, "color": p.color, "x": p.x, "z": p.z, "yaw": p.yaw,
+            "avatar": p.avatar, "equipped": p.equipped_cosmetics,
+        }
         for p in lobby.conns.values() if p.id != me.id
     ]
+    init_payload["selfCosmetics"] = {
+        "owned": sorted(me.owned_cosmetics),
+        "equipped": me.equipped_cosmetics,
+    }
     init_payload["phase"] = lobby.phase
     init_payload["extractedPlayers"] = list(lobby.extracted)
     init_payload["deadPlayers"] = list(lobby.dead)
