@@ -15,8 +15,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.auth import router as auth_router
 from app.api.http import router as http_router
 from app.api.ws import router as ws_router
+from app.config import settings
 from app.db.engine import connect as db_connect
 from app.db.engine import disconnect as db_disconnect
 
@@ -36,12 +38,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="bbbackrooms server", lifespan=lifespan)
 
+# Credentialed auth (session cookie) requires a specific origin — the CORS spec
+# forbids "*" with credentials. In dev that's the Vite origin (FRONTEND_URL); in
+# production the SPA is typically same-origin behind the proxy.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[settings.frontend_url],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(http_router)
+app.include_router(auth_router)
 app.include_router(ws_router)
