@@ -4,6 +4,8 @@
 - Python 3.11+ (for FastAPI + Pydantic v2)
 - [Bun](https://bun.sh) for the client. **Not npm.**
 - Optional: Docker + Docker Compose for the container stack.
+- Optional: PostgreSQL 16+ (or just Docker) — only for accounts / XP / cosmetics
+  persistence. The game runs fine without it. See [persistence.md](persistence.md).
 
 ## Backend
 ```powershell
@@ -18,7 +20,21 @@ pip install -r requirements.txt
 - Health: `GET /healthz` → `{"status":"ok"}`
 - Version: `GET /version`
 
-`run.ps1` starts Uvicorn with reload — code changes hot-reload the worker.
+`run.ps1` applies database migrations (a no-op if no DB is configured), then
+starts the app via `python -m app.asgi` with reload — code changes hot-reload
+the worker. Launch this way (not a bare `uvicorn app.main:app`) so the Windows
+Selector event-loop fix is applied; psycopg3's async pool needs it.
+
+## Database (optional — accounts/XP/cosmetics)
+Persistence is off by default and the game runs without it. To enable it, point
+the backend at a PostgreSQL database via the `DB_*` env vars and run migrations.
+Full guide, including the migration workflow: **[persistence.md](persistence.md)**.
+
+```powershell
+# quickest: a throwaway Postgres in Docker
+docker run -d --name bbb-postgres -e POSTGRES_USER=bbb -e POSTGRES_PASSWORD=bbb -e POSTGRES_DB=bbb -p 5432:5432 postgres:16-alpine
+cd server; .\run.ps1     # migrations run automatically on start
+```
 
 ## Frontend
 ```powershell
@@ -40,6 +56,10 @@ Copy `.env.example` → `.env`:
 | `PORT` | Host port of the frontend container (default `5367`). |
 | `TURN_TOKEN_ID` | Cloudflare Realtime TURN token ID. Required for webcam through restrictive NATs. |
 | `CLOUDFLARE_API_TOKEN` | Paired Cloudflare API token. If either is missing → STUN-only fallback. |
+| `DB_HOST` / `DB_PORT` | PostgreSQL host/port (default `127.0.0.1` / `5432`; `postgres` in compose). |
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database name/user/password (default `bbb`/`bbb`/`bbb`). |
+
+DB vars are optional — omit them to run without persistence. See [persistence.md](persistence.md).
 
 Get TURN credentials at *Cloudflare dashboard → Realtime → TURN Server → create app*.
 
@@ -48,9 +68,11 @@ Get TURN credentials at *Cloudflare dashboard → Realtime → TURN Server → c
 docker compose up -d
 ```
 - Pulls `pianonic/bbbackrooms-backend` and `pianonic/bbbackrooms-frontend`.
+- Starts a `postgres:16-alpine` service (data in the `bbb-pgdata` volume); the
+  backend waits for its healthcheck and runs migrations on start.
 - Frontend listens on `$PORT` (default `5367`).
 - Backend stays on the internal bridge network with a `/healthz` healthcheck (30s interval).
-- Stop: `docker compose down`.
+- Stop: `docker compose down` (add `-v` to also drop the database volume).
 
 ## Project conventions
 - Backend: onion architecture. `api/` may import `services/`, `services/` may import `domain/`, **never the other way around**.
