@@ -1,13 +1,14 @@
 /** Per-player voxel renderer, footstep audio, and live-video swapping.
  *  Mesh material factories live in `remotePlayerMaterials.ts`. */
 import * as THREE from "three";
-import type { RemotePlayer } from "../net/protocol";
+import type { EquippedCosmetics, RemotePlayer } from "../net/protocol";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { withinRadiusXZ } from "../core/geom";
 import {
-  disposeMaterial, makeAvatarMaterials, makeColorMaterial,
-  makeVideoMaterials,
+  buildHat, disposeHat, disposeMaterial, makeAvatarMaterials,
+  makeColorMaterial, makeFacePatternMaterials, makeVideoMaterials,
 } from "./remotePlayerMaterials";
+import { resolveCosmetic } from "./cosmetics";
 
 const BOX = new THREE.BoxGeometry(0.6, 1.7, 0.6);
 const Y = 0.85;
@@ -16,6 +17,13 @@ const REF_DISTANCE = 2.5;
 const MAX_DISTANCE = 25;
 const ROLLOFF = 1.8;
 const FOOTSTEP_URLS = [1, 2, 3, 4, 5].map((i) => `/sounds/footsteps/step-${i}.ogg`);
+
+/** Effective body colour: an equipped body theme's hex, else the player's
+ *  assigned colour (the `body_default` theme has an empty assetRef). */
+function bodyColor(equipped: EquippedCosmetics, fallback: string): string {
+  const ref = resolveCosmetic(equipped.body)?.assetRef;
+  return ref ? ref : fallback;
+}
 
 type Entry = {
   mesh: THREE.Mesh;
@@ -28,6 +36,8 @@ type Entry = {
   avatarUrl: string | null;
   video: HTMLVideoElement | null;
   videoTex: THREE.VideoTexture | null;
+  equipped: EquippedCosmetics;
+  hat: THREE.Object3D | null;
 };
 
 export class RemotePlayers {
@@ -63,7 +73,8 @@ export class RemotePlayers {
 
   add(p: RemotePlayer): void {
     if (this.entries.has(p.id)) return;
-    const mesh = new THREE.Mesh(BOX, makeColorMaterial(p.color));
+    const equipped = p.equipped ?? {};
+    const mesh = new THREE.Mesh(BOX, makeColorMaterial(bodyColor(equipped, p.color)));
     mesh.position.set(p.x, Y, p.z);
     mesh.rotation.y = p.yaw;
     this.group.add(mesh);
@@ -86,8 +97,62 @@ export class RemotePlayers {
       lastStepX: p.x, lastStepZ: p.z,
       avatarUrl: p.avatar ?? null,
       video: null, videoTex: null,
+      equipped, hat: null,
     });
+    this.updateHat(p.id);
     if (p.avatar) this.applyAvatar(p.id, p.avatar);
+    else this.applyFacePattern(p.id);
+  }
+
+  /** Swap the player's hat to match their equipped cosmetic. */
+  private updateHat(id: string): void {
+    const e = this.entries.get(id);
+    if (!e) return;
+    if (e.hat) { e.mesh.remove(e.hat); disposeHat(e.hat); e.hat = null; }
+    const key = resolveCosmetic(e.equipped.hat)?.assetRef;
+    if (key) {
+      const hat = buildHat(key);
+      if (hat) { e.mesh.add(hat); e.hat = hat; }
+    }
+  }
+
+  /** Draw the equipped face pattern on the front face (only when no avatar or
+   *  live video is shown). */
+  private applyFacePattern(id: string): void {
+    const e = this.entries.get(id);
+    if (!e || e.video || e.avatarUrl) return;
+    const path = resolveCosmetic(e.equipped.facePattern)?.assetRef;
+    if (!path) return;
+    void makeFacePatternMaterials(path).then((mats) => {
+      const still = this.entries.get(id);
+      if (!mats || still !== e || e.video || e.avatarUrl) return;
+      const old = e.mesh.material;
+      e.mesh.material = mats;
+      disposeMaterial(old);
+    });
+  }
+
+  /** Repaint the cube for the current body theme / face pattern (no-op while a
+   *  video or avatar owns the face). */
+  private repaintBody(id: string): void {
+    const e = this.entries.get(id);
+    if (!e || e.video || e.avatarUrl) return;
+    if (resolveCosmetic(e.equipped.facePattern)?.assetRef) {
+      this.applyFacePattern(id);
+      return;
+    }
+    const old = e.mesh.material;
+    e.mesh.material = makeColorMaterial(bodyColor(e.equipped, e.color));
+    disposeMaterial(old);
+  }
+
+  /** Apply a live equipped-cosmetics update (from the player_cosmetic packet). */
+  setCosmetic(id: string, equipped: EquippedCosmetics): void {
+    const e = this.entries.get(id);
+    if (!e) return;
+    e.equipped = equipped ?? {};
+    this.updateHat(id);
+    this.repaintBody(id);
   }
 
   setState(id: string, x: number, z: number, yaw: number): void {
@@ -154,9 +219,8 @@ export class RemotePlayers {
       e.videoTex?.dispose();
       e.videoTex = null;
       if (e.avatarUrl) { void this.applyAvatar(id, e.avatarUrl); return; }
-      const old = e.mesh.material;
-      e.mesh.material = makeColorMaterial(e.color);
-      disposeMaterial(old);
+      // Back to the cube: honour the equipped body theme / face pattern.
+      this.repaintBody(id);
     }
   }
 
@@ -172,6 +236,7 @@ export class RemotePlayers {
   remove(id: string): void {
     const e = this.entries.get(id);
     if (!e) return;
+    if (e.hat) disposeHat(e.hat);
     this.group.remove(e.mesh);
     disposeMaterial(e.mesh.material);
     if (e.video) e.video.srcObject = null;

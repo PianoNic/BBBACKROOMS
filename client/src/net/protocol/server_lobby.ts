@@ -6,6 +6,7 @@ import type {
   LaptopGame,
   LobbyPlayer,
   RosterEntry,
+  SelfCosmetics,
 } from "./types";
 
 export type LobbyStatePkt = {
@@ -18,6 +19,7 @@ export type LobbyStatePkt = {
   selectedTeachers: string[] | null;
   roster: RosterEntry[];
   players: LobbyPlayer[];
+  selfCosmetics?: SelfCosmetics;
   chat: ChatMessage[];
   mapSize?: number;
   mapSeed?: number | null;
