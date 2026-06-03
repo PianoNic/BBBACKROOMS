@@ -195,6 +195,11 @@ class Lobby:
     # is stamped once when the win/lose scoreboard is first built.
     round_started_at: float = 0.0
     round_ended_at: float = 0.0
+    # Per-conn reward blocks (xp/coins/level) computed at round end, cached so
+    # a reconnecting player still sees their level-up screen. rewards_applied
+    # guards against awarding twice (and, later, double account writes).
+    round_rewards: dict[str, dict] = field(default_factory=dict)
+    rewards_applied: bool = False
     # Active slow puddles: list of (x, z, radius, until, factor).
     potion_puddles: list[tuple[float, float, float, float, float]] = field(default_factory=list)
     pickups: dict[str, Pickup] = field(default_factory=dict)
