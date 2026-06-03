@@ -1,0 +1,66 @@
+@use "variables" as *;
+
+// Tutorial + options screens — both scroll-containers inside their
+// respective panels.
+#title {
+  .options-panel .settings-list {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding-right: 8px; // breathing room so slider thumbs don't clip
+  }
+
+  .tutorial-panel .tutorial-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding-right: 8px;
+    font-family: $font-mono;
+    color: $ink;
+  }
+
+  .tutorial-panel {
+    width: 760px; max-width: 96vw;
+  }
+
+  .tut-section {
+    margin-bottom: 22px;
+  }
+  .tut-title {
+    font-size: 22px;
+    letter-spacing: 0.18em;
+    color: $accent;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+    border-bottom: 1px dashed rgba(200,162,90,0.35);
+    padding-bottom: 4px;
+  }
+  .tut-list {
+    list-style: none; padding: 0; margin: 0;
+    li {
+      font-size: 16px;
+      line-height: 1.55;
+      padding: 4px 0 4px 18px;
+      position: relative;
+      color: $ink;
+      &::before {
+        content: ">";
+        position: absolute; left: 0; top: 4px;
+        color: $accent;
+      }
+    }
+  }
+
+  .tut-showcase {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 6px;
+  }
+  .tut-item {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: 4px;
+    padding: 10px 6px;
+    background: rgba(0,0,0,0.35);
+    box-shadow: inset 0 0 0 1px rgba(106,98,88,0.4);
+  }
+  .tut-item canvas { display: block; }
+  .tut-item-name { font-size: 14px; color: $accent; letter-spacing: 0.1em; }
+  .tut-item-sub { font-size: 11px; color: $dim; letter-spacing: 0.04em; }
+}

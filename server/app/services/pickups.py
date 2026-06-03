@@ -8,10 +8,11 @@ from __future__ import annotations
 import time as _time
 
 from app.domain.lobby import Lobby, PlayerConn
+from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
 from app.world.geom import within_radius
 
-PICKUP_RADIUS = 1.5
+PICKUP_RADIUS = 3.0
 POTION_DURATION = 8.0
 POTION_FACTOR = 1.5  # speed multiplier while haste active
 
@@ -38,22 +39,19 @@ GOGGLES_COOLDOWN = 30.0
 
 
 async def send_inventory(p: PlayerConn) -> None:
-    try:
-        await p.ws.send_json({
-            "type": "inventory",
-            "medkits": p.medkits,
-            "potions": p.potions,
-            "compasses": p.compasses,
-            "trackers": p.trackers,
-            "goggles": p.goggles,
-            "gps": p.gps,
-        })
-    except Exception:
-        pass
+    await send_safe(p, {
+        "type": "inventory",
+        "medkits": p.medkits,
+        "potions": p.potions,
+        "compasses": p.compasses,
+        "trackers": p.trackers,
+        "goggles": p.goggles,
+        "gps": p.gps,
+    })
 
 
 async def handle_collect(lobby: Lobby, me: PlayerConn, pickup_id: str) -> None:
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     pk = lobby.pickups.get(pickup_id)
     if pk is None:
@@ -74,7 +72,7 @@ async def handle_collect(lobby: Lobby, me: PlayerConn, pickup_id: str) -> None:
 
 
 async def handle_use_potion(lobby: Lobby, me: PlayerConn) -> None:
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     if me.potions <= 0:
         return
@@ -91,7 +89,7 @@ async def handle_use_goggles(lobby: Lobby, me: PlayerConn) -> None:
     """Activate the thermal goggles for GOGGLES_DURATION seconds. Subject to
     a per-player cooldown so they can only be used once per ~30s. The item
     itself is not consumed — owning the goggles grants the ability."""
-    if me.id in lobby.dead or me.id in lobby.extracted:
+    if not is_active(lobby, me):
         return
     if me.goggles <= 0:
         return
@@ -100,11 +98,8 @@ async def handle_use_goggles(lobby: Lobby, me: PlayerConn) -> None:
         return
     me.goggles_until = now + GOGGLES_DURATION
     me.goggles_cooldown_until = now + GOGGLES_COOLDOWN
-    try:
-        await me.ws.send_json({
-            "type": "goggles_state",
-            "activeMs": int(GOGGLES_DURATION * 1000),
-            "cooldownMs": int(GOGGLES_COOLDOWN * 1000),
-        })
-    except Exception:
-        pass
+    await send_safe(me, {
+        "type": "goggles_state",
+        "activeMs": int(GOGGLES_DURATION * 1000),
+        "cooldownMs": int(GOGGLES_COOLDOWN * 1000),
+    })

@@ -1,0 +1,172 @@
+@use "variables" as *;
+@use "panels" as *;
+
+// Server-list screen (lobby manifest) + profile panel with the spinning
+// voxel cube. Split out of `_title.scss` so each partial stays small.
+#title {
+  // Lobby-creation row (legacy, only used as the wide CREATE button now).
+  .create-row {
+    display: flex; gap: 10px; margin-bottom: 22px; align-items: stretch;
+    input { flex: 1; }
+    .menu-btn {
+      padding: 6px 14px; font-size: 22px; letter-spacing: 0.15em;
+      color: $accent;
+      box-shadow: inset 0 0 0 1px $accent;
+      background: rgba(200,162,90,0.06);
+      &::before { display: none; }
+      &:hover { background: rgba(200,162,90,0.18); }
+    }
+  }
+
+  .list-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 16px; letter-spacing: 0.18em; color: $dim;
+    text-transform: uppercase; margin: 8px 0;
+  }
+  .icon-btn {
+    background: transparent; border: none; color: $dim;
+    cursor: pointer; font-size: 22px; font-family: $font-mono;
+    padding: 0 4px;
+    &:hover { color: $accent; }
+  }
+
+  .lobby-list {
+    list-style: none; padding: 0 8px 0 0; margin: 0 0 14px;
+    flex: 1; min-height: 0; overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: $accent rgba(106, 98, 88, 0.18);
+
+    &::-webkit-scrollbar { display: block; width: 4px; }
+    &::-webkit-scrollbar-track { background: rgba(106, 98, 88, 0.15); }
+    &::-webkit-scrollbar-thumb { background: $accent; border-radius: 0; }
+    &::-webkit-scrollbar-thumb:hover { background: $accent-bright; }
+
+    .empty { padding: 14px 0; color: $dim; font-style: italic; }
+  }
+  .lobby-row {
+    display: flex; align-items: center;
+    padding: 6px 4px 6px 24px; position: relative;
+    cursor: pointer; font-size: 22px;
+    border-bottom: 1px dashed rgba(106,98,88,0.18);
+
+    &::before {
+      content: ">"; position: absolute; left: 4px; top: 50%;
+      transform: translateY(-50%) translateX(-4px); opacity: 0;
+      color: $accent; transition: opacity 0.1s, transform 0.1s;
+    }
+    &:hover { color: $accent; }
+    &:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+    .lobby-name { color: inherit; letter-spacing: 0.08em; }
+    .lobby-dots {
+      flex: 1; min-width: 24px; margin: 0 10px;
+      border-bottom: 1px dotted rgba(106,98,88,0.5);
+      align-self: center; height: 0;
+    }
+    .lobby-count { color: $dim; letter-spacing: 0.1em; }
+
+    &.locked {
+      cursor: not-allowed;
+      color: $dim;
+      .lobby-count { color: $red-rec; }
+      &:hover { color: $dim; }
+      &:hover::before { opacity: 0; }
+    }
+  }
+  .lobby-list .list-section {
+    list-style: none; padding: 14px 4px 4px;
+    font-size: 13px; letter-spacing: 0.22em; color: $dim;
+    text-transform: uppercase;
+    border-top: 1px dashed rgba(106,98,88,0.18); margin-top: 6px;
+  }
+
+  // Server screen: lobbies + profile flush together, with an empty
+  // filler column on the right so the wasted space lives there, not between.
+  .server-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) 280px 1fr;
+    grid-template-rows: 1fr;
+    column-gap: 24px;
+    flex: 1 1 0; min-height: 0;
+    align-items: stretch;
+
+    > .panel,
+    > .profile-panel { height: 100%; min-height: 0; box-sizing: border-box; }
+  }
+
+  // Profile panel: editable name + 3D voxel + avatar change.
+  .profile-panel {
+    display: flex; flex-direction: column; gap: 14px; padding: 18px 20px;
+
+    .col-header {
+      font-size: 14px; letter-spacing: 0.22em; color: $accent;
+      text-transform: uppercase; padding-bottom: 4px;
+      border-bottom: 1px dashed rgba(200,162,90,0.35);
+    }
+    .p-name-row {
+      display: flex; flex-direction: column; gap: 4px;
+      label {
+        font-size: 12px; letter-spacing: 0.18em; color: $dim;
+        text-transform: uppercase;
+      }
+    }
+    input { @include terminal-input; }
+    .change-avatar {
+      background: transparent; color: $accent;
+      font-family: $font-mono; font-size: 16px;
+      letter-spacing: 0.18em; padding: 6px 12px; cursor: pointer;
+      text-transform: uppercase; border: none;
+      box-shadow: inset 0 0 0 1px $accent;
+      align-self: center;
+      &:hover { background: rgba(200,162,90,0.15); }
+    }
+
+    // 3D voxel cube — proportions match in-game player (0.6 × 1.7 × 0.6).
+    .p-avatar-stage {
+      position: relative; align-self: center;
+      width: 100%; flex: 1 1 0; min-height: 0;
+      perspective: 800px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 12px 0;
+    }
+    .p-cube {
+      --w: 80px;  --h: 226px;  --d: 80px;
+      --hw: 40px; --hh: 113px; --hd: 40px;
+      position: relative; width: var(--w); height: var(--h);
+      transform-style: preserve-3d;
+      animation: cube-spin 6s linear infinite;
+
+      .face {
+        position: absolute;
+        background: #5a5060;
+        box-shadow: inset 0 0 0 2px #2a221a;
+        overflow: hidden;
+      }
+      .face.front, .face.back {
+        width: var(--w); height: var(--h); top: 0; left: 0;
+      }
+      .face.left, .face.right {
+        width: var(--d); height: var(--h); top: 0;
+        left: calc((var(--w) - var(--d)) / 2);
+      }
+      .face.top, .face.bottom {
+        width: var(--w); height: var(--d);
+        top: calc((var(--h) - var(--d)) / 2); left: 0;
+      }
+      .face.front  { transform: translateZ(var(--hd)); }
+      .face.back   { transform: rotateY(180deg) translateZ(var(--hd)); }
+      .face.left   { transform: rotateY(-90deg) translateZ(var(--hw)); }
+      .face.right  { transform: rotateY(90deg)  translateZ(var(--hw)); }
+      .face.top    { transform: rotateX(90deg)  translateZ(var(--hh)); }
+      .face.bottom { transform: rotateX(-90deg) translateZ(var(--hh)); }
+      .face.front .p-cube-face-img {
+        width: 100%; height: 100%; object-fit: cover;
+        image-rendering: pixelated; background: #000;
+      }
+    }
+  }
+  @keyframes cube-spin {
+    0%   { transform: rotateX(-12deg) rotateY(0deg); }
+    100% { transform: rotateX(-12deg) rotateY(360deg); }
+  }
+}

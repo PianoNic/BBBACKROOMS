@@ -29,18 +29,45 @@ async function fetchVersion(): Promise<string> {
   return cachedVersion;
 }
 
+const GITHUB_URL = "https://github.com/PianoNic/BBBACKROOMS";
+const DISCORD_URL = "https://discord.gg/EwJ4x2GvvG";
+
 function buildFootnote(): void {
   if (document.querySelector("#title .footnote")) return;
   const root = document.getElementById("title");
   if (!root) return;
   const note = el<HTMLDivElement>("div", "footnote");
-  const build = Math.floor(Math.random() * 0xffff).toString(16).padStart(4, "0");
   const today = new Date().toISOString().slice(0, 10);
-  note.textContent = `BBBKRMS · v… · BUILD #${build} · ${today}`;
+  note.textContent = `BBBKRMS · v… · ${today}`;
   root.appendChild(note);
   fetchVersion().then((v) => {
-    note.textContent = `BBBKRMS · v${v} · BUILD #${build} · ${today}`;
+    note.textContent = `BBBKRMS · v${v} · ${today}`;
   });
+}
+
+function buildSocialLinks(): void {
+  if (document.querySelector("#title .social-links")) return;
+  const root = document.getElementById("title");
+  if (!root) return;
+  const wrap = el<HTMLDivElement>("div", "social-links");
+  const mk = (href: string, label: string, faIcon: string) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.className = "social-link";
+    a.setAttribute("aria-label", label);
+    a.title = label;
+    const i = document.createElement("i");
+    i.className = `fa-brands ${faIcon}`;
+    i.setAttribute("aria-hidden", "true");
+    a.appendChild(i);
+    a.appendChild(el("span", "social-link-label", label));
+    return a;
+  };
+  wrap.appendChild(mk(GITHUB_URL, "GitHub", "fa-github"));
+  wrap.appendChild(mk(DISCORD_URL, "Discord", "fa-discord"));
+  root.appendChild(wrap);
 }
 
 function buildMainMenu(
@@ -94,6 +121,7 @@ export async function showTitleScreen(): Promise<TitleResult> {
     buildHeader(root);
     build(root);
     buildFootnote();
+    buildSocialLinks();
   };
 
   return new Promise<TitleResult>((resolve) => {

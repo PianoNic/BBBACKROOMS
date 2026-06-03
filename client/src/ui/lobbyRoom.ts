@@ -1,6 +1,4 @@
-import type {
-  LobbyStatePkt, LobbyPlayer, ChatMessage,
-} from "../net/protocol";
+import type { LobbyStatePkt, LobbyPlayer, ChatMessage } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { WebcamMesh } from "../gameplay/webcam";
 import { el } from "./dom";
@@ -27,7 +25,8 @@ export function showLobbyRoom(
     hasPassword: initial.hasPassword,
     selectedTeachers: initial.selectedTeachers,
     roster: initial.roster,
-    mapSize: initial.mapSize ?? 120,
+    mapSize: initial.mapSize ?? 60,
+    mapSeed: initial.mapSeed ?? null,
     objectiveCount: initial.objectiveCount ?? 6,
   };
 

@@ -1,0 +1,106 @@
+@use "variables" as *;
+
+/// 3D dice + coin animations for the dice / coinflip laptop minigames.
+/// Pulled out of `_laptop.scss` so each partial stays small.
+
+#laptop {
+  $die-size: 84px;
+  $die-half: $die-size * 0.5;
+
+  .dice-stage {
+    display: flex; justify-content: center; align-items: center;
+    gap: 48px;
+    width: 360px; height: 220px;
+    background: #0c0c10; border-radius: 6px;
+    perspective: 700px; perspective-origin: 50% 35%;
+  }
+
+  .die {
+    position: relative;
+    width: $die-size; height: $die-size;
+    transform-style: preserve-3d;
+    transition: transform 520ms cubic-bezier(.18,.72,.22,1.02);
+    will-change: transform;
+
+    &.die-a.spinning { animation: dice-tumble-a 0.95s linear infinite; }
+    &.die-b.spinning { animation: dice-tumble-b 1.08s linear infinite; }
+    &.spinning { transition: none; }
+
+    .face {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #fafaf4 0%, #e6e3d8 100%);
+      border: 1px solid #2a2a2e; border-radius: 12px;
+      box-shadow:
+        inset 0 0 10px rgba(0,0,0,0.18),
+        inset 0 0 0 1px rgba(255,255,255,0.4);
+      backface-visibility: hidden;
+    }
+
+    .face-1 { transform: translateZ($die-half); }
+    .face-6 { transform: rotateY(180deg) translateZ($die-half); }
+    .face-2 { transform: rotateY(90deg)  translateZ($die-half); }
+    .face-5 { transform: rotateY(-90deg) translateZ($die-half); }
+    .face-3 { transform: rotateX(90deg)  translateZ($die-half); }
+    .face-4 { transform: rotateX(-90deg) translateZ($die-half); }
+
+    .pip {
+      position: absolute;
+      width: 11px; height: 11px;
+      background: radial-gradient(circle at 35% 30%, #4a4a52 0%, #16161a 70%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
+    }
+  }
+
+  @keyframes dice-tumble-a {
+    0%   { transform: rotateX(0deg)   rotateY(0deg)   rotateZ(0deg);   }
+    100% { transform: rotateX(720deg) rotateY(540deg) rotateZ(360deg); }
+  }
+  @keyframes dice-tumble-b {
+    0%   { transform: rotateX(0deg)    rotateY(0deg)    rotateZ(0deg);   }
+    100% { transform: rotateX(-540deg) rotateY(-720deg) rotateZ(-360deg); }
+  }
+
+  $coin-size: 120px;
+
+  .coin-stage {
+    display: flex; justify-content: center; align-items: center;
+    width: 280px; height: 200px;
+    background: #0c0c10; border-radius: 6px;
+    perspective: 700px; perspective-origin: 50% 50%;
+  }
+
+  .coin {
+    position: relative;
+    width: $coin-size; height: $coin-size;
+    transform-style: preserve-3d;
+    transition: transform 520ms cubic-bezier(.18,.72,.22,1.02);
+    will-change: transform;
+
+    &.flipping {
+      transition: none;
+      animation: coin-flip 0.7s linear infinite;
+    }
+
+    .coin-face {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffe07d 0%, #d6a32a 65%, #a37d12 100%);
+      box-shadow:
+        inset 0 0 0 3px #a37d12,
+        inset 0 0 18px rgba(0,0,0,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-family: monospace; font-weight: 800; font-size: 48px;
+      color: #5a3b00;
+      backface-visibility: hidden;
+    }
+    .coin-face.heads { transform: rotateX(0deg)   translateZ(2px); }
+    .coin-face.tails { transform: rotateX(180deg) translateZ(2px); }
+  }
+
+  @keyframes coin-flip {
+    0%   { transform: rotateX(0deg); }
+    100% { transform: rotateX(720deg); }
+  }
+}

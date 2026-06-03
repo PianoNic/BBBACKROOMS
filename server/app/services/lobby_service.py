@@ -27,8 +27,11 @@ def start_lobby(lobby: Lobby) -> None:
     if lobby.status != "waiting":
         return
     size = lobby.map_size
+    seed = lobby.map_seed if lobby.map_seed is not None else random.randrange(2**31)
+    lobby.last_seed = seed
     world, layout = generate(
-        width=size, height=size, objective_count=lobby.objective_count,
+        seed=seed, width=size, height=size,
+        objective_count=lobby.objective_count,
     )
     lobby.hallway_rects = [h for h in layout.hallways if h is not layout.atrium]
     lobby.doors = list(layout.doors)
@@ -100,6 +103,7 @@ def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
         "selfId": self_id,
         "selectedTeachers": lobby.selected_teacher_images,
         "mapSize": lobby.map_size,
+        "mapSeed": lobby.map_seed,
         "objectiveCount": lobby.objective_count,
         "roster": [
             {"image": img, "name": name, "subject": subj, "ability": ab}

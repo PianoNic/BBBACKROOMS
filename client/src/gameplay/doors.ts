@@ -1,101 +1,102 @@
 /** Classroom doors: hinged panels at room doorways. Interact with E to
  *  toggle. Server is authoritative — the client only animates and emits
- *  the toggle intent. Doors do not block movement (intentional). */
+ *  the toggle intent. Doors block movement when CLOSED; opening removes
+ *  the panel collider. Geometry assembly lives in `doorBuilder.ts`. */
 import * as THREE from "three";
 import type { DoorInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
-import { M } from "../world/propBuilders/_common";
+import type { Rect } from "../world/colliders";
+import {
+  CELL, DOOR_T, DOOR_W, FILLER_HALF_W, DOORWAY_X,
+  buildFillers, buildFrameAndPanel,
+} from "./doorBuilder";
 
 const REACH = 1.8;
-const OPEN_ANGLE = Math.PI / 2 - 0.05; // just shy of 90° so the door peeks back
+const OPEN_ANGLE = Math.PI / 2 - 0.05; // just shy of 90°
 const OPEN_SPEED = 5.0;                 // rad/s
-
-const DOOR_W = 1.05;   // panel width (door + hinge gap)
-const DOOR_H = 2.05;
-const DOOR_T = 0.05;
-const FRAME_T = 0.06;
 
 type Entry = {
   info: DoorInfo;
   pivot: THREE.Group;
   isOpen: boolean;
   target: number;
+  panelRect: Rect;
+  panelRectIn: boolean;
 };
 
 export class Doors {
   readonly group = new THREE.Group();
   private readonly entries = new Map<string, Entry>();
+  private readonly colliders: Rect[];
 
-  constructor(initial: DoorInfo[]) {
+  constructor(initial: DoorInfo[], colliders: Rect[]) {
+    this.colliders = colliders;
     for (const d of initial) this.add(d);
   }
 
   private add(d: DoorInfo): void {
     const root = new THREE.Group();
     root.position.set(d.x, 0, d.z);
-    // `yaw` is the closed-state orientation; the panel + frame sit on the
-    // wall axis. Open animation is then a child-pivot rotation that
-    // swings the panel inward.
     root.rotation.y = d.yaw;
 
-    // Frame: thin posts on either side + lintel. The wall geometry is
-    // built elsewhere (the wall has a gap at the doorway cell), so the
-    // frame here is what fills that gap visually.
-    const post = new THREE.BoxGeometry(FRAME_T, DOOR_H + 0.10, FRAME_T);
-    const lintel = new THREE.BoxGeometry(DOOR_W + FRAME_T * 2, FRAME_T, FRAME_T);
-    const frameMat = M(0x8a7a5a);
-    const leftPost = new THREE.Mesh(post, frameMat);
-    leftPost.position.set(-DOOR_W / 2 - FRAME_T / 2, (DOOR_H + 0.10) / 2, 0);
-    root.add(leftPost);
-    const rightPost = new THREE.Mesh(post, frameMat);
-    rightPost.position.set(DOOR_W / 2 + FRAME_T / 2, (DOOR_H + 0.10) / 2, 0);
-    root.add(rightPost);
-    const top = new THREE.Mesh(lintel, frameMat);
-    top.position.set(0, DOOR_H + 0.05, 0);
-    root.add(top);
-
-    // Hinge pivot on the LEFT edge of the doorway (local -x). The door
-    // panel is offset so its mesh sits centred in the doorway when closed.
-    const pivot = new THREE.Group();
-    pivot.position.set(-DOOR_W / 2, 0, 0);
-    const panel = new THREE.Mesh(
-      new THREE.BoxGeometry(DOOR_W, DOOR_H, DOOR_T),
-      M(0xc09060),
-    );
-    panel.position.set(DOOR_W / 2, DOOR_H / 2, 0);
-    pivot.add(panel);
-    // Inset panel detail (two recessed rectangles for a school-door look)
-    const inset = M(0xa07040);
-    for (let i = 0; i < 2; i++) {
-      const r = new THREE.Mesh(
-        new THREE.BoxGeometry(DOOR_W * 0.7, DOOR_H * 0.35, DOOR_T * 0.4),
-        inset,
-      );
-      r.position.set(DOOR_W / 2, DOOR_H * 0.30 + i * DOOR_H * 0.40, DOOR_T * 0.55);
-      pivot.add(r);
-    }
-    // Frosted glass window upper third
-    const glass = new THREE.Mesh(
-      new THREE.PlaneGeometry(DOOR_W * 0.55, DOOR_H * 0.20),
-      new THREE.MeshBasicMaterial({
-        color: 0xa8c8d8, transparent: true, opacity: 0.35,
-      }),
-    );
-    glass.position.set(DOOR_W / 2, DOOR_H * 0.78, DOOR_T * 0.55);
-    pivot.add(glass);
-    // Handle
-    const handle = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, 0.04, 0.18), M(0xb8b8c0),
-    );
-    handle.position.set(DOOR_W - 0.15, DOOR_H / 2, DOOR_T * 0.7);
-    pivot.add(handle);
-
-    root.add(pivot);
+    const pivot = buildFrameAndPanel(root);
+    buildFillers(root);
     this.group.add(root);
+
+    // Static colliders for the wall fillers (always blocking).
+    const leftCenter = -(DOORWAY_X + FILLER_HALF_W);
+    const rightCenter = DOORWAY_X + FILLER_HALF_W;
+    this.colliders.push(this.rotateLocalRect(
+      d.x, d.z, d.yaw,
+      leftCenter - FILLER_HALF_W, -CELL / 2,
+      leftCenter + FILLER_HALF_W, +CELL / 2,
+    ));
+    this.colliders.push(this.rotateLocalRect(
+      d.x, d.z, d.yaw,
+      rightCenter - FILLER_HALF_W, -CELL / 2,
+      rightCenter + FILLER_HALF_W, +CELL / 2,
+    ));
+    // Panel collider — only registered when the door is closed.
+    const panelRect = this.rotateLocalRect(
+      d.x, d.z, d.yaw,
+      -DOOR_W / 2, -DOOR_T / 2, DOOR_W / 2, DOOR_T / 2,
+    );
 
     const target = d.isOpen ? OPEN_ANGLE : 0;
     pivot.rotation.y = target;
-    this.entries.set(d.id, { info: d, pivot, isOpen: d.isOpen, target });
+    const entry: Entry = {
+      info: d, pivot, isOpen: d.isOpen, target,
+      panelRect, panelRectIn: false,
+    };
+    if (!d.isOpen) {
+      this.colliders.push(panelRect);
+      entry.panelRectIn = true;
+    }
+    this.entries.set(d.id, entry);
+  }
+
+  /** Convert a local-space AABB (door-aligned) into a world-space AABB.
+   *  Doorway yaws are always cardinal so a swap-and-sign is exact. */
+  private rotateLocalRect(
+    cx: number, cz: number, yaw: number,
+    lminX: number, lminZ: number, lmaxX: number, lmaxZ: number,
+  ): Rect {
+    const c = Math.round(Math.cos(yaw));
+    const s = Math.round(Math.sin(yaw));
+    const corners = [
+      [lminX, lminZ], [lminX, lmaxZ], [lmaxX, lminZ], [lmaxX, lmaxZ],
+    ];
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const [x, z] of corners) {
+      const wx = cx + x * c + z * s;
+      const wz = cz - x * s + z * c;
+      if (wx < minX) minX = wx;
+      if (wx > maxX) maxX = wx;
+      if (wz < minZ) minZ = wz;
+      if (wz > maxZ) maxZ = wz;
+    }
+    return { minX, minZ, maxX, maxZ };
   }
 
   setOpen(id: string, isOpen: boolean): void {
@@ -103,6 +104,14 @@ export class Doors {
     if (!e) return;
     e.isOpen = isOpen;
     e.target = isOpen ? OPEN_ANGLE : 0;
+    if (isOpen && e.panelRectIn) {
+      const idx = this.colliders.indexOf(e.panelRect);
+      if (idx >= 0) this.colliders.splice(idx, 1);
+      e.panelRectIn = false;
+    } else if (!isOpen && !e.panelRectIn) {
+      this.colliders.push(e.panelRect);
+      e.panelRectIn = true;
+    }
   }
 
   update(dt: number): void {

@@ -88,19 +88,30 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
                 lobby.map_size = pkt.mapSize
         if pkt.objectiveCount is not None:
             lobby.objective_count = max(2, min(12, int(pkt.objectiveCount)))
+        if pkt.clearMapSeed:
+            lobby.map_seed = None
+        elif pkt.mapSeed is not None:
+            # Pydantic clamps to int already; cap to fit in 32-bit range
+            # so the Python RNG never has to deal with absurd magnitudes.
+            lobby.map_seed = max(0, min(2**31 - 1, int(pkt.mapSeed)))
         await broadcast(lobby, {
             "type": "lobby_settings",
             "maxPlayers": lobby.max_players,
             "hasPassword": lobby.password is not None,
             "selectedTeachers": lobby.selected_teacher_images,
             "mapSize": lobby.map_size,
+            "mapSeed": lobby.map_seed,
             "objectiveCount": lobby.objective_count,
         })
         return
     if isinstance(pkt, StartGamePkt):
         if me.id != lobby.admin_id or lobby.status != "waiting":
             return
-        start_lobby(lobby)
+        # Tell every client to show a loading screen while we build the
+        # world. Worldgen can take up to ~15s on big maps; running it on
+        # a thread keeps other lobbies' event loops responsive.
+        await broadcast(lobby, {"type": "world_gen_start"})
+        await asyncio.to_thread(start_lobby, lobby)
         for p in list(lobby.conns.values()):
             try:
                 await p.ws.send_json(world_init_payload(lobby, p))
