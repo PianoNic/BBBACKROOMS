@@ -3,10 +3,70 @@ import { el } from "./dom";
 import { buildSettingsList } from "./settingsPanel";
 import { buildServerScreen } from "./serverBrowser";
 import { buildTutorialScreen } from "./tutorialScreen";
+import { getMe, getProviders, loginUrl, logout } from "../net/auth";
 
 export { getStoredName, getStoredAvatar, getStoredColor } from "./profilePanel";
 
 const API = import.meta.env.VITE_SERVER_URL ?? "";
+
+/** Read the ?login=ok|error the OAuth callback appended, then scrub it from the
+ *  URL so a refresh doesn't re-show it. Returns the status once. */
+function consumeLoginStatus(): "ok" | "error" | null {
+  const params = new URLSearchParams(location.search);
+  const status = params.get("login");
+  if (status !== "ok" && status !== "error") return null;
+  params.delete("login");
+  const qs = params.toString();
+  history.replaceState(null, "", location.pathname + (qs ? `?${qs}` : "") + location.hash);
+  return status;
+}
+
+const loginStatus = consumeLoginStatus();
+
+/** Login buttons (logged out) or an account chip with sign-out (logged in).
+ *  Rendered async; degrades to nothing if no provider is configured. */
+function buildAccountWidget(root: HTMLElement): void {
+  const wrap = el<HTMLDivElement>("div", "account-widget");
+  root.appendChild(wrap);
+
+  void (async () => {
+    const [account, providers] = await Promise.all([getMe(), getProviders()]);
+    wrap.replaceChildren();
+
+    if (account) {
+      const chip = el<HTMLDivElement>("div", "account-chip");
+      chip.appendChild(el("span", "acc-name", account.displayName || "Signed in"));
+      chip.appendChild(el("span", "acc-stats", `Lv ${account.level} · ${account.coins} coins`));
+      const out = el<HTMLButtonElement>("button", "acc-signout", "Sign out");
+      out.onclick = async () => { await logout(); buildAccountWidget(root); wrap.remove(); };
+      chip.appendChild(out);
+      wrap.appendChild(chip);
+      return;
+    }
+
+    const anyProvider = providers.google || providers.microsoft;
+    if (!anyProvider) {
+      if (loginStatus === "error") {
+        wrap.appendChild(el("div", "acc-note error", "Sign-in failed. Try again."));
+      }
+      return;
+    }
+
+    if (loginStatus === "error") {
+      wrap.appendChild(el("div", "acc-note error", "Sign-in failed. Try again."));
+    }
+    wrap.appendChild(el("div", "acc-note", "Sign in to save XP, levels & cosmetics"));
+    const row = el<HTMLDivElement>("div", "acc-buttons");
+    const mk = (provider: "google" | "microsoft", label: string) => {
+      const b = el<HTMLButtonElement>("button", `acc-login ${provider}`, label);
+      b.onclick = () => { location.href = loginUrl(provider); };
+      return b;
+    };
+    if (providers.google) row.appendChild(mk("google", "Sign in with Google"));
+    if (providers.microsoft) row.appendChild(mk("microsoft", "Sign in with Microsoft"));
+    wrap.appendChild(row);
+  })();
+}
 
 function buildHeader(root: HTMLElement): void {
   const sysbar = el<HTMLDivElement>("div", "sysbar");
@@ -85,6 +145,7 @@ function buildMainMenu(
   tutBtn.onclick = onTutorial;
   menu.append(playBtn, optBtn, tutBtn);
   root.appendChild(menu);
+  buildAccountWidget(root);
 }
 
 function buildOptionsScreen(root: HTMLElement, onBack: () => void): void {
