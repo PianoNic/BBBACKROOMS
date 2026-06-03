@@ -94,8 +94,8 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
       d.spectator.activate();
       showBanner("EXTRACTED — spectating teammates. Click to switch view.", 6000);
     },
-    game_won: () => showVictory(d.net),
-    game_lost: () => showGameOver(d.net),
+    game_won: (p) => showVictory(d.net, p.scoreboard, d.init.selfId),
+    game_lost: (p) => showGameOver(d.net, p.scoreboard, d.init.selfId),
     lobby_state: (p) => {
       // Server flipped us back to the waiting room (someone hit
       // "Back to lobby" on the victory screen). Reload — the
