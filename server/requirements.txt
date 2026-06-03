@@ -1,4 +1,9 @@
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
 pydantic==2.10.3
+pydantic-settings==2.14.1
 httpx==0.27.2
+peewee==4.0.6
+peewee-async==2.0.0
+psycopg[binary,pool]==3.3.4
+peewee-migrate==1.15.0
