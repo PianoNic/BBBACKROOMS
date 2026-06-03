@@ -111,6 +111,7 @@ async def tick_revives(lobby: Lobby, now: float, on_complete) -> None:
         if reviver.medkits <= 0:
             continue
         reviver.medkits -= 1
+        reviver.revives_done += 1
         lobby.dead.discard(target.id)
         corpse = lobby.corpses.pop(target.id, None)
         if corpse is not None:

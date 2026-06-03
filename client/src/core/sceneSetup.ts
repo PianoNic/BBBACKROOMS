@@ -39,7 +39,7 @@ import { TaskCompass } from "../ui/compass";
 import { Heartbeat } from "./heartbeat";
 import { preloadJumpscareImages } from "../ui/jumpscare";
 import { preloadSfx } from "./audio";
-import { showVictory } from "../ui/victory";
+import { showVictory, showGameOver } from "../ui/victory";
 import { InputState } from "./input";
 
 export type SceneSetup = ReturnType<typeof buildScene>;
@@ -74,7 +74,8 @@ export function buildScene(
   );
   ctx.scene.add(portal.group);
   if (init.phase === "escape") portal.show();
-  if (init.phase === "won") showVictory(net);
+  if (init.phase === "won") showVictory(net, init.scoreboard ?? null, init.selfId);
+  else if (init.phase === "lost") showGameOver(net, init.scoreboard ?? null, init.selfId);
 
   const spectator = new Spectator(ctx.camera, remotes, init.selfId);
   const deadSet = new Set(init.deadPlayers ?? []);
