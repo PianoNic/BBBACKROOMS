@@ -72,6 +72,35 @@
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
+  .rewards {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    margin-top: 4px;
+    .level-badge {
+      font-size: 22px; letter-spacing: 3px; font-weight: bold;
+      &.leveled { animation: levelpop 0.6s ease-out 0.9s both; }
+    }
+    .xp-bar {
+      width: 260px; height: 12px; background: rgba(255, 255, 255, 0.12);
+      border: 1px solid currentColor; border-radius: 6px; overflow: hidden;
+      .fill {
+        height: 100%; width: 0;
+        background: $extract; transition: width 1.2s ease-out;
+      }
+    }
+    .gains {
+      display: flex; gap: 16px; font-size: 14px;
+      .coins { color: #ffd24a; }
+    }
+    .guest-note { font-size: 12px; opacity: 0.6; }
+  }
+  &.lost .rewards .xp-bar .fill { background: $danger; }
+
+  @keyframes levelpop {
+    0% { transform: scale(1); text-shadow: none; }
+    50% { transform: scale(1.35); text-shadow: 0 0 12px currentColor; }
+    100% { transform: scale(1); }
+  }
+
   .scoreboard {
     margin-top: 4px; max-height: 50vh; overflow-y: auto;
     table { border-collapse: collapse; font-size: 13px; }

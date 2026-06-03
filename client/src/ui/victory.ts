@@ -8,7 +8,7 @@
  *   - "Exit to title screen" → clears the resume hint and reloads to the
  *                            title menu. */
 import type { NetClient } from "../net/client";
-import type { ScoreboardData } from "../net/protocol";
+import type { ScoreboardData, SelfRewards } from "../net/protocol";
 
 function releaseLock(): void {
   if (document.pointerLockElement) document.exitPointerLock();
@@ -16,6 +16,62 @@ function releaseLock(): void {
 
 type Endgame = "won" | "lost";
 let active: Endgame | null = null;
+
+/** Count a number up from 0 to `target` over `ms`, calling `set` each frame. */
+function countUp(target: number, ms: number, set: (v: number) => void): void {
+  if (target <= 0) { set(0); return; }
+  const start = performance.now();
+  const tick = (now: number): void => {
+    const t = Math.min(1, (now - start) / ms);
+    set(Math.round(target * t));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/** XP-gain / level-up panel with an animated bar + counting numbers. */
+function buildRewards(r: SelfRewards): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.className = "rewards";
+
+  const level = document.createElement("div");
+  level.className = "level-badge";
+  level.textContent = `LEVEL ${r.levelAfter}`;
+
+  const bar = document.createElement("div");
+  bar.className = "xp-bar";
+  const fill = document.createElement("div");
+  fill.className = "fill";
+  // Start empty, then transition to the post-round progress so the bar fills.
+  fill.style.width = "0%";
+  bar.appendChild(fill);
+
+  const gains = document.createElement("div");
+  gains.className = "gains";
+  const xpLine = document.createElement("span");
+  const coinLine = document.createElement("span");
+  coinLine.className = "coins";
+  gains.append(xpLine, coinLine);
+
+  wrap.append(level, bar, gains);
+  if (!r.saved) {
+    const note = document.createElement("div");
+    note.className = "guest-note";
+    note.textContent = "Sign in to save your progress.";
+    wrap.appendChild(note);
+  }
+
+  // Kick the animations on the next frame so the CSS width transition runs.
+  const pct = r.xpForNextLevel > 0
+    ? Math.min(100, (r.xpIntoLevel / r.xpForNextLevel) * 100)
+    : 0;
+  requestAnimationFrame(() => { fill.style.width = `${pct}%`; });
+  countUp(r.xpEarned, 1200, (v) => { xpLine.textContent = `+${v} XP`; });
+  countUp(r.coinsEarned, 1200, (v) => { coinLine.textContent = `+${v} coins`; });
+  if (r.leveledUp) level.classList.add("leveled");
+
+  return wrap;
+}
 
 function fmtTime(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -125,6 +181,7 @@ function buildOverlay(
 
   buttons.append(backBtn, exitBtn);
   root.append(h, sub);
+  if (scoreboard?.selfRewards) root.append(buildRewards(scoreboard.selfRewards));
   if (scoreboard) root.append(buildScoreboard(scoreboard, selfId));
   root.append(buttons);
   return root;
