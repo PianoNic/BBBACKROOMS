@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
 from app.api.http import router as http_router
+from app.api.shop import router as shop_router
 from app.api.ws import router as ws_router
 from app.config import settings
 from app.db.engine import connect as db_connect
@@ -51,4 +52,5 @@ app.add_middleware(
 
 app.include_router(http_router)
 app.include_router(auth_router)
+app.include_router(shop_router)
 app.include_router(ws_router)

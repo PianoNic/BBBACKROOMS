@@ -13,6 +13,7 @@ import type {
   Prop,
   RemotePlayer,
   RosterEntry,
+  SelfCosmetics,
   Spawn,
   TeacherInfo,
 } from "./types";
@@ -84,6 +85,7 @@ export type WorldInit = {
     medkits: number; potions: number; compasses: number;
     trackers: number; goggles: number; gps: number;
   };
+  selfCosmetics?: SelfCosmetics;
   scoreboard?: ScoreboardData | null;
 };
 

@@ -45,12 +45,14 @@ import type {
   LockerOpenedPkt,
   PickupTakenPkt,
   PlayerAvatarPkt,
+  PlayerCosmeticPkt,
   PlayerJoinPkt,
   PlayerLeavePkt,
   PlayerRevivedPkt,
   PlayerStatePkt,
   PlayerStatusPkt,
   ReviveProgressPkt,
+  ShopResultPkt,
   WebRTCSignalPkt,
   WebcamStateBroadcastPkt,
 } from "./server_player";
@@ -84,6 +86,8 @@ export type ServerPacket =
   | GambleStatePkt
   | GambleResultPkt
   | PlayerJoinPkt
+  | PlayerCosmeticPkt
+  | ShopResultPkt
   | PlayerStatePkt
   | PlayerLeavePkt
   | PlayerAvatarPkt
