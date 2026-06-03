@@ -67,20 +67,16 @@ async def _check_game_over(lobby: Lobby) -> bool:
     all_done = all(
         pid in lobby.extracted or pid in lobby.dead for pid in lobby.conns
     )
-    from app.services.scoreboard import build_scoreboard
+    from app.services.endgame import broadcast_endgame
     if all_dead:
         lobby.phase = "lost"
-        await broadcast(lobby, {
-            "type": "game_lost", "scoreboard": build_scoreboard(lobby, "lost"),
-        })
+        await broadcast_endgame(lobby, "lost")
         # NOTE: lobby is kept alive so players can press "Back to lobby".
         # Stale-cleanup happens on the last conn leaving (handled elsewhere).
         return True
     if lobby.phase == "escape" and all_done:
         lobby.phase = "won"
-        await broadcast(lobby, {
-            "type": "game_won", "scoreboard": build_scoreboard(lobby, "won"),
-        })
+        await broadcast_endgame(lobby, "won")
     return False
 
 

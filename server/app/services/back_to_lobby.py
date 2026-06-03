@@ -33,6 +33,8 @@ def _reset_runtime_state(lobby: Lobby) -> None:
     lobby.grace_until = 0.0
     lobby.round_started_at = 0.0
     lobby.round_ended_at = 0.0
+    lobby.round_rewards.clear()
+    lobby.rewards_applied = False
     lobby.world = None
     lobby.phase = "tasks"
     lobby.status = "waiting"

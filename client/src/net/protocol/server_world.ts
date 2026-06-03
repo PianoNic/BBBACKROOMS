@@ -31,8 +31,22 @@ export type PlayerScore = {
   died: boolean;
 };
 
+/** The viewing player's own XP/coins/level result for the round. Drives the
+ *  level-up animation. `saved` is false for guests (shown but not persisted). */
+export type SelfRewards = {
+  xpEarned: number;
+  coinsEarned: number;
+  levelBefore: number;
+  levelAfter: number;
+  xpIntoLevel: number;
+  xpForNextLevel: number;
+  leveledUp: boolean;
+  saved: boolean;
+};
+
 /** End-of-round stats summary, attached to game_won/game_lost (and to
- *  world_init when reconnecting into an already-decided round). */
+ *  world_init when reconnecting into an already-decided round). `selfRewards`
+ *  is per-recipient (omitted from the shared stats). */
 export type ScoreboardData = {
   result: "won" | "lost";
   durationMs: number;
@@ -41,6 +55,7 @@ export type ScoreboardData = {
     tasks: number; stuns: number; revives: number; items: number;
     extracted: number; died: number; total: number;
   };
+  selfRewards?: SelfRewards | null;
 };
 
 export type WorldInit = {

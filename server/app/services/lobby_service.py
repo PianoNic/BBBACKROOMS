@@ -185,11 +185,14 @@ def world_init_payload(lobby: Lobby, me: PlayerConn) -> dict:
         "compasses": me.compasses, "trackers": me.trackers,
         "goggles": me.goggles, "gps": me.gps,
     }
-    # Reconnecting into an already-decided round: ship the scoreboard so the
-    # client can render the end screen on resume.
+    # Reconnecting into an already-decided round: ship the scoreboard (with
+    # this player's own rewards block) so the client renders the end screen.
     if lobby.phase in ("won", "lost"):
         from app.services.scoreboard import build_scoreboard
-        init_payload["scoreboard"] = build_scoreboard(lobby, lobby.phase)
+        init_payload["scoreboard"] = {
+            **build_scoreboard(lobby, lobby.phase),
+            "selfRewards": lobby.round_rewards.get(me.id),
+        }
     else:
         init_payload["scoreboard"] = None
     return init_payload
