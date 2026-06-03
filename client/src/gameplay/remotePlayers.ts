@@ -160,15 +160,13 @@ export class RemotePlayers {
     }
   }
 
-  /** Lay the player's voxel flat on the ground as a corpse. */
-  markDead(id: string, x?: number, z?: number): void {
-    const e = this.entries.get(id);
-    if (!e) return;
-    if (x !== undefined && z !== undefined) { e.mesh.position.set(x, Y, z); e.target.set(x, Y, z); }
-    e.mesh.rotation.x = Math.PI / 2;
-    e.mesh.position.y = e.target.y = 0.3;
-    e.mesh.userData.dead = true;
-    this.entries.delete(id);
+  /** Retire a downed player's live voxel. The visible corpse and its revive
+   *  target are owned by the `Corpses` system, so we just remove the voxel
+   *  here — otherwise the flattened voxel and the corpse marker overlap and
+   *  render as two bodies inside each other. On revive the voxel is recreated
+   *  via `remove` + `add` in the packet handler. */
+  markDead(id: string, _x?: number, _z?: number): void {
+    this.remove(id);
   }
 
   remove(id: string): void {
