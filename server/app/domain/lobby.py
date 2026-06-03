@@ -127,6 +127,14 @@ class PlayerConn:
     goggles_cooldown_until: float = 0.0
     haste_until: float = 0.0
     haste_factor: float = 1.0
+    # Per-round scoreboard counters (zeroed on back-to-lobby). death_t /
+    # extracted_t are monotonic stamps used to derive survival time.
+    tasks_done: int = 0
+    teachers_stunned: int = 0
+    revives_done: int = 0
+    items_collected: int = 0
+    death_t: float = 0.0
+    extracted_t: float = 0.0
 
 
 @dataclass
@@ -183,6 +191,10 @@ class Lobby:
     # Players are invulnerable and ability events are paused until this time
     # (monotonic clock). Used to cover the start-of-game slot-machine reveal.
     grace_until: float = 0.0
+    # Round timing (monotonic) for the end-of-round scoreboard. round_ended_at
+    # is stamped once when the win/lose scoreboard is first built.
+    round_started_at: float = 0.0
+    round_ended_at: float = 0.0
     # Active slow puddles: list of (x, z, radius, until, factor).
     potion_puddles: list[tuple[float, float, float, float, float]] = field(default_factory=list)
     pickups: dict[str, Pickup] = field(default_factory=dict)
