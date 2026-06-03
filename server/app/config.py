@@ -22,5 +22,34 @@ class Settings(BaseSettings):
     db_pool_min: int = 1
     db_pool_max: int = 8
 
+    # --- OAuth (optional login). Empty client ids disable that provider. ---
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+    microsoft_tenant: str = "common"
+    # Public base URL of THIS backend; provider redirect URIs are
+    # {oauth_redirect_base}/auth/{provider}/callback (must match the console).
+    oauth_redirect_base: str = "http://localhost:8000"
+    # Where the callback sends the browser back to after login (the SPA), and
+    # the allowed CORS origin for credentialed requests.
+    frontend_url: str = "http://localhost:5173"
+
+    # --- Session ---
+    # HMAC key for signing session + WS-ticket tokens. Leave empty in dev to
+    # auto-generate an ephemeral key per process (sessions drop on restart);
+    # set a stable 32+ byte value in production.
+    session_secret: str = ""
+    session_ttl_seconds: int = 2_592_000  # 30 days
+    ws_ticket_ttl_seconds: int = 60
+    # Set true in production (HTTPS). Must stay false for http://localhost dev.
+    session_cookie_secure: bool = False
+
+    def google_enabled(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret)
+
+    def microsoft_enabled(self) -> bool:
+        return bool(self.microsoft_client_id and self.microsoft_client_secret)
+
 
 settings = Settings()
