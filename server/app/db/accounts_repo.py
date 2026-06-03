@@ -61,6 +61,24 @@ async def add_rewards(account_id: int, xp_delta: int, coins_delta: int) -> tuple
     return prof.xp, prof.coins
 
 
+async def apply_round_rewards(
+    account_id: int, xp_earned: int, coins_earned: int,
+) -> tuple[int, int, int]:
+    """Credit a round's rewards in one transaction; ensures the profile exists.
+    Returns (xp_before, xp_after, coins_after) so the caller can render the
+    correct level-up (before -> after)."""
+    async with database.aio_atomic():
+        prof = await ensure_profile(account_id)
+        xp_before = prof.xp
+        await (
+            Profile.update(xp=Profile.xp + xp_earned, coins=Profile.coins + coins_earned)
+            .where(Profile.account == account_id)
+            .aio_execute()
+        )
+        after = await Profile.aio_get(Profile.account == account_id)
+        return xp_before, after.xp, after.coins
+
+
 async def account_view(account_id: int) -> dict | None:
     """The /auth/me payload: identity + progress (level derived from xp)."""
     acct = await get_account(account_id)
