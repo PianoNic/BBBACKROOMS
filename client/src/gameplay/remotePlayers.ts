@@ -43,6 +43,11 @@ type Entry = {
 export class RemotePlayers {
   readonly group = new THREE.Group();
   private readonly entries = new Map<string, Entry>();
+  /** Looks of downed players, kept so the recreated voxel on revive keeps
+   *  its avatar and cosmetics (the live entry is destroyed by `markDead`). */
+  private readonly retiredLooks = new Map<
+    string, { avatarUrl: string | null; equipped: EquippedCosmetics }
+  >();
   private listener: THREE.AudioListener | null = null;
   private readonly buffers: AudioBuffer[] = [];
   private buffersLoaded = false;
@@ -73,7 +78,10 @@ export class RemotePlayers {
 
   add(p: RemotePlayer): void {
     if (this.entries.has(p.id)) return;
-    const equipped = p.equipped ?? {};
+    const look = this.retiredLooks.get(p.id);
+    this.retiredLooks.delete(p.id);
+    const equipped = p.equipped ?? look?.equipped ?? {};
+    const avatar = p.avatar ?? look?.avatarUrl ?? null;
     const mesh = new THREE.Mesh(BOX, makeColorMaterial(bodyColor(equipped, p.color)));
     mesh.position.set(p.x, Y, p.z);
     mesh.rotation.y = p.yaw;
@@ -95,12 +103,12 @@ export class RemotePlayers {
       target: new THREE.Vector3(p.x, Y, p.z),
       targetYaw: p.yaw, audio,
       lastStepX: p.x, lastStepZ: p.z,
-      avatarUrl: p.avatar ?? null,
+      avatarUrl: avatar,
       video: null, videoTex: null,
       equipped, hat: null,
     });
     this.updateHat(p.id);
-    if (p.avatar) this.applyAvatar(p.id, p.avatar);
+    if (avatar) this.applyAvatar(p.id, avatar);
     else this.applyFacePattern(p.id);
   }
 
@@ -149,7 +157,12 @@ export class RemotePlayers {
   /** Apply a live equipped-cosmetics update (from the player_cosmetic packet). */
   setCosmetic(id: string, equipped: EquippedCosmetics): void {
     const e = this.entries.get(id);
-    if (!e) return;
+    if (!e) {
+      // Player is downed — update the stashed look so the revive keeps it.
+      const look = this.retiredLooks.get(id);
+      if (look) look.equipped = equipped ?? {};
+      return;
+    }
     e.equipped = equipped ?? {};
     this.updateHat(id);
     this.repaintBody(id);
@@ -180,6 +193,10 @@ export class RemotePlayers {
   setAvatar(id: string, avatar: string): void {
     const e = this.entries.get(id);
     if (e) e.avatarUrl = avatar;
+    else {
+      const look = this.retiredLooks.get(id);
+      if (look) look.avatarUrl = avatar;
+    }
     if (e?.video) return; // live cam takes precedence
     this.applyAvatar(id, avatar);
   }
@@ -230,6 +247,10 @@ export class RemotePlayers {
    *  render as two bodies inside each other. On revive the voxel is recreated
    *  via `remove` + `add` in the packet handler. */
   markDead(id: string, _x?: number, _z?: number): void {
+    const e = this.entries.get(id);
+    if (e) {
+      this.retiredLooks.set(id, { avatarUrl: e.avatarUrl, equipped: e.equipped });
+    }
     this.remove(id);
   }
 
