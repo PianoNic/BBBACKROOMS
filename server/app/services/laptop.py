@@ -9,6 +9,7 @@ from fastapi import WebSocket
 from app.domain.lobby import Laptop, Lobby, PlayerConn
 from app.services.broadcast import broadcast
 from app.services.laptop_challenges import is_correct
+from app.services.rpg_battle import play_rpg
 from app.world.geom import distance_squared_xz
 from app.world.physics import LAPTOP_INTERACT_RADIUS
 
@@ -39,8 +40,10 @@ def laptop_done_status(lobby: Lobby, laptop_id: str) -> bool:
     return False
 
 
-def play_game(lp: Laptop, choice: str | None) -> tuple[bool, dict]:
+def play_game(lp: Laptop, choice: str | None, player_id: str) -> tuple[bool, dict]:
     game = lp.game
+    if game == "rpg_battle":
+        return play_rpg(lp, player_id, choice)
     if game == "slots":
         symbols = [random.randrange(SLOT_SYMBOLS) for _ in range(3)]
         return symbols[0] == symbols[1] == symbols[2], {"symbols": symbols}
@@ -65,6 +68,9 @@ async def handle_gamble_open(ws: WebSocket, lobby: Lobby, me: PlayerConn) -> Non
     lp = nearest_laptop(lobby, me.x, me.z)
     if lp is None:
         return
+    # RPG fights restart on every open so the client UI (full HP bars)
+    # matches the server state.
+    lp.battles.pop(me.id, None)
     done = laptop_done_status(lobby, lp.id)
     await ws.send_json({
         "type": "gamble_state", "laptopId": lp.id, "game": lp.game, "done": done,
@@ -106,7 +112,7 @@ async def handle_gamble_play(
     lp = lobby.laptops.get(laptop_id)
     if lp is None or laptop_done_status(lobby, lp.id):
         return
-    win, detail = play_game(lp, choice)
+    win, detail = play_game(lp, choice, me.id)
     await ws.send_json({
         "type": "gamble_result", "laptopId": lp.id, "game": lp.game, "win": win,
         **detail,
