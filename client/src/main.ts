@@ -76,7 +76,7 @@ async function main(): Promise<void> {
   const gogglesState = { activeUntilMs: 0, cooldownUntilMs: 0 };
   net.onPacket(makeGamePacketHandler({
     init, net, webcam, proximityVoice: s.proximityVoice,
-    remotes: s.remotes, quests: s.quests, laptops: s.laptops,
+    remotes: s.remotes, quests: s.quests, pings: s.pings, laptops: s.laptops,
     teachers: s.teachers, teacherById: s.teacherById,
     teacherEffects: s.teacherEffects, chairs: s.chairs, corpses: s.corpses,
     pickups: s.pickups, lockers: s.lockers, doors: s.doors, inventory: s.inventory,
@@ -181,7 +181,7 @@ async function main(): Promise<void> {
   runGameLoop({
     ctx, net, stats,
     player: s.player, lights: s.lights, remotes: s.remotes, minimap: s.minimap,
-    quests: s.quests, stamina: s.stamina, interactPrompt: s.interactPrompt,
+    quests: s.quests, pings: s.pings, stamina: s.stamina, interactPrompt: s.interactPrompt,
     portal: s.portal, spectator: s.spectator, state: s.state,
     laptops: s.laptops, teachers: s.teachers, teacherEffects: s.teacherEffects,
     chairs: s.chairs, pickups: s.pickups, lockers: s.lockers, doors: s.doors,

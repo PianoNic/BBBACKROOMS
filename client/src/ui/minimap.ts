@@ -55,6 +55,7 @@ export class Minimap {
       items: WorldPos[];
       tasks: WorldPos[];
       teachers: WorldPos[];
+      pings?: RemoteDot[];
     } = { items: [], tasks: [], teachers: [] },
   ): void {
     const ctx = this.ctx;
@@ -71,6 +72,21 @@ export class Minimap {
     this.drawDots(ctx, worldX, worldZ, tracked.items, "#5adef0", 4);
     // tracked teachers (red) — biggest so they stand out
     this.drawDots(ctx, worldX, worldZ, tracked.teachers, "#ff3a3a", 6);
+
+    // teammate pings — pulsing ring in the pinger's colour
+    const pulse = 4 + 2 * Math.abs(Math.sin(performance.now() / 250));
+    for (const p of tracked.pings ?? []) {
+      const x = DISPLAY / 2 + ((p.x - worldX) / this.grid.cellSize) * ZOOM;
+      const y = DISPLAY / 2 + ((p.z - worldZ) / this.grid.cellSize) * ZOOM;
+      const dx = x - DISPLAY / 2;
+      const dy = y - DISPLAY / 2;
+      if (dx * dx + dy * dy > (DISPLAY / 2) * (DISPLAY / 2)) continue;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, pulse, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     // remote players (relative to self)
     for (const r of remotes) {
