@@ -1,17 +1,24 @@
 @use "variables" as *;
 @forward "laptop-app-teams";
 @forward "laptop-app-moodle";
+@forward "laptop-app-rpg";
 
 /// Larger browser frame when the laptop is hosting a real-app skin
-/// (Teams or Moodle) since their layouts need more horizontal room.
+/// (Teams, Moodle or the RPG) since their layouts need more room.
 #laptop .browser.shell-teams,
 #laptop .browser.shell-moodle {
   width: 1180px;
   max-width: 96vw;
 }
 
+#laptop .browser.shell-rpg {
+  width: 880px;
+  max-width: 96vw;
+}
+
 #laptop .browser.shell-teams .page,
-#laptop .browser.shell-moodle .page {
+#laptop .browser.shell-moodle .page,
+#laptop .browser.shell-rpg .page {
   padding: 0;
   background: transparent;
   min-height: 600px;
@@ -20,12 +27,14 @@
 }
 
 #laptop .browser.shell-teams .page.page-app,
-#laptop .browser.shell-moodle .page.page-app {
+#laptop .browser.shell-moodle .page.page-app,
+#laptop .browser.shell-rpg .page.page-app {
   display: flex;
   flex-direction: column;
 }
 
 #laptop .browser.shell-teams .app-wrap,
-#laptop .browser.shell-moodle .app-wrap {
+#laptop .browser.shell-moodle .app-wrap,
+#laptop .browser.shell-rpg .app-wrap {
   flex: 1 1 auto; display: flex; min-height: 540px;
 }

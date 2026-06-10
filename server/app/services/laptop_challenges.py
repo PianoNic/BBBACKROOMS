@@ -83,6 +83,69 @@ DM_SCENARIOS: list[dict] = [
 ]
 
 
+# One-question Moodle tests. `correct` is the winning option; the client
+# shuffles nothing — order is baked here at world init.
+QUIZ_QUESTIONS: list[dict] = [
+    {
+        "question": "Wie viele Bits hat ein Byte?",
+        "correct": "8",
+        "wrong": ["4", "16", "32"],
+    },
+    {
+        "question": "Welcher Port wird standardmässig für HTTPS verwendet?",
+        "correct": "443",
+        "wrong": ["80", "22", "8080"],
+    },
+    {
+        "question": "Wofür steht HTML?",
+        "correct": "HyperText Markup Language",
+        "wrong": [
+            "HighTech Modern Language",
+            "Hyperlink Text Management Layer",
+            "Home Tool Markup Language",
+        ],
+    },
+    {
+        "question": "Was macht der Befehl «git commit»?",
+        "correct": "Speichert die vorgemerkten Änderungen im Repository",
+        "wrong": [
+            "Lädt Änderungen auf den Server hoch",
+            "Löscht den letzten Branch",
+            "Installiert Git neu",
+        ],
+    },
+    {
+        "question": "Welche IP-Adresse ist eine private Adresse?",
+        "correct": "192.168.1.10",
+        "wrong": ["8.8.8.8", "172.217.16.46", "1.1.1.1"],
+    },
+    {
+        "question": "Was ist die Binärdarstellung von 10?",
+        "correct": "1010",
+        "wrong": ["0101", "1100", "1001"],
+    },
+    {
+        "question": "Welches Protokoll löst Domainnamen in IP-Adressen auf?",
+        "correct": "DNS",
+        "wrong": ["DHCP", "FTP", "SMTP"],
+    },
+    {
+        "question": "Was bedeutet SQL?",
+        "correct": "Structured Query Language",
+        "wrong": [
+            "Simple Question Language",
+            "System Quality Layer",
+            "Sequential Query List",
+        ],
+    },
+]
+
+# rpg_battle tuning. Baked into the challenge so client and server agree
+# on the bars; resolution itself stays server-side in `rpg_battle.py`.
+RPG_PLAYER_HP = 20
+RPG_BOSS_HP = 22
+
+
 def make_challenge(game: str, rng: random.Random) -> dict:
     """Roll the random state for one laptop. Empty dict for casino games."""
     if game == "teams_call":
@@ -95,6 +158,10 @@ def make_challenge(game: str, rng: random.Random) -> dict:
         return _moodle_course(rng)
     if game == "moodle_file":
         return _moodle_file(rng)
+    if game == "moodle_quiz":
+        return _moodle_quiz(rng)
+    if game == "rpg_battle":
+        return _rpg_battle(rng)
     return {}
 
 
@@ -163,4 +230,26 @@ def _moodle_file(rng: random.Random) -> dict:
         "files": files,
         "correct": target,
         "hint": target,
+    }
+
+
+def _moodle_quiz(rng: random.Random) -> dict:
+    course = rng.choice(COURSES)
+    quiz = rng.choice(QUIZ_QUESTIONS)
+    options = [quiz["correct"], *quiz["wrong"]]
+    rng.shuffle(options)
+    return {
+        "course": {"name": course[0], "code": course[1]},
+        "quizTitle": f"{course[0]} – Abschlusstest",
+        "question": quiz["question"],
+        "options": options,
+        "correct": quiz["correct"],
+    }
+
+
+def _rpg_battle(rng: random.Random) -> dict:
+    return {
+        "boss": rng.choice(TEACHER_NAMES),
+        "playerMaxHp": RPG_PLAYER_HP,
+        "bossMaxHp": RPG_BOSS_HP,
     }
