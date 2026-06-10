@@ -8,6 +8,7 @@ import type { NetClient } from "./client";
 import { routePacket } from "./router";
 import type { WorldInit, ServerPacket } from "./protocol";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
+import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
 import type { Laptops } from "../gameplay/laptops";
 import type { Teachers } from "../gameplay/teachers";
@@ -42,6 +43,7 @@ export type GamePacketDeps = {
   proximityVoice: ProximityVoice;
   remotes: RemotePlayers;
   quests: Quests;
+  pings: Pings;
   laptops: Laptops;
   teachers: Teachers;
   teacherById: Map<string, { image: string; name: string; subject: string }>;
@@ -144,6 +146,7 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
     door_state: (p) => d.doors.setOpen(p.id, p.isOpen),
     revive_progress: (p) => d.reviveBar.set(p.progress),
     player_revived: (p) => handleRevived(d, p),
+    player_ping: (p) => d.pings.add(p.x, p.z, p.color),
   }, pkt);
 }
 
