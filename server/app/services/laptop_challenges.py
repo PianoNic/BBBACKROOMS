@@ -40,11 +40,21 @@ TEACHER_NAMES: list[str] = [
     "Anna Hofer", "Markus Iten",
 ]
 
+# BBB-style material names (module code + sequence + type + topic), as on
+# the real moodle.bbbaden.ch course pages.
 FILE_NAMES: list[str] = [
-    "uebung_1.pdf", "uebung_2.pdf", "loesung.pdf", "skript.pdf",
-    "praesentation.pptx", "hausaufgaben.docx", "projektplan.xlsx",
-    "richtlinien.pdf", "abschluss.pdf", "kapitel_3.pdf",
-    "kapitel_4.pdf", "zusammenfassung.md",
+    "INFILA1-010d-PR-WasIstILA.pptx",
+    "INFILA1-020d-PR-DateiablageEinrichten.pptx",
+    "INFILA1-030d-LA-Ordnerstruktur.docx",
+    "INFILA1-040d-LA-OneDriveZusammenarbeit.docx",
+    "INFILA1-050d-PR-AnleitungGitHubUndMarkdown.pptx",
+    "INFILA1-060d-LA-GitHubUebung.docx",
+    "INFILA1-070d-LA-GitLokal.docx",
+    "INFILA2-080d-PR-QVinDerLehre.pptx",
+    "INFILA2-090d-PR-LBs.pptx",
+    "INFILA2-100d-BG-LBAufgaben.docx",
+    "INFILA2-110d-BG-Vorlage.xlsx",
+    "INFILA2-120d-BG-GrosseDateien.pdf",
 ]
 
 # Single-correct-answer DM scenarios. The teacher message is the question,
