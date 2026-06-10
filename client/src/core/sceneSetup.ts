@@ -14,6 +14,7 @@ import { buildPropColliders } from "../world/colliders";
 import { FlickerLights } from "../rendering/lights";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
+import { Pings } from "../gameplay/pings";
 import { Quests } from "../gameplay/quests";
 import { TaskBoard } from "../ui/taskboard";
 import { Minimap } from "../ui/minimap";
@@ -68,6 +69,9 @@ export function buildScene(
   const quests = new Quests(init.objectives);
   ctx.scene.add(quests.group);
   new TaskBoard(quests);
+
+  const pings = new Pings();
+  ctx.scene.add(pings.group);
 
   const portal = new ExtractionPortal(
     init.extraction.x, init.extraction.z, init.extraction.radius,
@@ -151,7 +155,7 @@ export function buildScene(
   webcam.setPeers(init.players.map((p) => p.id));
 
   return {
-    state, player, remotes, quests, portal, spectator, minimap, stamina,
+    state, player, remotes, quests, pings, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, lights, proximityVoice,

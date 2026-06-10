@@ -7,6 +7,7 @@ import type { FlickerLights } from "../rendering/lights";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
+import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
 import type { StaminaBar } from "../ui/stamina";
 import type { InteractPrompt } from "../ui/interactPrompt";
@@ -37,6 +38,7 @@ export type GameDeps = {
   net: NetClient;
   stats: Stats;
   quests: Quests;
+  pings: Pings;
   stamina: StaminaBar;
   interactPrompt: InteractPrompt;
   portal: ExtractionPortal;
@@ -95,6 +97,7 @@ export function runGameLoop(d: GameDeps): void {
     d.lights.update(elapsed, d.player.position.x, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
+    d.pings.update(elapsed);
     d.portal.update(elapsed);
     d.teachers.update();
     d.teacherEffects.update();
@@ -124,6 +127,7 @@ export function runGameLoop(d: GameDeps): void {
       items: d.inventory.hasTracker() ? d.pickups.getMapPositions() : [],
       tasks: d.inventory.hasTracker() ? d.quests.getMapPositions() : [],
       teachers: d.inventory.hasGps() ? d.teachers.getMapPositions() : [],
+      pings: d.pings.getMapDots(),
     };
     d.minimap.update(
       d.player.position.x, d.player.position.z, d.player.yaw,

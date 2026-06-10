@@ -86,6 +86,13 @@ class PickupCollectPkt(BaseModel):
     pickupId: str
 
 
+class PingPkt(BaseModel):
+    """Mark a world spot for teammates. Server stamps the sender + colour."""
+    type: Literal["ping"]
+    x: float
+    z: float
+
+
 class ReviveStartPkt(BaseModel):
     type: Literal["revive_start"]
     targetId: str
@@ -157,7 +164,7 @@ ClientPacket = Annotated[
         WebRTCSignalPkt, WebcamStatePkt,
         PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
         UseGogglesPkt, BackToLobbyPkt, LockerOpenPkt, DoorTogglePkt,
-        SetCosmeticPkt, BuyCosmeticPkt,
+        SetCosmeticPkt, BuyCosmeticPkt, PingPkt,
     ],
     Field(discriminator="type"),
 ]
