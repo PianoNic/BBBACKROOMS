@@ -10,7 +10,7 @@ import random
 import secrets
 import time as _time
 
-from app.domain.lobby import GAMES, Chair, Door, Laptop, Lobby, Locker, PlayerConn
+from app.domain.lobby import GAMES, Chair, Door, Hideout, Laptop, Lobby, Locker, PlayerConn
 from app.services.laptop_challenges import make_challenge
 from app.world.generator import generate
 from app.world.pickups import fill_lockers
@@ -67,6 +67,9 @@ def start_lobby(lobby: Lobby) -> None:
         elif p.type == "locker":
             lid = secrets.token_hex(3)
             lobby.lockers[lid] = Locker(id=lid, x=p.x, z=p.z, yaw=p.yaw)
+        elif p.type == "closet":
+            hid = secrets.token_hex(3)
+            lobby.hideouts[hid] = Hideout(id=hid, x=p.x, z=p.z, yaw=p.yaw)
     for obj in world.objectives:
         if obj.kind == "casino":
             for s, laptop in zip(obj.spots, lobby.laptops.values()):

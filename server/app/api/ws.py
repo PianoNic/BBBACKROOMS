@@ -106,6 +106,8 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
         pass
     finally:
         await cancel_revives_for(lobby, pid)
+        from app.services.hiding import free_hideout_for
+        free_hideout_for(lobby, pid)
         lobby.conns.pop(pid, None)
         await broadcast(lobby, {"type": "player_leave", "id": pid})
         if lobby.admin_id == pid:

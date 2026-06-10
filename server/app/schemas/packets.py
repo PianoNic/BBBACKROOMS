@@ -93,6 +93,11 @@ class PingPkt(BaseModel):
     z: float
 
 
+class HidePkt(BaseModel):
+    """Toggle hiding in the nearest closet (enter or exit)."""
+    type: Literal["hide"]
+
+
 class VoiceNoisePkt(BaseModel):
     """Client mic picked up speech — emits a noise at the server-known
     player position (rate-limited server-side)."""
@@ -170,7 +175,7 @@ ClientPacket = Annotated[
         WebRTCSignalPkt, WebcamStatePkt,
         PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
         UseGogglesPkt, BackToLobbyPkt, LockerOpenPkt, DoorTogglePkt,
-        SetCosmeticPkt, BuyCosmeticPkt, PingPkt, VoiceNoisePkt,
+        SetCosmeticPkt, BuyCosmeticPkt, PingPkt, VoiceNoisePkt, HidePkt,
     ],
     Field(discriminator="type"),
 ]

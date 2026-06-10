@@ -254,6 +254,13 @@ export class RemotePlayers {
     this.remove(id);
   }
 
+  /** Toggle voxel visibility (hidden-in-closet players stay in the map
+   *  but render nothing). */
+  setVisible(id: string, visible: boolean): void {
+    const e = this.entries.get(id);
+    if (e) e.mesh.visible = visible;
+  }
+
   remove(id: string): void {
     const e = this.entries.get(id);
     if (!e) return;

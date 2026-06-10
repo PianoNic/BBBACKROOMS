@@ -83,6 +83,7 @@ const SECTIONS: Section[] = [
       "Hört euch im Proximity-Chat: Lehrer-Schritte sind hörbar bevor ihr sie seht.",
       "Lehrer HÖREN euch: Sprinten, Stühle werfen, Schliessfächer, Türen und eure Stimme locken Lehrer in der Nähe an. Schleichen und flüstern!",
       "Schliessfächer liegen verstreut in der Schule und können Items enthalten.",
+      "Versteck dich in Schränken (E)! Lehrer verlieren dich — aber nicht, wenn sie dich reinklettern sehen. Rein- und rausklettern macht Lärm.",
       "Casino-Laptops sind 100% Glück, Teams/Moodle-Laptops sind 100% Logik - tauscht Plätze wenn ihr feststeckt.",
     ],
   },
