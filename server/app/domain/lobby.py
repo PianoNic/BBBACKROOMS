@@ -138,6 +138,13 @@ class PlayerConn:
     goggles_cooldown_until: float = 0.0
     # Ping rate limit (monotonic seconds of the last accepted ping).
     last_ping_t: float = 0.0
+    # Noise system: previous move sample (for sprint-speed inference) and
+    # rate-limit stamps for sprint/voice noise emission.
+    last_move_x: float = 0.0
+    last_move_z: float = 0.0
+    last_move_t: float = 0.0
+    last_noise_t: float = 0.0
+    last_voice_noise_t: float = 0.0
     haste_until: float = 0.0
     haste_factor: float = 1.0
     # Per-round scoreboard counters (zeroed on back-to-lobby). death_t /
@@ -195,6 +202,8 @@ class Lobby:
     chair_projectiles: list[ChairProjectile] = field(default_factory=list)
     teachers: list[TeacherState] = field(default_factory=list)
     hallway_rects: list[Rect] = field(default_factory=list)
+    # Queued noise events (x, z, hearing radius) — drained every teacher tick.
+    noise_events: list[tuple[float, float, float]] = field(default_factory=list)
     # World coords of every doorway (cell centers in metres). Teachers stay
     # outside a small radius around these points so they don't camp entrances.
     doors: list[tuple[float, float]] = field(default_factory=list)

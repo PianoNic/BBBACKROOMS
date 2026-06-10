@@ -11,6 +11,7 @@ import secrets
 from app.domain.lobby import Lobby, Pickup, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
+from app.services.noise import LOCKER_RADIUS, emit_noise
 from app.world.geom import wall_forward, within_radius_xz
 
 LOCKER_OPEN_RADIUS = 3.5
@@ -29,6 +30,7 @@ async def handle_open(lobby: Lobby, me: PlayerConn, locker_id: str) -> None:
     if not within_radius_xz(me.x, me.z, lk.x, lk.z, LOCKER_OPEN_RADIUS):
         return
     lk.opened = True
+    emit_noise(lobby, lk.x, lk.z, LOCKER_RADIUS)
     spawned: Pickup | None = None
     if lk.item is not None:
         # Drop the item as a visible pickup inside the locker. The
