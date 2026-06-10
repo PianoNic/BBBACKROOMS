@@ -71,6 +71,7 @@ const SECTIONS: Section[] = [
       "Linksklick mit Stuhl in der Hand - Stuhl werfen. Linksklick im Spectator-Modus - nächsten Mitspieler beobachten.",
       "G - Stuhl ablegen (ohne zu werfen).",
       "V (gedrückt halten) - Push-to-Talk Mikrofon (wenn so eingestellt).",
+      "X - Ping: markiert die Stelle, die du anschaust, für dein ganzes Team.",
       "Escape - Pause-Menü (Optionen, Einstellungen, zurück zum Titel).",
     ],
   },

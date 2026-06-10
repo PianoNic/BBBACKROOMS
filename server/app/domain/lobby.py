@@ -136,6 +136,8 @@ class PlayerConn:
     # only retrigger after `goggles_cooldown_until` (both monotonic).
     goggles_until: float = 0.0
     goggles_cooldown_until: float = 0.0
+    # Ping rate limit (monotonic seconds of the last accepted ping).
+    last_ping_t: float = 0.0
     haste_until: float = 0.0
     haste_factor: float = 1.0
     # Per-round scoreboard counters (zeroed on back-to-lobby). death_t /

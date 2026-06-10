@@ -49,6 +49,7 @@ Vollständige Liste: [docs/items.md](docs/items.md).
 - **F** Wärmebild-Brille.
 - **Linksklick** Stuhl werfen, **G** Stuhl ablegen.
 - **V** Push-to-Talk (falls aktiviert).
+- **X** Ping — markiert eine Stelle für das Team.
 
 ## Run
 

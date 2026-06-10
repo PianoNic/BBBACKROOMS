@@ -115,3 +115,11 @@ export type WebcamStateBroadcastPkt = {
   id: string;
   on: boolean;
 };
+
+export type PlayerPingPkt = {
+  type: "player_ping";
+  id: string;
+  color: string;
+  x: number;
+  z: number;
+};

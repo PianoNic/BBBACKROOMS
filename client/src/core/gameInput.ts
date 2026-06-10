@@ -66,6 +66,22 @@ function onKeyDown(d: GameInputDeps, e: KeyboardEvent): void {
   if (e.code === "KeyV" && !e.repeat && !d.voice.isToggleOn()) {
     d.voice.setActive(true);
   }
+  if (e.code === "KeyX" && !e.repeat) {
+    sendPing(d);
+  }
+}
+
+/** Ping the spot the camera looks at: intersect the view ray with the floor
+ *  plane, clamped so sky-gazing still drops a marker a few meters ahead. */
+function sendPing(d: GameInputDeps): void {
+  const origin = new THREE.Vector3();
+  d.camera.getWorldPosition(origin);
+  const dir = new THREE.Vector3();
+  d.camera.getWorldDirection(dir);
+  let t = 18;
+  if (dir.y < -0.02) t = Math.min(40, -origin.y / dir.y);
+  const target = origin.addScaledVector(dir, t);
+  d.net.send({ type: "ping", x: target.x, z: target.z });
 }
 
 function handleInteract(d: GameInputDeps): void {

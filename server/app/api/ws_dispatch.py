@@ -12,7 +12,7 @@ from app.schemas.packets import (
     GamblePlayPkt, LobbySettingsPkt, LockerOpenPkt, MovePkt, SetAvatarPkt,
     SetNamePkt, StartGamePkt, WebRTCSignalPkt, WebcamStatePkt,
     PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
-    UseGogglesPkt, BackToLobbyPkt, SetCosmeticPkt, BuyCosmeticPkt,
+    UseGogglesPkt, BackToLobbyPkt, SetCosmeticPkt, BuyCosmeticPkt, PingPkt,
 )
 from app.services.broadcast import broadcast
 from app.services.laptop import handle_gamble_open, handle_gamble_play
@@ -22,6 +22,7 @@ from app.services.lockers import handle_open as handle_locker_open
 from app.services.doors import handle_door_toggle
 from app.services.back_to_lobby import handle_back_to_lobby
 from app.services.pickups import handle_collect, handle_use_goggles, handle_use_potion
+from app.services.pings import handle_ping
 from app.services.revive import handle_revive_cancel, handle_revive_start
 from app.services.quests import check_extraction, try_complete_spots
 from app.services.signaling import broadcast_webcam_state, relay_signal
@@ -161,6 +162,9 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
         return
     if isinstance(pkt, PickupCollectPkt):
         await handle_collect(lobby, me, pkt.pickupId)
+        return
+    if isinstance(pkt, PingPkt):
+        await handle_ping(lobby, me, pkt.x, pkt.z)
         return
     if isinstance(pkt, UsePotionPkt):
         await handle_use_potion(lobby, me)
