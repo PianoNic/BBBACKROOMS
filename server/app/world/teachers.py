@@ -33,6 +33,11 @@ class TeacherState:
     tz: float
     cooldown_t: float = 0.0
     stun_until: float = 0.0
+    # Noise investigation: walk to (noise_x, noise_z) until noise_until
+    # (monotonic) or arrival. Chasing a player always takes precedence.
+    noise_x: float = 0.0
+    noise_z: float = 0.0
+    noise_until: float = 0.0
     # BFS-planned waypoint chain (world coords). Empty = needs replanning,
     # or means we're currently in greedy-steering mode (LOS to target).
     path: list[tuple[float, float]] = field(default_factory=list)

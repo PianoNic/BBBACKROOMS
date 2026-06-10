@@ -81,6 +81,7 @@ Vite druckt die URL (Standard `http://localhost:5173`). Canvas klicken für Poin
 ## Tips
 - Bleibt zusammen — Wiederbeleben ist zuverlässiger als Soloplay.
 - Proximity-Chat nutzen: Lehrer-Schritte sind hörbar, bevor man sie sieht.
+- Lehrer hören euch auch: Sprinten, Stühle, Schliessfächer, Türen und Stimme locken sie an.
 - Schliessfächer in der ganzen Schule durchsuchen — da liegen die Items.
 - Casino-Laptops sind Glück, Teams/Moodle sind Logik — Plätze tauschen wenn ihr steckt.
 
