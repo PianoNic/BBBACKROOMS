@@ -7,6 +7,7 @@ import * as THREE from "three";
 import type { NetClient } from "../net/client";
 import type { Prop } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
+import { playSfx } from "../core/audio";
 import { M } from "../world/propBuilders/_common";
 
 const LEVER_ROWS = 2;
@@ -139,6 +140,7 @@ export class FuseBoxes {
     if (!e) return;
     e.doorOpen = !e.doorOpen;
     e.doorTarget = e.doorOpen ? DOOR_OPEN_ANGLE : 0;
+    playSfx("/sounds/actions/fusebox-door.ogg", 0.8);
   }
 
   flipLever(id: string, leverIdx: number, net: NetClient): void {
@@ -148,6 +150,7 @@ export class FuseBoxes {
     if (!lv || lv.on) return;
     lv.on = true;
     lv.target = LEVER_UP;
+    playSfx("/sounds/actions/lever.ogg", 0.8);
     // When ALL levers are flipped, fire the standard quest-interact
     // packet — the server resolves the fuse-box quest spot by proximity
     // (we're standing right next to the box, well within its radius).

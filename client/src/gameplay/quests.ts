@@ -72,6 +72,11 @@ export class Quests {
     for (const fn of this.listeners) fn();
   }
 
+  spotPosition(id: string, spotIdx: number): { x: number; z: number } | null {
+    const sObj = this.entries.get(id)?.obj.spots[spotIdx];
+    return sObj ? { x: sObj.x, z: sObj.z } : null;
+  }
+
   list(): Objective[] { return [...this.entries.values()].map((e) => e.obj); }
 
   /** World positions of every undone task spot — used by the tracker item
