@@ -11,6 +11,7 @@ import { showTeacherSlots } from "./ui/teacherSlots";
 import { showPauseMenu } from "./ui/pauseMenu";
 import { captureInput } from "./core/inputCapture";
 import { startAmbient, unlockAudio } from "./core/audio";
+import { music } from "./core/music";
 import { createWebcamMesh } from "./gameplay/webcam";
 import { makeGamePacketHandler } from "./net/gamePackets";
 import { installGameInput } from "./core/gameInput";
@@ -129,6 +130,9 @@ async function main(): Promise<void> {
   const enterGame = (): void => {
     unlockAudio();
     startAmbient();
+    if (init.phase === "tasks" || init.phase === "escape") {
+      music.setPhase(init.phase);
+    }
     captureInput(ctx.renderer.domElement);
   };
 

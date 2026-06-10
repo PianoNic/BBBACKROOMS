@@ -7,6 +7,7 @@ import type { FlickerLights } from "../rendering/lights";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
+import { music } from "./music";
 import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
 import type { StaminaBar } from "../ui/stamina";
@@ -142,10 +143,16 @@ export function runGameLoop(d: GameDeps): void {
     d.compass.update(d.player.position.x, d.player.position.z, d.player.yaw);
     // Heartbeat picks up nearest non-stunned teacher; silenced while
     // spectating (dead/extracted) since the player is no longer in danger.
-    if (d.state.extracted) d.heartbeat.stop();
-    else d.heartbeat.setNearestDistance(
-      d.teachers.nearestDistance(d.player.position.x, d.player.position.z),
-    );
+    if (d.state.extracted) {
+      d.heartbeat.stop();
+      music.updateThreat(Infinity, elapsed);
+    } else {
+      const nearest = d.teachers.nearestDistance(
+        d.player.position.x, d.player.position.z,
+      );
+      d.heartbeat.setNearestDistance(nearest);
+      music.updateThreat(nearest, elapsed);
+    }
 
     sendAcc += dt;
     if (!d.state.extracted && sendAcc >= sendInterval) {
