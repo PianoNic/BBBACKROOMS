@@ -81,6 +81,7 @@ const SECTIONS: Section[] = [
       "Umsehen geht mit der Maus ODER den Pfeiltasten (↑↓←→) — wie in Roblox. In den Einstellungen kannst du die Pfeiltasten-Geschwindigkeit anpassen.",
       "Bleibt zusammen - Wiederbeleben ist viel zuverlässiger als alleine zu spielen.",
       "Hört euch im Proximity-Chat: Lehrer-Schritte sind hörbar bevor ihr sie seht.",
+      "Lehrer HÖREN euch: Sprinten, Stühle werfen, Schliessfächer, Türen und eure Stimme locken Lehrer in der Nähe an. Schleichen und flüstern!",
       "Schliessfächer liegen verstreut in der Schule und können Items enthalten.",
       "Casino-Laptops sind 100% Glück, Teams/Moodle-Laptops sind 100% Logik - tauscht Plätze wenn ihr feststeckt.",
     ],

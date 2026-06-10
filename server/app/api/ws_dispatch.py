@@ -13,6 +13,7 @@ from app.schemas.packets import (
     SetNamePkt, StartGamePkt, WebRTCSignalPkt, WebcamStatePkt,
     PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
     UseGogglesPkt, BackToLobbyPkt, SetCosmeticPkt, BuyCosmeticPkt, PingPkt,
+    VoiceNoisePkt,
 )
 from app.services.broadcast import broadcast
 from app.services.laptop import handle_gamble_open, handle_gamble_play
@@ -23,6 +24,7 @@ from app.services.doors import handle_door_toggle
 from app.services.back_to_lobby import handle_back_to_lobby
 from app.services.pickups import handle_collect, handle_use_goggles, handle_use_potion
 from app.services.pings import handle_ping
+from app.services.noise import handle_voice_noise, track_movement_noise
 from app.services.revive import handle_revive_cancel, handle_revive_start
 from app.services.quests import check_extraction, try_complete_spots
 from app.services.signaling import broadcast_webcam_state, relay_signal
@@ -134,6 +136,7 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
         return
     if isinstance(pkt, MovePkt):
         me.x, me.z, me.yaw = pkt.x, pkt.z, pkt.yaw
+        track_movement_noise(lobby, me)
         await broadcast(
             lobby,
             {"type": "player_state", "id": me.id, "x": me.x, "z": me.z, "yaw": me.yaw},
@@ -165,6 +168,9 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
         return
     if isinstance(pkt, PingPkt):
         await handle_ping(lobby, me, pkt.x, pkt.z)
+        return
+    if isinstance(pkt, VoiceNoisePkt):
+        handle_voice_noise(lobby, me)
         return
     if isinstance(pkt, UsePotionPkt):
         await handle_use_potion(lobby, me)

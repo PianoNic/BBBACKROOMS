@@ -14,6 +14,7 @@ import { startAmbient, unlockAudio } from "./core/audio";
 import { createWebcamMesh } from "./gameplay/webcam";
 import { makeGamePacketHandler } from "./net/gamePackets";
 import { installGameInput } from "./core/gameInput";
+import { installVoiceNoise } from "./gameplay/voiceNoise";
 import { buildScene } from "./core/sceneSetup";
 import { getSettings, onSettingsChange, updateSetting } from "./core/settings";
 import { ensureCatalog } from "./gameplay/cosmetics";
@@ -104,6 +105,12 @@ async function main(): Promise<void> {
       void webcam.setLocalEnabled(false);
     }
   });
+  installVoiceNoise(
+    net, webcam,
+    () => getSettings().voiceMode === "open"
+      || (getSettings().voiceMode === "ptt" && voice.pttHeld),
+    () => !s.state.extracted,
+  );
   installGameInput({
     net, camera: ctx.camera, state: s.state, reviveState,
     interactPrompt: s.interactPrompt, laptop: s.laptop, chairs: s.chairs,

@@ -37,6 +37,7 @@ export type ClientSetCosmeticPkt = {
 };
 export type ClientBuyCosmeticPkt = { type: "buy_cosmetic"; cosmeticId: string };
 export type ClientPingPkt = { type: "ping"; x: number; z: number };
+export type ClientVoiceNoisePkt = { type: "voice_noise" };
 
 export type ClientLobbySettingsPkt = {
   type: "lobby_settings";
@@ -76,4 +77,5 @@ export type ClientPacket =
   | ClientDoorTogglePkt
   | ClientSetCosmeticPkt
   | ClientBuyCosmeticPkt
-  | ClientPingPkt;
+  | ClientPingPkt
+  | ClientVoiceNoisePkt;

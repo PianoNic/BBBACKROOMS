@@ -13,6 +13,7 @@ import time as _time
 from app.domain.lobby import Lobby, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
+from app.services.noise import DOOR_RADIUS, emit_noise
 from app.world.geom import within_radius_xz
 
 DOOR_REACH = 3.5
@@ -34,6 +35,7 @@ async def handle_door_toggle(lobby: Lobby, me: PlayerConn, door_id: str) -> None
     if not within_radius_xz(me.x, me.z, d.x, d.z, DOOR_REACH):
         return
     d.is_open = not d.is_open
+    emit_noise(lobby, d.x, d.z, DOOR_RADIUS)
     await broadcast(lobby, {
         "type": "door_state", "id": d.id, "isOpen": d.is_open, "by": me.id,
     })
