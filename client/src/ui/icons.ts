@@ -21,6 +21,7 @@ export {
   RotateCw,
   // Laptop apps
   Bell,
+  ChevronDown,
   MessageSquare,
   Users,
   Calendar,
