@@ -123,3 +123,16 @@ export type PlayerPingPkt = {
   x: number;
   z: number;
 };
+
+export type PlayerHiddenPkt = {
+  type: "player_hidden";
+  id: string;
+  hidden: boolean;
+  x: number;
+  z: number;
+};
+
+export type HideDeniedPkt = {
+  type: "hide_denied";
+  reason: "seen" | "occupied";
+};

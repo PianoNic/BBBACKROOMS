@@ -29,6 +29,7 @@ import type { WebcamMesh } from "../gameplay/webcam";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
 import { playSfx, playSfxNear } from "../core/audio";
 import { music } from "../core/music";
+import { hideHideOverlay, showHideOverlay } from "../ui/hideOverlay";
 import { showBanner } from "../ui/banner";
 import {
   showVictory, showGameOver, isEndgameVisible, clearEndgameOverlay,
@@ -63,7 +64,7 @@ export type GamePacketDeps = {
   spectator: Spectator;
   player: Player;
   camera: THREE.PerspectiveCamera;
-  state: { extracted: boolean };
+  state: { extracted: boolean; hidden: boolean };
   reviveState: ReviveState;
   /** Deadlines for thermal-goggles reveal + cooldown (performance.now()
    *  scale). 0 = inactive. Written by the goggles_state packet handler,
@@ -201,6 +202,13 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
       d.pings.add(p.x, p.z, p.color);
       playSfx(`${SND}/ping.ogg`, 0.5);
     },
+    player_hidden: (p) => handleHidden(d, p),
+    hide_denied: (p) => showBanner(
+      p.reason === "seen"
+        ? "Ein Lehrer schaut direkt zu dir — zu riskant!"
+        : "Da versteckt sich schon jemand!",
+      2500,
+    ),
   }, pkt);
 }
 
@@ -220,6 +228,22 @@ function handleKilled(
     d.corpses.add(p.id, p.x, p.z, col);
     d.remotes.markDead(p.id, p.x, p.z);
   }
+}
+
+function handleHidden(
+  d: GamePacketDeps,
+  p: { id: string; hidden: boolean; x: number; z: number },
+): void {
+  playSfxNear(`${SND}/locker-open.ogg`, distTo(d, p.x, p.z), 0.7);
+  if (p.id === d.init.selfId) {
+    d.state.hidden = p.hidden;
+    d.player.spawn(p.x, p.z, d.player.yaw);
+    if (p.hidden) showHideOverlay();
+    else hideHideOverlay();
+    return;
+  }
+  d.remotes.setVisible(p.id, !p.hidden);
+  if (!p.hidden) d.remotes.setState(p.id, p.x, p.z, 0);
 }
 
 function handleRevived(

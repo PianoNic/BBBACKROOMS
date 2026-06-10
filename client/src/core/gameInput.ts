@@ -18,7 +18,7 @@ import type { ReviveBar } from "../ui/reviveBar";
 export type GameInputDeps = {
   net: NetClient;
   camera: THREE.PerspectiveCamera;
-  state: { extracted: boolean };
+  state: { extracted: boolean; hidden: boolean };
   reviveState: ReviveState;
   interactPrompt: InteractPrompt;
   laptop: LaptopOverlay;
@@ -46,6 +46,11 @@ export function installGameInput(d: GameInputDeps): void {
 function onKeyDown(d: GameInputDeps, e: KeyboardEvent): void {
   if (d.state.extracted || d.laptop.isOpen()) return;
   if (!document.pointerLockElement) return;
+  if (d.state.hidden) {
+    // Inside a closet only E (climb out) works.
+    if (e.code === "KeyE" && !e.repeat) d.net.send({ type: "hide" });
+    return;
+  }
   if (e.code === "KeyE") {
     if (e.repeat) return;
     handleInteract(d);
@@ -87,6 +92,7 @@ function sendPing(d: GameInputDeps): void {
 function handleInteract(d: GameInputDeps): void {
   const cur = d.interactPrompt.current;
   if (cur?.kind === "laptop") { d.net.send({ type: "gamble_open" }); return; }
+  if (cur?.kind === "hide") { d.net.send({ type: "hide" }); return; }
   if (cur?.kind === "chair" && cur.chairId) {
     d.chairs.requestPickup(d.net, cur.chairId); return;
   }

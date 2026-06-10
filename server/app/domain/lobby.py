@@ -81,6 +81,17 @@ class Door:
 
 
 @dataclass
+class Hideout:
+    """A closet a player can hide inside. Invisible to teachers while
+    occupied; one player per closet."""
+    id: str
+    x: float
+    z: float
+    yaw: float
+    occupied_by: str | None = None
+
+
+@dataclass
 class Locker:
     """School locker. `item` is the hidden pickup kind, or None for empty.
     Opening drops it as a regular `Pickup` at the locker's position."""
@@ -145,6 +156,8 @@ class PlayerConn:
     last_move_t: float = 0.0
     last_noise_t: float = 0.0
     last_voice_noise_t: float = 0.0
+    # Hideout (closet) the player is currently hiding in, or None.
+    hidden_in: str | None = None
     haste_until: float = 0.0
     haste_factor: float = 1.0
     # Per-round scoreboard counters (zeroed on back-to-lobby). death_t /
@@ -226,6 +239,7 @@ class Lobby:
     potion_puddles: list[tuple[float, float, float, float, float]] = field(default_factory=list)
     pickups: dict[str, Pickup] = field(default_factory=dict)
     lockers: dict[str, Locker] = field(default_factory=dict)
+    hideouts: dict[str, Hideout] = field(default_factory=dict)
     doors_state: dict[str, Door] = field(default_factory=dict)
     # Position recorded at death so corpses are interactable for revive.
     corpses: dict[str, tuple[float, float]] = field(default_factory=dict)

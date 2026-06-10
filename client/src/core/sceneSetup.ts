@@ -14,6 +14,7 @@ import { buildPropColliders } from "../world/colliders";
 import { FlickerLights } from "../rendering/lights";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
+import { Hideouts } from "../gameplay/hideouts";
 import { Pings } from "../gameplay/pings";
 import { Quests } from "../gameplay/quests";
 import { TaskBoard } from "../ui/taskboard";
@@ -73,6 +74,8 @@ export function buildScene(
   const pings = new Pings();
   ctx.scene.add(pings.group);
 
+  const hideouts = new Hideouts(init.props);
+
   const portal = new ExtractionPortal(
     init.extraction.x, init.extraction.z, init.extraction.radius,
   );
@@ -85,6 +88,7 @@ export function buildScene(
   const deadSet = new Set(init.deadPlayers ?? []);
   const state = {
     extracted: init.extractedPlayers.includes(init.selfId) || deadSet.has(init.selfId),
+    hidden: false,
   };
   if (state.extracted) spectator.activate();
   for (const id of deadSet) {
@@ -160,7 +164,7 @@ export function buildScene(
   webcam.setPeers(init.players.map((p) => p.id));
 
   return {
-    state, player, remotes, quests, pings, portal, spectator, minimap, stamina,
+    state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, lights, proximityVoice,

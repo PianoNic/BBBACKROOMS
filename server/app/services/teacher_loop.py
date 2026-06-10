@@ -40,6 +40,7 @@ async def _check_catches(lobby: Lobby) -> None:
     alive = [
         p for p in lobby.conns.values()
         if p.id not in lobby.dead and p.id not in lobby.extracted
+        and p.hidden_in is None
     ]
     for p in alive:
         for t in lobby.teachers:
@@ -93,6 +94,7 @@ async def _teacher_loop(lobby_id: str) -> None:
             alive = [
                 p for p in lobby.conns.values()
                 if p.id not in lobby.dead and p.id not in lobby.extracted
+                and p.hidden_in is None
             ]
             positions = [(p.x, p.z) for p in alive]
             now = _time.monotonic()

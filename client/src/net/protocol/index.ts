@@ -50,6 +50,8 @@ import type {
   PlayerLeavePkt,
   PlayerRevivedPkt,
   PlayerPingPkt,
+  PlayerHiddenPkt,
+  HideDeniedPkt,
   PlayerStatePkt,
   PlayerStatusPkt,
   ReviveProgressPkt,
@@ -101,6 +103,8 @@ export type ServerPacket =
   | ReviveProgressPkt
   | PlayerRevivedPkt
   | PlayerPingPkt
+  | PlayerHiddenPkt
+  | HideDeniedPkt
   | ChairStatePkt
   | ChairThrowStartPkt
   | ChairHitPkt
