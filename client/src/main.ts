@@ -192,7 +192,7 @@ async function main(): Promise<void> {
   runGameLoop({
     ctx, net, stats,
     player: s.player, lights: s.lights, remotes: s.remotes, minimap: s.minimap,
-    quests: s.quests, pings: s.pings, stamina: s.stamina, interactPrompt: s.interactPrompt,
+    quests: s.quests, pings: s.pings, hideouts: s.hideouts, stamina: s.stamina, interactPrompt: s.interactPrompt,
     portal: s.portal, spectator: s.spectator, state: s.state,
     laptops: s.laptops, teachers: s.teachers, teacherEffects: s.teacherEffects,
     chairs: s.chairs, pickups: s.pickups, lockers: s.lockers, doors: s.doors,
