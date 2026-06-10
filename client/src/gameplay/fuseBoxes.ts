@@ -15,11 +15,13 @@ const DOOR_W = 0.50;
 const DOOR_H = 0.62;
 const DOOR_T = 0.025;
 const DOOR_Y = 1.35;
-const DOOR_OPEN_ANGLE = -Math.PI / 2 + 0.05;  // swing left, ~85°
+const DOOR_OPEN_ANGLE = Math.PI / 2 - 0.15;   // swing out into the room, ~81°
 const DOOR_OPEN_SPEED = 5.0;
 const LEVER_FLIP_SPEED = 14.0;
-const LEVER_DOWN = 0.45;                       // lever tilted "off"
-const LEVER_UP = -0.45;                        // lever tilted "on"
+// Tilt about X: negative leans the arm toward the room (out of the niche),
+// positive toward the back panel. "On" stays small so the knob clears it.
+const LEVER_DOWN = -0.5;                       // lever tilted "off"
+const LEVER_UP = 0.25;                         // lever tilted "on"
 const REACH_DOOR = 1.8;
 const REACH_LEVER = 1.6;
 
@@ -63,22 +65,22 @@ export class FuseBoxes {
   }
 
   private add(id: string, p: Prop): void {
-    // Boxes mount with their door facing away from the spawner direction,
-    // so the lever face points *into* the room. Add π once and use this
-    // local yaw for both rendering and the world-space lever coords —
-    // otherwise the interact-prompt range would check the opposite side
-    // from where the levers actually render.
-    const yaw = p.yaw + Math.PI;
+    // Wall props render their visible front on local -Z (the project's
+    // wall-prop convention), so the door/levers use the prop yaw as-is and
+    // sit on the negative-Z side of the body — in the niche, facing the
+    // room. The same yaw drives the world-space lever coords so the
+    // interact-prompt range checks the side the levers actually render on.
+    const yaw = p.yaw;
     const root = new THREE.Group();
     root.position.set(p.x, 0, p.z);
     root.rotation.y = yaw;
     this.group.add(root);
 
-    // Hinged door on the LEFT edge of the cover so opening reveals the
-    // levers without protruding into the centre of the room. Hinge sits
-    // at (x = -DOOR_W/2) so the door's panel pivots fully outward.
+    // Hinged door covering the niche, flush with the frame front. The
+    // hinge sits on one edge (x = -DOOR_W/2); opening swings the panel
+    // out into the room.
     const doorPivot = new THREE.Group();
-    doorPivot.position.set(-DOOR_W / 2, DOOR_Y, 0);
+    doorPivot.position.set(-DOOR_W / 2, DOOR_Y, -0.14);
     const door = new THREE.Mesh(DOOR_GEOM, M(0xeeeee0));
     door.position.set(DOOR_W / 2, 0, -DOOR_T / 2);
     doorPivot.add(door);
@@ -104,10 +106,10 @@ export class FuseBoxes {
         const lx = colX[c];
         const ly = rowY[r];
         const base = new THREE.Mesh(LEVER_BASE_GEOM, M(0x141416));
-        base.position.set(lx, ly, -0.01);
+        base.position.set(lx, ly, -0.035);
         root.add(base);
         const pivot = new THREE.Group();
-        pivot.position.set(lx, ly + 0.04, -0.02);
+        pivot.position.set(lx, ly + 0.04, -0.06);
         pivot.rotation.x = LEVER_DOWN;
         const arm = new THREE.Mesh(LEVER_ARM_GEOM, M(0xb8b8c0));
         arm.position.set(0, -0.05, 0);
