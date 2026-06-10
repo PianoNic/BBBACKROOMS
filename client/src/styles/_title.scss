@@ -189,3 +189,43 @@
     svg { width: 24px; height: 24px; display: block; }
   }
 }
+
+// =========================================================================
+// Intro splash ("PianoNic Games presents") — once per session.
+// =========================================================================
+#intro-splash {
+  position: fixed; inset: 0; z-index: 4000;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: opacity 600ms ease;
+  &.intro-out { opacity: 0; pointer-events: none; }
+
+  .intro-credit {
+    text-align: center;
+    .intro-studio {
+      font-size: clamp(34px, 6vw, 64px);
+      font-weight: 700; color: #e8e2f4;
+      letter-spacing: 4px;
+      animation: intro-studio-in 2.6s ease-out both;
+      text-shadow: 0 0 30px rgba(201, 162, 39, 0.35);
+    }
+    .intro-presents {
+      margin-top: 14px;
+      font-size: 16px; letter-spacing: 10px; color: #9b8fb8;
+      text-transform: uppercase;
+      animation: intro-presents-in 2.2s ease-out 0.7s both;
+    }
+  }
+}
+
+@keyframes intro-studio-in {
+  0% { opacity: 0; letter-spacing: 18px; filter: blur(6px); }
+  35% { opacity: 1; filter: blur(0); }
+  85% { opacity: 1; letter-spacing: 4px; }
+  100% { opacity: 0.9; }
+}
+@keyframes intro-presents-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
