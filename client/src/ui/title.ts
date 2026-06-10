@@ -1,4 +1,7 @@
 /** Title-screen orchestrator. Composes main menu, options, and server browser. */
+import { playSfx, unlockAudio } from "../core/audio";
+import { music } from "../core/music";
+import { playIntro } from "./introSplash";
 import { el } from "./dom";
 import { buildSettingsList } from "./settingsPanel";
 import { buildServerScreen } from "./serverBrowser";
@@ -63,7 +66,12 @@ function buildHeader(root: HTMLElement): void {
   sysbar.appendChild(el("span", "sysbar-label", "SYS://ROOM_INDEX"));
   sysbar.appendChild(el("span", "rec", "REC"));
   root.appendChild(sysbar);
-  root.appendChild(el("h1", undefined, "BBBACKROOMS"));
+  const logo = el<HTMLHeadingElement>("h1", undefined, "BBBACKROOMS");
+  logo.onclick = () => {
+    unlockAudio();
+    playSfx("/sounds/actions/logo-sting.ogg", 0.85);
+  };
+  root.appendChild(logo);
 }
 
 let cachedVersion: string | null = null;
@@ -175,6 +183,7 @@ export async function showTitleScreen(): Promise<TitleResult> {
   const render = (build: (root: HTMLElement) => void) => {
     root.replaceChildren();
     buildHeader(root);
+    void playIntro().then(() => music.setState("title"));
     build(root);
     buildFootnote();
     buildSocialLinks();

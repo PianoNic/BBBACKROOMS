@@ -40,6 +40,12 @@ export function getSfxDestination(): GainNode | null {
   return sfxGain;
 }
 
+/** Returns the music destination gain — the soundtrack director's output bus. */
+export function getMusicDestination(): GainNode | null {
+  ensureCtx();
+  return musicGain;
+}
+
 async function loadFootsteps(): Promise<void> {
   if (footstepLoadStarted) return;
   footstepLoadStarted = true;

@@ -28,6 +28,7 @@ import type { ReviveBar } from "../ui/reviveBar";
 import type { WebcamMesh } from "../gameplay/webcam";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
 import { playSfx, playSfxNear } from "../core/audio";
+import { music } from "../core/music";
 import { showBanner } from "../ui/banner";
 import {
   showVictory, showGameOver, isEndgameVisible, clearEndgameOverlay,
@@ -104,6 +105,7 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
     phase_change: (p) => {
       if (p.phase === "escape") {
         d.portal.show();
+        music.setPhase("escape");
         playSfx(`${SND}/escape-phase.ogg`, 0.7);
         showBanner("ALL TASKS DONE — return to the atrium to extract", 6000);
       }
@@ -116,8 +118,14 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
       d.spectator.activate();
       showBanner("EXTRACTED — spectating teammates. Click to switch view.", 6000);
     },
-    game_won: (p) => showVictory(d.net, p.scoreboard, d.init.selfId),
-    game_lost: (p) => showGameOver(d.net, p.scoreboard, d.init.selfId),
+    game_won: (p) => {
+      music.stop();
+      showVictory(d.net, p.scoreboard, d.init.selfId);
+    },
+    game_lost: (p) => {
+      music.stop();
+      showGameOver(d.net, p.scoreboard, d.init.selfId);
+    },
     lobby_state: (p) => {
       // Server flipped us back to the waiting room (someone hit
       // "Back to lobby" on the victory screen). Reload — the
