@@ -118,6 +118,20 @@ PROP_SPECS: dict[str, PropSpec] = {
     "fridge":            PropSpec((2, 2), _WALL),
     # sofa: 1.8 x 0.85 → 4 x 2 (wall, faces room)
     "sofa":              PropSpec((4, 2), _WALL),
+    # aquarium: tank 1.3 x 0.45 on a stand → 3 x 1 (wall)
+    "aquarium":          PropSpec((3, 1), _WALL),
+    # water_dispenser: 0.4 x 0.4 → 1 x 1 (wall)
+    "water_dispenser":   PropSpec((1, 1), _WALL),
+    # trophy_case: 1.3 x 0.4 glass case → 3 x 1 (wall)
+    "trophy_case":       PropSpec((3, 1), _WALL),
+    # ball_rack: 0.9 x 0.45 frame → 2 x 1 (wall)
+    "ball_rack":         PropSpec((2, 1), _WALL),
+    # piano: upright, 1.6 x 0.7 → 4 x 2 (center)
+    "piano":             PropSpec((4, 2), _CENTER),
+    # skeleton: anatomy model on a stand → 2 x 2 (corner)
+    "skeleton":          PropSpec((2, 2), _CORNER),
+    # easel: tripod with canvas → 2 x 2 (corner)
+    "easel":             PropSpec((2, 2), _CORNER),
 
     # === Floor: no wall constraint, can land in walking lanes ===
     "chair":             PropSpec((1, 1), _FLOOR),
