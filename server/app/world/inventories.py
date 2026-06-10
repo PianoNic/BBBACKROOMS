@@ -54,6 +54,8 @@ INVENTORIES: dict[str, list[Slot]] = {
         Slot("microwave", count=(1, 2), on="counter"),  # always against a wall
         Slot("vending_machine", count=(2, 3), wall="side_b"),
         Slot("coffee_machine", count=(1, 1), wall="side_b"),
+        Slot("water_dispenser", count=(1, 1), wall="side_b"),
+        Slot("aquarium", count=(0, 1), wall="back"),
         # Big aisle_d so the cafeteria forms ONE row of tables, not stacked rows.
         Slot("cafeteria_table", count=(0, 99), pattern="grid_fill",
              aisle_w=2, aisle_d=20),
@@ -100,6 +102,11 @@ INVENTORIES: dict[str, list[Slot]] = {
         Slot("cupboard", count=(1, 2), wall="front"),
         Slot("bulletin_board", count=(0, 1), wall="front"),
         Slot("coat_rack", count=(0, 1), wall="front"),
+        # Specialty: biology skeleton, art easel, class aquarium, dispenser.
+        Slot("skeleton", count=(0, 1)),
+        Slot("easel", count=(0, 1)),
+        Slot("aquarium", count=(0, 1), wall="side_a"),
+        Slot("water_dispenser", count=(0, 1), wall="front"),
         # Decor / clutter.
         Slot("plant", count=(1, 3)),
         Slot("trash_can", count=(1, 1)),
@@ -134,6 +141,10 @@ INVENTORIES: dict[str, list[Slot]] = {
         # Printer on its own side table.
         Slot("side_table", count=(1, 1)),
         Slot("printer", count=(1, 1), on="side_table"),
+        # Specialty.
+        Slot("water_dispenser", count=(1, 1), wall="front"),
+        Slot("trophy_case", count=(0, 1), wall="front"),
+        Slot("aquarium", count=(0, 1), wall="side_a"),
         # Decor / clutter.
         Slot("plant", count=(2, 3)),
         Slot("trash_can", count=(1, 1)),
@@ -168,6 +179,9 @@ INVENTORIES: dict[str, list[Slot]] = {
         Slot("gym_mat", count=(2, 5)),
         Slot("bench", count=(1, 2), wall="side_a"),
         Slot("bench", count=(1, 2), wall="side_b"),
+        Slot("ball_rack", count=(1, 2), wall="side_a"),
+        Slot("trophy_case", count=(1, 1), wall="front"),
+        Slot("piano", count=(1, 1)),
         Slot("pylon", count=(3, 5)),
         Slot("closet", count=(1, 1), wall="front"),
         Slot("trash_can", count=(0, 1)),
