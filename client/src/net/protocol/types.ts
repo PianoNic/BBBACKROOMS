@@ -60,7 +60,9 @@ export type PropType =
   | "map"
   | "chalkboard"
   | "coat_rack"
-  | "microscope";
+  | "microscope"
+  | "aquarium" | "skeleton" | "piano" | "water_dispenser"
+  | "trophy_case" | "ball_rack" | "easel";
 
 export type Prop = {
   type: PropType; x: number; z: number; yaw: number; variant?: number;

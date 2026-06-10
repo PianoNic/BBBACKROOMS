@@ -9,6 +9,7 @@ import { ATMOSPHERE_BUILDERS } from "./propBuilders/atmosphere";
 import { CLASSROOM_FRONT_BUILDERS } from "./propBuilders/classroomFront";
 import { ROOM_BUILDERS } from "./propBuilders/rooms";
 import { SEATING_BUILDERS } from "./propBuilders/seating";
+import { SPECIALTY_BUILDERS } from "./propBuilders/specialty";
 import { STORAGE_BUILDERS } from "./propBuilders/storage";
 import { TOILET_BUILDERS } from "./propBuilders/toilet";
 import { UTILITY_BUILDERS } from "./propBuilders/utility";
@@ -20,6 +21,7 @@ export const EXTRA_BUILDERS: Record<string, Builder> = {
   ...CLASSROOM_FRONT_BUILDERS,
   ...ROOM_BUILDERS,
   ...SEATING_BUILDERS,
+  ...SPECIALTY_BUILDERS,
   ...STORAGE_BUILDERS,
   ...TOILET_BUILDERS,
   ...UTILITY_BUILDERS,
