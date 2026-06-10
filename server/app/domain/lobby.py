@@ -13,7 +13,8 @@ from app.world.teachers import TeacherState
 GAMES = (
     "slots", "dice", "coinflip",
     "teams_call", "teams_dm", "teams_file",
-    "moodle_course", "moodle_file",
+    "moodle_course", "moodle_file", "moodle_quiz",
+    "rpg_battle",
 )
 
 
@@ -53,6 +54,9 @@ class Laptop:
     # teams_*/moodle_*: per-laptop random state (options + correct answer).
     # Casino games (slots/dice/coinflip) leave this empty — they roll fresh.
     challenge: dict = field(default_factory=dict)
+    # rpg_battle: in-flight battle state per player id (HP values). Dropped
+    # when the player reopens the laptop, dies in battle, or wins.
+    battles: dict[str, dict] = field(default_factory=dict)
 
 
 @dataclass

@@ -14,6 +14,8 @@ import { TeamsDmApp } from "./teams/dm";
 import { TeamsFileApp } from "./teams/file";
 import { MoodleCourseApp } from "./moodle/course";
 import { MoodleFileApp } from "./moodle/file";
+import { MoodleQuizApp } from "./moodle/quiz";
+import { RpgBattleApp } from "./rpg/battle";
 import {
   buildBrandHeader, buildTitlebar, buildToolbar,
   chromeFor, isAppShell, shellClassFor,
@@ -98,6 +100,8 @@ export class LaptopOverlay {
     if (game === "teams_dm") return new TeamsDmApp(challenge, send);
     if (game === "teams_file") return new TeamsFileApp(challenge, send);
     if (game === "moodle_course") return new MoodleCourseApp(challenge, send);
+    if (game === "moodle_quiz") return new MoodleQuizApp(challenge, send);
+    if (game === "rpg_battle") return new RpgBattleApp(challenge, send);
     return new MoodleFileApp(challenge, send);
   }
 

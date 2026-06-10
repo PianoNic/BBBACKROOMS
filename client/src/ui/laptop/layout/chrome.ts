@@ -29,6 +29,13 @@ export function chromeFor(game: LaptopGame): ChromeSpec {
       brandLabel: "Moodle BBB",
     };
   }
+  if (game === "rpg_battle") {
+    return {
+      url: "https://games.bbbaden.ch/bbb-quest",
+      tabTitle: "BBB Quest",
+      brandLabel: "BBB Quest",
+    };
+  }
   return {
     url: "https://www.bbbaden.ch/online-casino",
     tabTitle: `BBB-Casino - ${game}`,
@@ -39,11 +46,15 @@ export function chromeFor(game: LaptopGame): ChromeSpec {
 export function shellClassFor(game: LaptopGame): string {
   if (game.startsWith("teams_")) return "shell-teams";
   if (game.startsWith("moodle_")) return "shell-moodle";
+  if (game === "rpg_battle") return "shell-rpg";
   return "shell-casino";
 }
 
 export function isAppShell(game: LaptopGame): boolean {
-  return game.startsWith("teams_") || game.startsWith("moodle_");
+  return (
+    game.startsWith("teams_") || game.startsWith("moodle_") ||
+    game === "rpg_battle"
+  );
 }
 
 export function buildTitlebar(title: string, onClose: () => void): HTMLDivElement {
