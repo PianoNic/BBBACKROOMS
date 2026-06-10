@@ -105,6 +105,15 @@ export function preloadSfx(url: string): void {
   loadSfx(url);
 }
 
+/** One-shot SFX attenuated by distance to the listener. Silent past
+ *  `maxDist`. Use for world events triggered by other players. */
+export function playSfxNear(
+  url: string, dist: number, base = 1, maxDist = 25,
+): void {
+  if (dist > maxDist) return;
+  playSfx(url, base * (1 - dist / maxDist));
+}
+
 /** Play a random footstep sound. Loads on first call. */
 export function playFootstep(volume = 1): void {
   const c = ensureCtx();
