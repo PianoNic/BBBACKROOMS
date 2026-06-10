@@ -15,8 +15,11 @@ import logging
 
 from app.db import accounts_repo
 from app.db.engine import db_available
+from app.domain.achievements import CATALOG as ACHIEVEMENT_CATALOG
+from app.domain.achievements import to_dto as achievement_dto
 from app.domain.lobby import Lobby
 from app.services._helpers import send_safe
+from app.services.achievements import evaluate_round
 from app.services.leveling import level_from_total
 from app.services.scoreboard import build_scoreboard, compute_rewards
 
@@ -55,6 +58,31 @@ async def _persist_rewards(lobby: Lobby, rewards: dict[str, dict]) -> None:
         })
 
 
+async def _apply_achievements(
+    lobby: Lobby, result: str, rewards: dict[str, dict], duration_ms: int,
+) -> None:
+    """Attach earned achievements to each player's reward block. Signed-in
+    players only see NEW unlocks and get their coin bonus credited once;
+    guests see everything they earned this round, unsaved and coinless."""
+    for p in lobby.conns.values():
+        r = rewards.get(p.id)
+        if r is None:
+            continue
+        earned = evaluate_round(lobby, result, p, duration_ms)
+        if p.account_id is not None and db_available():
+            try:
+                from app.db import achievements_repo
+                new_ids = await achievements_repo.unlock_new(p.account_id, earned)
+                bonus = sum(ACHIEVEMENT_CATALOG[aid].coins for aid in new_ids)
+                if bonus:
+                    await accounts_repo.apply_round_rewards(p.account_id, 0, bonus)
+                r["achievements"] = [achievement_dto(aid, True) for aid in new_ids]
+                continue
+            except Exception as exc:  # noqa: BLE001
+                log.warning("achievement persist failed for %s: %s", p.id, exc)
+        r["achievements"] = [achievement_dto(aid, False) for aid in earned]
+
+
 async def _send_each(lobby: Lobby, result: str, shared: dict) -> None:
     pkt_type = f"game_{result}"
     for p in lobby.conns.values():
@@ -77,6 +105,7 @@ async def broadcast_endgame(lobby: Lobby, result: str) -> None:
 
     rewards = compute_rewards(lobby, result)
     await _persist_rewards(lobby, rewards)
+    await _apply_achievements(lobby, result, rewards, shared["durationMs"])
     lobby.round_rewards = rewards
     lobby.rewards_applied = True
     await _send_each(lobby, result, shared)
