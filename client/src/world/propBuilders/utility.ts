@@ -8,14 +8,26 @@ import { Basic, M, type Builder } from "./_common";
 // click toggling).
 const buildFuseBox: Builder = () => {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.7, 0.15), M(0xd8d8c8));
-  body.position.set(0, 1.35, -0.075);
-  g.add(body);
-  // Recessed interior (darker) so when the door is open the cavity reads
-  // as inset, not flat. The actual lever meshes sit in front of this.
-  const cavity = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.60, 0.02), M(0x202024));
-  cavity.position.set(0, 1.35, -0.01);
-  g.add(cavity);
+  // Open frame (top/bottom/left/right slabs) around a dark back panel, so
+  // the box has a real recessed niche. The hinged door and the levers that
+  // live inside the niche are rendered by the FuseBoxes manager on the
+  // room-facing local -Z side.
+  const frameMat = M(0xd8d8c8);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.05, 0.15), frameMat);
+  top.position.set(0, 1.675, -0.075);
+  g.add(top);
+  const bottom = top.clone();
+  bottom.position.y = 1.025;
+  g.add(bottom);
+  const left = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.7, 0.15), frameMat);
+  left.position.set(-0.2575, 1.35, -0.075);
+  g.add(left);
+  const right = left.clone();
+  right.position.x = 0.2575;
+  g.add(right);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.60, 0.02), M(0x202024));
+  back.position.set(0, 1.35, -0.02);
+  g.add(back);
   return g;
 };
 
