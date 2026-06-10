@@ -105,6 +105,11 @@ export function buildScene(
   );
   preloadJumpscareImages((init.teachers ?? []).map((t) => `/teachers/${t.image}`));
   preloadSfx("/sounds/jumpscare/scream.wav");
+  for (const f of [
+    "door-open", "door-close", "locker-open", "lever", "fusebox-door",
+    "pickup", "task-done", "objective-done", "revive", "ping", "throw",
+    "chair-impact", "extract", "escape-phase", "win", "wrong",
+  ]) preloadSfx(`/sounds/actions/${f}.ogg`);
 
   const corpses = new Corpses();
   ctx.scene.add(corpses.group);

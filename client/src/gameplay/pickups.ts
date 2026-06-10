@@ -53,6 +53,11 @@ export class Pickups {
     return [...this.entries.values()].map((e) => ({ x: e.info.x, z: e.info.z }));
   }
 
+  getPosition(id: string): { x: number; z: number } | null {
+    const e = this.entries.get(id);
+    return e ? { x: e.info.x, z: e.info.z } : null;
+  }
+
   getInteractTargets(): InteractTarget[] {
     const out: InteractTarget[] = [];
     for (const e of this.entries.values()) {
