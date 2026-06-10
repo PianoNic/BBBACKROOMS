@@ -93,6 +93,12 @@ class PingPkt(BaseModel):
     z: float
 
 
+class VoiceNoisePkt(BaseModel):
+    """Client mic picked up speech — emits a noise at the server-known
+    player position (rate-limited server-side)."""
+    type: Literal["voice_noise"]
+
+
 class ReviveStartPkt(BaseModel):
     type: Literal["revive_start"]
     targetId: str
@@ -164,7 +170,7 @@ ClientPacket = Annotated[
         WebRTCSignalPkt, WebcamStatePkt,
         PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
         UseGogglesPkt, BackToLobbyPkt, LockerOpenPkt, DoorTogglePkt,
-        SetCosmeticPkt, BuyCosmeticPkt, PingPkt,
+        SetCosmeticPkt, BuyCosmeticPkt, PingPkt, VoiceNoisePkt,
     ],
     Field(discriminator="type"),
 ]

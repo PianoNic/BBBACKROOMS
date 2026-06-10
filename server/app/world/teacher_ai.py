@@ -83,9 +83,11 @@ def _pick_patrol_target(
 def _pick_target(
     t: TeacherState, player_positions: list[tuple[float, float]],
     hallways: list[Rect], rng: random.Random, doors: list[tuple[float, float]],
+    now: float,
 ) -> tuple[float, float]:
-    """Chase the nearest player inside the ability's chase radius; otherwise
-    keep the current patrol target until we arrive, then roll a fresh one."""
+    """Chase the nearest player inside the ability's chase radius; else
+    investigate a heard noise; otherwise keep the current patrol target
+    until we arrive, then roll a fresh one."""
     radius = ABILITY_CHASE_RADIUS.get(t.ability, CHASE_RADIUS)
     if player_positions:
         nearest = min(
@@ -94,6 +96,13 @@ def _pick_target(
         )
         if distance_squared_xz(nearest[0], nearest[1], t.x, t.z) <= radius * radius:
             return nearest
+    if t.noise_until > now:
+        if distance_squared_xz(
+            t.noise_x, t.noise_z, t.x, t.z,
+        ) < ARRIVE_DIST * ARRIVE_DIST:
+            t.noise_until = 0.0  # arrived — look around, then resume patrol
+        else:
+            return t.noise_x, t.noise_z
     arrived = distance_squared_xz(t.tx, t.tz, t.x, t.z) < ARRIVE_DIST * ARRIVE_DIST
     camping_door = _too_close_to_door(t.x, t.z, doors)
     if arrived or camping_door or (t.tx == t.x and t.tz == t.z):
@@ -159,7 +168,7 @@ def step_teacher(
 ) -> None:
     """One AI tick for a single teacher. Picks a target, then either walks
     straight at it (clear LOS) or follows a BFS path around walls."""
-    target = _pick_target(t, player_positions, hallways, rng, doors)
+    target = _pick_target(t, player_positions, hallways, rng, doors, now)
     t.tx, t.tz = target
     if line_of_sight(cells, t.x, t.z, target[0], target[1]):
         t.path = []

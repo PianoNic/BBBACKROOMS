@@ -14,6 +14,7 @@ import time as _time
 from app.domain.lobby import ChairProjectile, Lobby, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
+from app.services.noise import CHAIR_THROW_RADIUS, emit_noise
 from app.world.constants import CELL_SIZE
 from app.world.geom import within_radius, within_radius_xz
 
@@ -102,6 +103,8 @@ async def handle_throw(
         "x": me.x, "z": me.z,
         "vx": dir_x * THROW_SPEED, "vz": dir_z * THROW_SPEED,
     })
+    # A flying chair is the loudest thing in the school.
+    emit_noise(lobby, me.x, me.z, CHAIR_THROW_RADIUS)
 
 
 def _cell_blocks(cells: list[int], width: int, height: int, x: float, z: float) -> bool:
