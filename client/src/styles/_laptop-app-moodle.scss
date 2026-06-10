@@ -1,7 +1,9 @@
 @use "variables" as *;
 
 // =========================================================================
-// MOODLE (Moodle skin used by moodle_course / moodle_file laptop minigames)
+// MOODLE (Moodle skin used by moodle_* laptop minigames)
+// Mirrors moodle.bbbaden.ch: login splash, dashboard card grid, course
+// page with index sidebar + collapsible sections.
 // =========================================================================
 $moodle-red: #c61824;
 $moodle-red-2: #ca3120;
@@ -18,6 +20,97 @@ $moodle-border: #dee2e6;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   min-height: 540px;
 }
+
+// --- Login splash ---------------------------------------------------------
+
+.moodle-login {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  // Campus stand-in: blue sky + brick-pattern facade wedge.
+  background:
+    repeating-linear-gradient(
+      295deg,
+      rgba(214, 204, 182, 0.95) 0 14px,
+      rgba(124, 116, 100, 0.95) 14px 18px
+    ) left bottom / 58% 75% no-repeat,
+    linear-gradient(200deg, #2e7bd0 0%, #5ea4e8 55%, #a8cdf0 100%);
+
+  .moodle-login-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    width: 340px; padding: 28px 32px;
+    display: flex; flex-direction: column; align-items: stretch;
+  }
+
+  .moodle-login-logo {
+    height: 96px; width: auto; object-fit: contain;
+    align-self: center; margin-bottom: 18px;
+  }
+
+  .moodle-login-alert {
+    background: #f8d7da; color: #842029;
+    border-radius: 4px;
+    padding: 10px 14px; margin-bottom: 16px;
+    font-size: 13px; text-align: center;
+  }
+
+  .moodle-login-input {
+    border: 1px solid #8f959b; border-radius: 6px;
+    padding: 11px 13px; margin-bottom: 12px;
+    font-size: 15px; color: $moodle-text;
+    background: #fff; outline: none;
+    &::placeholder { color: $moodle-muted; }
+    &.pass { border: 2px solid $moodle-red-2; }
+  }
+
+  .moodle-login-btn {
+    align-self: flex-start;
+    background: #b5292f; color: #fff;
+    border: none; border-radius: 6px;
+    padding: 11px 22px; margin-top: 2px;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    &:hover { background: $moodle-red; }
+  }
+
+  .moodle-login-forgot {
+    color: $moodle-red; font-size: 14px;
+    margin: 16px 0 14px; cursor: pointer;
+    &:hover { text-decoration: underline; }
+  }
+
+  .moodle-login-foot {
+    border-top: 1px solid $moodle-border;
+    padding-top: 14px;
+    display: flex; align-items: center; gap: 14px;
+
+    .moodle-login-lang {
+      color: $moodle-red; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 4px;
+      cursor: pointer;
+    }
+    .moodle-login-cookie {
+      background: #e9ecef; color: #343a40;
+      border: none; border-radius: 4px;
+      padding: 8px 12px; font-size: 13px;
+      cursor: pointer;
+      &:hover { background: #dde1e5; }
+    }
+  }
+
+  .moodle-login-help {
+    position: absolute; right: 18px; bottom: 16px;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: #e9ecef; color: #343a40;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+}
+
+// --- Top navbar -----------------------------------------------------------
 
 .moodle-nav {
   background: #fff;
@@ -82,6 +175,7 @@ $moodle-border: #dee2e6;
   color: #604c0e; padding: 9px 22px;
   display: flex; align-items: center; gap: 8px;
   font-size: 14px; font-weight: 500;
+  flex-shrink: 0;
   .task-pin {
     display: inline-flex; align-items: center; line-height: 0;
     color: #604c0e;
@@ -89,7 +183,7 @@ $moodle-border: #dee2e6;
 }
 
 .moodle-main {
-  flex: 1 1 auto; padding: 32px 48px;
+  flex: 1 1 auto; padding: 28px 44px;
   overflow-y: auto;
   background: #fff;
   .moodle-h1 {
@@ -99,21 +193,19 @@ $moodle-border: #dee2e6;
   .moodle-h2 {
     font-size: 24px; font-weight: 700; margin: 28px 0 18px;
   }
-  .moodle-meta { color: $moodle-muted; font-size: 13px; margin: 0 0 18px; }
-  .moodle-crumbs {
-    font-size: 12px; color: $moodle-muted; margin-bottom: 6px;
-    .crumb-sep { margin: 0 6px; }
-  }
+  .moodle-h2-section { margin: 22px 0 12px; }
 }
 
+// --- Dashboard ------------------------------------------------------------
+
 .moodle-greet {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-bottom: 20px;
   .moodle-wave { font-size: 28px; }
 }
 
 .moodle-search-row {
-  display: flex; max-width: 420px; margin: 0 auto 24px;
+  display: flex; max-width: 420px; margin: 0 auto 8px;
   height: 44px;
   .moodle-search-input {
     flex: 1; min-width: 0;
@@ -138,65 +230,173 @@ $moodle-border: #dee2e6;
 }
 
 .course-grid {
-  display: flex; flex-direction: column;
-  gap: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+
   .course-card {
     background: #fff;
     border: 1px solid $moodle-border;
-    border-radius: 4px;
-    margin-bottom: 8px;
+    border-radius: 6px;
     overflow: hidden; cursor: pointer;
     transition: box-shadow 120ms, border-color 120ms;
     &:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
       border-color: #c8ccd1;
     }
     &.ok { border-color: #357a32; background: #f1f9ef; }
     &.bad { border-color: $moodle-red; background: #fdf1f3; }
 
-    .course-body { padding: 16px 20px; }
+    .course-banner { height: 92px; }
+
+    .course-body {
+      padding: 12px 16px 16px;
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 8px;
+    }
+    .course-id-badge {
+      background: $moodle-red; color: #fff;
+      border-radius: 10px;
+      padding: 2px 9px;
+      font-size: 11px; font-weight: 700;
+    }
     .coursename {
-      font-weight: 600; font-size: 15px;
-      color: $moodle-red;
+      font-weight: 700; font-size: 15px;
+      color: $moodle-text;
       letter-spacing: 0.2px;
     }
-    .course-summary {
-      color: $moodle-text; font-size: 14px; margin-top: 6px;
+    .course-go {
+      background: $moodle-red; color: #fff;
+      border: none; border-radius: 4px;
+      padding: 8px 14px;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      &:hover { background: $moodle-red-2; }
     }
   }
 }
 
-.moodle-section {
-  background: #fff; border: 1px solid $moodle-border; border-radius: 6px;
-  margin-top: 10px;
-  .moodle-section-title {
-    padding: 12px 16px; font-weight: 700; font-size: 14px;
-    border-bottom: 1px solid $moodle-border; background: #f8f9fa;
+// --- Course page (sidebar + sections) --------------------------------------
+
+.moodle-course-body {
+  flex: 1 1 auto;
+  display: flex; align-items: stretch;
+  min-height: 0;
+  background: #fff;
+}
+
+.moodle-sidebar {
+  width: 220px; flex-shrink: 0;
+  border-right: 1px solid $moodle-border;
+  padding: 12px 14px;
+  overflow-y: auto;
+  font-size: 12px;
+
+  .m-side-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+    .m-side-btn {
+      color: #495057; cursor: pointer;
+      display: inline-flex; align-items: center;
+    }
+    .m-side-kebab { font-size: 16px; font-weight: 700; }
+  }
+
+  .m-side-sec {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 700;
+    margin: 10px 0 6px;
+    .m-side-chevron { display: inline-flex; color: $moodle-text; }
+  }
+
+  .m-side-item {
+    color: $moodle-text;
+    padding: 5px 0 5px 22px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer;
+    &:hover { color: $moodle-red; }
   }
 }
 
-.moodle-resource-list .resource-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 16px; cursor: pointer;
-  border-bottom: 1px solid $moodle-border;
-  font-size: 13px;
-  &:last-child { border-bottom: 0; }
-  &:hover { background: #f8f9fa; }
-  &.ok { background: #e7f5e3; }
-  &.bad { background: #fde7e9; }
-  .resource-name { flex: 1; font-weight: 500; color: $moodle-red; }
-  .resource-meta { color: $moodle-muted; font-size: 11px; }
-  .moodle-file-badge {
-    width: 28px; height: 28px; border-radius: 3px; color: #fff;
-    font-weight: 700; font-size: 10px;
-    display: inline-flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+.moodle-course-main {
+  .moodle-tabs {
+    display: flex; gap: 26px;
+    border-bottom: 1px solid $moodle-border;
+    margin: 18px 0 22px;
+
+    .moodle-tab {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 0 2px 12px;
+      font-size: 15px; color: $moodle-text;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      &:hover { color: $moodle-red; }
+      &.active {
+        font-weight: 600;
+        border-bottom-color: $moodle-red;
+      }
+    }
+  }
+}
+
+.m-section-card {
+  border: 1px solid $moodle-border;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+
+  .m-sec-head {
+    display: flex; align-items: center; gap: 14px;
+    .m-sec-chevron {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: #fbe9ea; color: $moodle-red;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .m-sec-title { font-size: 19px; font-weight: 700; }
+    .m-collapse-all {
+      margin-left: auto;
+      color: $moodle-red; font-size: 13px;
+      cursor: pointer;
+      &:hover { text-decoration: underline; }
+    }
+  }
+}
+
+.m-file-list {
+  margin-top: 8px;
+
+  .m-file-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 6px 13px 48px;
+    border-bottom: 1px solid #eceef0;
+    font-size: 14px;
+    cursor: pointer;
+    &:last-child { border-bottom: 0; }
+    &:hover { background: #f8f9fa; }
+    &.ok { background: #e7f5e3; }
+    &.bad { background: #fde7e9; }
+
+    .m-doc-icon {
+      width: 26px; height: 30px; flex-shrink: 0;
+      border: 2px solid; border-radius: 3px;
+      font-size: 8px; font-weight: 700;
+      display: inline-flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 2px;
+      background: #fff;
+    }
+    .m-file-name {
+      color: $moodle-red; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .m-file-ext { color: $moodle-muted; font-size: 12px; }
   }
 }
 
 .moodle-app .challenge-status {
   padding: 12px 0; font-size: 13px; text-align: center;
   color: $moodle-muted;
+  flex-shrink: 0;
   &.win  { color: #357a32; font-weight: 700; }
   &.lose { color: $moodle-red; font-weight: 700; }
 }
