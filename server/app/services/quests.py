@@ -17,17 +17,33 @@ async def try_complete_spots(
     for obj in lobby.world.objectives:
         if obj.done or obj.interact != require_interact or obj.kind == "casino":
             continue
+        # Co-op objectives need `min_players` living players inside the
+        # radius at once. Clamped to the current active player count so a
+        # shrinking lobby can never soft-lock the run.
+        required = obj.min_players
+        active: list[PlayerConn] = []
+        if required > 1:
+            active = [
+                q for pid, q in lobby.conns.items()
+                if pid not in lobby.dead and pid not in lobby.extracted
+            ]
+            required = max(1, min(required, len(active)))
         changed = False
         for idx, s in enumerate(obj.spots):
             if s.done:
                 continue
-            if within_radius(p, s, obj.radius):
-                s.done = True
-                changed = True
-                p.tasks_done += 1
-                await broadcast(lobby, {
-                    "type": "spot_done", "id": obj.id, "spot": idx, "by": p.id,
-                })
+            if not within_radius(p, s, obj.radius):
+                continue
+            if required > 1:
+                near = sum(1 for q in active if within_radius(q, s, obj.radius))
+                if near < required:
+                    continue
+            s.done = True
+            changed = True
+            p.tasks_done += 1
+            await broadcast(lobby, {
+                "type": "spot_done", "id": obj.id, "spot": idx, "by": p.id,
+            })
         if changed and all(s.done for s in obj.spots):
             obj.done = True
             await broadcast(lobby, {"type": "objective_done", "id": obj.id, "by": p.id})

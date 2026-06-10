@@ -61,6 +61,9 @@ class Objective(BaseModel):
     spots: list[Spot]
     radius: float = 2.0
     done: bool = False
+    # Co-op: how many living players must stand inside the radius for an
+    # interact to count. 1 = normal solo objective.
+    min_players: int = 1
 
 
 class ExtractionZone(BaseModel):
