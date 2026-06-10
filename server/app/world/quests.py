@@ -14,13 +14,21 @@ FIND_COUNT = 4
 
 # Per-prop interact-objective config. Each tuple defines a possible quest:
 # (prop_type, required_item, template, target_count).
-INTERACT_QUESTS: list[tuple[str, ItemType, str, int]] = [
-    ("whiteboard",     "sponge",        "Wipe {n} whiteboards",              3),
-    ("painting",       "eye",           "Inspect {n} paintings",             3),
-    ("plant",          "watering_can",  "Water {n} plants",                  3),
-    ("bulletin_board", "papers",        "Pin posters on {n} bulletin boards", 2),
-    ("fuse_box",       "key",           "Reset {n} fuse boxes",              2),
-    ("server_rack",    "hdd",           "Swap HDD in {n} server racks",      4),
+INTERACT_QUESTS: list[tuple[str, ItemType | None, str, int]] = [
+    ("whiteboard",      "sponge",       "Wipe {n} whiteboards",              3),
+    ("painting",        "eye",          "Inspect {n} paintings",             3),
+    ("plant",           "watering_can", "Water {n} plants",                  3),
+    ("bulletin_board",  "papers",       "Pin posters on {n} bulletin boards", 2),
+    ("fuse_box",        "key",          "Reset {n} fuse boxes",              2),
+    ("server_rack",     "hdd",          "Swap HDD in {n} server racks",      4),
+    ("aquarium",        None,           "Feed the fish in {n} aquariums",    2),
+    ("skeleton",        "eye",          "Inspect {n} anatomy skeletons",     2),
+    ("piano",           None,           "Play {n} pianos",                   1),
+    ("coffee_machine",  None,           "Brew coffee at {n} machines",       2),
+    ("sink",            None,           "Wash your hands at {n} sinks",      3),
+    ("printer",         "papers",       "Refill paper in {n} printers",      1),
+    ("water_dispenser", None,           "Refill bottles at {n} dispensers",  2),
+    ("trophy_case",     "eye",          "Polish {n} trophy cases",           1),
 ]
 
 # Teamwork quests: the spot only completes while `min_players` living
@@ -33,7 +41,33 @@ COOP_QUESTS: list[tuple[str, str, int, int]] = [
     ("vending_machine",  "Tilt {n} vending machines — 2 players together",  2, 2),
     ("bookshelf",        "Search {n} tall bookshelves — 2 players together", 2, 2),
     ("fridge",           "Push {n} fridges aside — 2 players together",     2, 2),
+    ("gym_mat",          "Stack {n} gym mats — 2 players together",         2, 2),
 ]
+
+# Used instead of the {n} template when a quest ends up with a single spot
+# (world had fewer matching props than the quest wanted).
+SINGULAR_TEXTS: dict[str, str] = {
+    "whiteboard": "Wipe the whiteboard",
+    "painting": "Inspect the painting",
+    "plant": "Water the plant",
+    "bulletin_board": "Pin a poster on the bulletin board",
+    "fuse_box": "Reset the fuse box",
+    "server_rack": "Swap HDD in the server rack",
+    "aquarium": "Feed the fish in the aquarium",
+    "skeleton": "Inspect the anatomy skeleton",
+    "piano": "Play the piano",
+    "coffee_machine": "Brew a coffee",
+    "sink": "Wash your hands at the sink",
+    "printer": "Refill paper in the printer",
+    "water_dispenser": "Refill your bottle at the dispenser",
+    "trophy_case": "Polish the trophy case",
+    "cafeteria_table": "Flip the cafeteria table — 2 players together",
+    "sofa": "Move the heavy sofa — 2 players together",
+    "vending_machine": "Tilt the vending machine — 2 players together",
+    "bookshelf": "Search the tall bookshelf — 2 players together",
+    "fridge": "Push the fridge aside — 2 players together",
+    "gym_mat": "Carry the gym mat — 2 players together",
+}
 
 
 def _spot(x: float, z: float, yaw: float = 0.0) -> Spot:
@@ -50,12 +84,16 @@ def _front_spot(p: Prop, dist: float = 0.9) -> Spot:
     Floor props (plants) get a zero offset — the marker hovers directly
     above the prop. The UI anchor is set to the prop's own world position
     at display height so the [E] prompt overlays the prop itself."""
-    # Plants and cafeteria tables are floor/center props; the marker should
-    # hover on top of them, not 0.9m off to one side along their yaw.
-    if p.type in ("plant", "cafeteria_table"):
+    # Floor/center props: the marker hovers on top of the prop itself,
+    # not 0.9m off to one side along its (arbitrary) yaw.
+    _FLOOR_ANCHOR_Y = {
+        "plant": 1.4, "cafeteria_table": 1.3, "gym_mat": 0.8,
+        "piano": 1.5, "skeleton": 1.9, "easel": 1.5,
+    }
+    if p.type in _FLOOR_ANCHOR_Y:
         return Spot(
             x=p.x, z=p.z, yaw=p.yaw, done=False,
-            anchor_x=p.x, anchor_y=1.4 if p.type == "plant" else 1.3, anchor_z=p.z,
+            anchor_x=p.x, anchor_y=_FLOOR_ANCHOR_Y[p.type], anchor_z=p.z,
         )
     # Almost every wall-mounted prop has its visible front on local -Z
     # (the project's wall-prop convention — wall_yaw rotates local -Z
@@ -75,6 +113,8 @@ def _front_spot(p: Prop, dist: float = 0.9) -> Spot:
         1.95 if p.type == "bulletin_board"
         else 1.7 if p.type == "painting"
         else 1.4 if p.type == "fuse_box"
+        else 1.2 if p.type in ("sink", "water_dispenser", "coffee_machine", "printer")
+        else 1.5 if p.type in ("aquarium", "trophy_case")
         else 1.6
     )
     return Spot(
@@ -124,9 +164,13 @@ def _interact_objective(
         for p in chosen:
             p.variant = 1
     spots = [_front_spot(p) for p in chosen]
+    if len(spots) == 1 and prop_type in SINGULAR_TEXTS:
+        quest_text = SINGULAR_TEXTS[prop_type]
+    else:
+        quest_text = text.format(n=len(spots))
     return Objective(
         id=secrets.token_hex(3),
-        text=text.format(n=len(spots)),
+        text=quest_text,
         interact=True,
         item=item,
         spots=spots,
