@@ -90,6 +90,7 @@ INVENTORIES: dict[str, list[Slot]] = {
         Slot("bookshelf", count=(1, 2), wall="side_b"),
         Slot("coat_rack", count=(1, 2), wall="side_a"),
         Slot("coat_rack", count=(1, 2), wall="side_b"),
+        Slot("closet", count=(0, 2), wall="side_b"),
         Slot("radiator", count=(1, 2), wall="side_a"),
         Slot("radiator", count=(1, 2), wall="side_b"),
         # Back wall: more paintings, a bulletin, swiss flag, maybe a map.

@@ -8,6 +8,7 @@ import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
 import { music } from "./music";
+import type { Hideouts } from "../gameplay/hideouts";
 import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
 import type { StaminaBar } from "../ui/stamina";
@@ -40,11 +41,12 @@ export type GameDeps = {
   stats: Stats;
   quests: Quests;
   pings: Pings;
+  hideouts: Hideouts;
   stamina: StaminaBar;
   interactPrompt: InteractPrompt;
   portal: ExtractionPortal;
   spectator: Spectator;
-  state: { extracted: boolean };
+  state: { extracted: boolean; hidden: boolean };
   laptops: Laptops;
   teachers: Teachers;
   teacherEffects: TeacherEffects;
@@ -94,7 +96,7 @@ export function runGameLoop(d: GameDeps): void {
     elapsed += dt;
 
     setCarryingChair(d.chairs.isHoldingChair());
-    if (!d.state.extracted) d.player.update(dt);
+    if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
     d.lights.update(elapsed, d.player.position.x, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
@@ -121,6 +123,7 @@ export function runGameLoop(d: GameDeps): void {
         ...d.doors.getInteractTargets(),
         ...d.toiletStallDoors.getInteractTargets(),
         ...d.fuseBoxes.getInteractTargets(),
+        ...d.hideouts.getInteractTargets(),
         ...d.corpses.getInteractTargets(d.inventory.hasMedkit()),
       ]);
     }
@@ -155,7 +158,7 @@ export function runGameLoop(d: GameDeps): void {
     }
 
     sendAcc += dt;
-    if (!d.state.extracted && sendAcc >= sendInterval) {
+    if (!d.state.extracted && !d.state.hidden && sendAcc >= sendInterval) {
       sendAcc = 0;
       const { x, z } = d.player.position;
       const yaw = d.player.yaw;
