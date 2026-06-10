@@ -65,44 +65,88 @@ export async function makeAvatarMaterials(
 export function buildHat(key: string): THREE.Object3D | null {
   const group = new THREE.Group();
   const GOLD = 0xffd24a, DARK = 0x222222, PARTY = 0xff5fa2;
+  const add = (
+    geom: THREE.BufferGeometry, color: number, y: number,
+    opts: { basic?: boolean; double?: boolean } = {},
+  ): THREE.Mesh => {
+    const mat = opts.basic
+      ? new THREE.MeshBasicMaterial({ color })
+      : new THREE.MeshLambertMaterial({
+        color, side: opts.double ? THREE.DoubleSide : THREE.FrontSide,
+      });
+    const m = new THREE.Mesh(geom, mat);
+    m.position.y = y;
+    group.add(m);
+    return m;
+  };
+
   if (key === "cone") {
-    const m = new THREE.Mesh(
-      new THREE.ConeGeometry(0.26, 0.5, 16),
-      new THREE.MeshLambertMaterial({ color: PARTY }),
-    );
-    m.position.y = 1.12; group.add(m);
+    add(new THREE.ConeGeometry(0.26, 0.5, 16), PARTY, 1.12);
   } else if (key === "halo") {
-    const m = new THREE.Mesh(
-      new THREE.TorusGeometry(0.22, 0.045, 8, 24),
-      new THREE.MeshBasicMaterial({ color: GOLD }),
+    const m = add(
+      new THREE.TorusGeometry(0.22, 0.045, 8, 24), GOLD, 1.18, { basic: true },
     );
-    m.rotation.x = Math.PI / 2; m.position.y = 1.18; group.add(m);
+    m.rotation.x = Math.PI / 2;
   } else if (key === "gradcap") {
-    const board = new THREE.Mesh(
-      new THREE.BoxGeometry(0.55, 0.05, 0.55),
-      new THREE.MeshLambertMaterial({ color: DARK }),
-    );
-    board.position.y = 0.95; group.add(board);
-    const tassel = new THREE.Mesh(
-      new THREE.SphereGeometry(0.04, 8, 8),
-      new THREE.MeshLambertMaterial({ color: GOLD }),
-    );
-    tassel.position.set(0.22, 0.9, 0); group.add(tassel);
+    add(new THREE.BoxGeometry(0.55, 0.05, 0.55), DARK, 0.95);
+    const tassel = add(new THREE.SphereGeometry(0.04, 8, 8), GOLD, 0.9);
+    tassel.position.x = 0.22;
   } else if (key === "crown") {
-    const band = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.25, 0.25, 0.14, 16, 1, true),
-      new THREE.MeshLambertMaterial({ color: GOLD, side: THREE.DoubleSide }),
+    add(
+      new THREE.CylinderGeometry(0.25, 0.25, 0.14, 16, 1, true), GOLD, 0.98,
+      { double: true },
     );
-    band.position.y = 0.98; group.add(band);
     for (let i = 0; i < 4; i++) {
-      const spike = new THREE.Mesh(
-        new THREE.ConeGeometry(0.05, 0.12, 6),
-        new THREE.MeshLambertMaterial({ color: GOLD }),
-      );
+      const spike = add(new THREE.ConeGeometry(0.05, 0.12, 6), GOLD, 1.08);
       const a = (i / 4) * Math.PI * 2;
-      spike.position.set(Math.cos(a) * 0.19, 1.08, Math.sin(a) * 0.19);
-      group.add(spike);
+      spike.position.x = Math.cos(a) * 0.19;
+      spike.position.z = Math.sin(a) * 0.19;
     }
+  } else if (key === "beret") {
+    const dome = add(new THREE.SphereGeometry(0.3, 16, 12), 0xc0392b, 0.92);
+    dome.scale.y = 0.35;
+    dome.position.x = 0.04;
+    add(new THREE.SphereGeometry(0.04, 8, 8), 0x8e2330, 1.04).position.x = 0.04;
+  } else if (key === "propeller") {
+    add(new THREE.CylinderGeometry(0.24, 0.26, 0.12, 16), 0xe74c3c, 0.93);
+    add(new THREE.CylinderGeometry(0.02, 0.02, 0.12, 8), DARK, 1.04);
+    add(new THREE.BoxGeometry(0.46, 0.02, 0.07), 0x3498db, 1.11);
+    add(new THREE.BoxGeometry(0.07, 0.02, 0.46), 0xf1c40f, 1.11);
+  } else if (key === "viking") {
+    add(
+      new THREE.CylinderGeometry(0.27, 0.27, 0.14, 16, 1, true), 0x7d7d85, 0.95,
+      { double: true },
+    );
+    for (const side of [-1, 1]) {
+      const horn = add(new THREE.ConeGeometry(0.07, 0.28, 10), 0xf3e9d2, 1.05);
+      horn.position.x = side * 0.29;
+      horn.rotation.z = -side * 0.85;
+    }
+  } else if (key === "sombrero") {
+    add(new THREE.CylinderGeometry(0.45, 0.45, 0.03, 20), 0xd8a24a, 0.92);
+    add(new THREE.ConeGeometry(0.2, 0.3, 16), 0xd8a24a, 1.08);
+    add(new THREE.CylinderGeometry(0.205, 0.205, 0.06, 16), 0xc0392b, 0.97);
+  } else if (key === "headset") {
+    // Half-torus band over the head, earcups on the cube's upper sides.
+    add(new THREE.TorusGeometry(0.34, 0.04, 8, 24, Math.PI), DARK, 0.5);
+    for (const side of [-1, 1]) {
+      const cup = add(
+        new THREE.CylinderGeometry(0.1, 0.1, 0.07, 12), DARK, 0.5,
+      );
+      cup.position.x = side * 0.34;
+      cup.rotation.z = Math.PI / 2;
+    }
+  } else if (key === "tophat") {
+    add(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 20), 0x161616, 0.92);
+    add(new THREE.CylinderGeometry(0.22, 0.22, 0.4, 16), 0x161616, 1.13);
+    add(new THREE.CylinderGeometry(0.225, 0.225, 0.07, 16), 0x8e2330, 0.99);
+  } else if (key === "antenna") {
+    add(new THREE.CylinderGeometry(0.018, 0.018, 0.32, 8), 0x444444, 1.0);
+    add(new THREE.SphereGeometry(0.07, 10, 10), 0x6bff5a, 1.18, { basic: true });
+  } else if (key === "wizard") {
+    add(new THREE.CylinderGeometry(0.36, 0.36, 0.03, 20), 0x5b2d91, 0.92);
+    add(new THREE.ConeGeometry(0.24, 0.65, 16), 0x5b2d91, 1.27);
+    add(new THREE.CylinderGeometry(0.245, 0.245, 0.06, 16), 0xd4a017, 0.97);
   } else {
     return null;
   }
