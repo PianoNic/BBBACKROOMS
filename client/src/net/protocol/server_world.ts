@@ -34,6 +34,15 @@ export type PlayerScore = {
 
 /** The viewing player's own XP/coins/level result for the round. Drives the
  *  level-up animation. `saved` is false for guests (shown but not persisted). */
+export type AchievementUnlocked = {
+  id: string;
+  name: string;
+  description: string;
+  coins: number;
+  icon: string;
+  saved: boolean;
+};
+
 export type SelfRewards = {
   xpEarned: number;
   coinsEarned: number;
@@ -43,6 +52,7 @@ export type SelfRewards = {
   xpForNextLevel: number;
   leveledUp: boolean;
   saved: boolean;
+  achievements?: AchievementUnlocked[];
 };
 
 /** End-of-round stats summary, attached to game_won/game_lost (and to

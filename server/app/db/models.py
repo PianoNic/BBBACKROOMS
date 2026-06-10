@@ -71,4 +71,14 @@ class CosmeticEquipped(BaseModel):
         primary_key = peewee.CompositeKey("account", "category")
 
 
-ALL_MODELS = [Account, Profile, CosmeticOwnership, CosmeticEquipped]
+class AchievementUnlock(BaseModel):
+    account = peewee.ForeignKeyField(Account, backref="achievements", on_delete="CASCADE")
+    achievement_id = peewee.CharField()
+    unlocked_at = peewee.DateTimeField(default=_utcnow)
+
+    class Meta:
+        table_name = "achievement_unlock"
+        primary_key = peewee.CompositeKey("account", "achievement_id")
+
+
+ALL_MODELS = [Account, Profile, CosmeticOwnership, CosmeticEquipped, AchievementUnlock]

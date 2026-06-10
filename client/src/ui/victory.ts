@@ -54,6 +54,32 @@ function buildRewards(r: SelfRewards): HTMLElement {
   gains.append(xpLine, coinLine);
 
   wrap.append(level, bar, gains);
+  if (r.achievements?.length) {
+    const achList = document.createElement("div");
+    achList.className = "ach-list";
+    for (const a of r.achievements) {
+      const card = document.createElement("div");
+      card.className = "ach-card";
+      const icon = document.createElement("span");
+      icon.className = "ach-icon";
+      icon.textContent = a.icon;
+      const text = document.createElement("div");
+      text.className = "ach-text";
+      const name = document.createElement("div");
+      name.className = "ach-name";
+      name.textContent = a.name;
+      const desc = document.createElement("div");
+      desc.className = "ach-desc";
+      desc.textContent = a.description;
+      text.append(name, desc);
+      const coins = document.createElement("span");
+      coins.className = "ach-coins";
+      coins.textContent = a.saved ? `+${a.coins}` : "—";
+      card.append(icon, text, coins);
+      achList.appendChild(card);
+    }
+    wrap.appendChild(achList);
+  }
   if (!r.saved) {
     const note = document.createElement("div");
     note.className = "guest-note";
