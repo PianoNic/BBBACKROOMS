@@ -109,7 +109,7 @@ export function runGameLoop(d: GameDeps): void {
     } else {
       d.stamina.update(d.player.stamina);
       d.interactPrompt.update(d.ctx.camera, d.player.position, [
-        ...d.quests.getInteractTargets(),
+        ...d.quests.getInteractTargets(d.remotes.positions()),
         ...d.laptops.getInteractTargets(),
         ...d.chairs.getInteractTargets(),
         ...d.pickups.getInteractTargets(),

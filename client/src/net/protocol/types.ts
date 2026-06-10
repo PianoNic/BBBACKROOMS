@@ -99,6 +99,8 @@ export type Objective = {
   spots: Spot[];
   radius: number;
   done: boolean;
+  /** Co-op: players that must stand at the spot together (default 1). */
+  min_players?: number;
 };
 
 export type CosmeticCategory = "body" | "facePattern" | "hat" | "title";
