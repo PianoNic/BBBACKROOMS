@@ -23,6 +23,18 @@ INTERACT_QUESTS: list[tuple[str, ItemType, str, int]] = [
     ("server_rack",    "hdd",           "Swap HDD in {n} server racks",      4),
 ]
 
+# Teamwork quests: the spot only completes while `min_players` living
+# players stand inside its radius together (the server clamps the
+# requirement to the active player count, so small lobbies stay winnable).
+# No item → the client renders the "look here" arrow marker.
+COOP_QUESTS: list[tuple[str, str, int, int]] = [
+    ("cafeteria_table",  "Flip {n} cafeteria tables — 2 players together",  2, 2),
+    ("sofa",             "Move {n} heavy sofas — 2 players together",       2, 2),
+    ("vending_machine",  "Tilt {n} vending machines — 2 players together",  2, 2),
+    ("bookshelf",        "Search {n} tall bookshelves — 2 players together", 2, 2),
+    ("fridge",           "Push {n} fridges aside — 2 players together",     2, 2),
+]
+
 
 def _spot(x: float, z: float, yaw: float = 0.0) -> Spot:
     return Spot(x=x, z=z, yaw=yaw, done=False)
@@ -38,12 +50,12 @@ def _front_spot(p: Prop, dist: float = 0.9) -> Spot:
     Floor props (plants) get a zero offset — the marker hovers directly
     above the prop. The UI anchor is set to the prop's own world position
     at display height so the [E] prompt overlays the prop itself."""
-    # Plants are floor props; the watering can should sit on top of them,
-    # not 0.9m off to one side along the prop's arbitrary yaw.
-    if p.type == "plant":
+    # Plants and cafeteria tables are floor/center props; the marker should
+    # hover on top of them, not 0.9m off to one side along their yaw.
+    if p.type in ("plant", "cafeteria_table"):
         return Spot(
             x=p.x, z=p.z, yaw=p.yaw, done=False,
-            anchor_x=p.x, anchor_y=1.4, anchor_z=p.z,
+            anchor_x=p.x, anchor_y=1.4 if p.type == "plant" else 1.3, anchor_z=p.z,
         )
     # Almost every wall-mounted prop has its visible front on local -Z
     # (the project's wall-prop convention — wall_yaw rotates local -Z
@@ -98,7 +110,8 @@ def _find_objectives(
 
 
 def _interact_objective(
-    props: list[Prop], prop_type: str, item: ItemType, text: str, count: int, rng: random.Random
+    props: list[Prop], prop_type: str, item: ItemType | None, text: str,
+    count: int, rng: random.Random, min_players: int = 1,
 ) -> Objective | None:
     matching = [p for p in props if p.type == prop_type]
     if not matching:
@@ -118,6 +131,7 @@ def _interact_objective(
         item=item,
         spots=spots,
         radius=4.5,
+        min_players=min_players,
     )
 
 
@@ -144,10 +158,13 @@ def build_objectives(
     """Generate up to `objective_count` non-casino objectives. The casino
     laptop quest is always added on top (it scales with the laptops the
     generator placed, separate from the admin slider)."""
-    # Split: half-ish find, the rest interact. Both pools cap at their own
-    # natural size — asking for more objectives than exist just yields all.
-    find_n = max(1, objective_count // 2)
-    interact_n = max(0, objective_count - find_n)
+    # Split: a co-op share first (~a third, so at least 20% of the roster
+    # is teamwork), then half-ish find, the rest solo interact. All pools
+    # cap at their own natural size.
+    coop_n = max(1, objective_count // 3)
+    solo_n = max(1, objective_count - coop_n)
+    find_n = max(1, solo_n // 2)
+    interact_n = max(0, solo_n - find_n)
 
     objectives: list[Objective] = list(_find_objectives(layout, rng, find_n))
     interact_pool = list(INTERACT_QUESTS)
@@ -157,6 +174,19 @@ def build_objectives(
         if added >= interact_n:
             break
         obj = _interact_objective(props, prop_type, item, template, count, rng)
+        if obj:
+            objectives.append(obj)
+            added += 1
+
+    coop_pool = list(COOP_QUESTS)
+    rng.shuffle(coop_pool)
+    added = 0
+    for prop_type, template, count, min_players in coop_pool:
+        if added >= coop_n:
+            break
+        obj = _interact_objective(
+            props, prop_type, None, template, count, rng, min_players=min_players,
+        )
         if obj:
             objectives.append(obj)
             added += 1
