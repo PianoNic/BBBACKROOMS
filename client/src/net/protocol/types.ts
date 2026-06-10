@@ -144,7 +144,8 @@ export type RosterEntry = {
 export type LaptopGame =
   | "slots" | "dice" | "coinflip"
   | "teams_call" | "teams_dm" | "teams_file"
-  | "moodle_course" | "moodle_file";
+  | "moodle_course" | "moodle_file" | "moodle_quiz"
+  | "rpg_battle";
 
 export type LaptopInfo = {
   id: string;
@@ -169,6 +170,22 @@ export type LaptopChallenge = {
   course?: { name: string; code: string };
   courses?: { name: string; code: string }[];
   hint?: string;
+  quizTitle?: string;
+  boss?: string;
+  playerMaxHp?: number;
+  bossMaxHp?: number;
+};
+
+/** One resolved rpg_battle turn, attached to the gamble_result packet. */
+export type RpgBattle = {
+  action: string;
+  playerHp: number;
+  bossHp: number;
+  playerDmg: number;
+  bossDmg: number;
+  healed: number;
+  bossDown: boolean;
+  playerDown: boolean;
 };
 
 export type ChairInit = {
