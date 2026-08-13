@@ -171,27 +171,93 @@ def _paint_spurs(
         _paint_rect(grid, layout, Rect(x, y, w, h), CORRIDOR)
 
 
-def _place_room(
-    grid: list[int], layout: Layout, rng: random.Random,
-    rect: Rect, sides: list[Direction],
-) -> None:
+_STEP: dict[Direction, tuple[int, int]] = {
+    "N": (0, -1), "S": (0, 1), "E": (1, 0), "W": (-1, 0),
+}
+
+
+def _paint_room_shell(grid: list[int], rect: Rect) -> Rect | None:
+    """Paint the room floor inside its leaf, leaving the ROOM_PAD wall ring."""
     if rect.w < ROOM_PAD * 2 + 3 or rect.h < ROOM_PAD * 2 + 3:
-        return
+        return None
     room_rect = Rect(rect.x + ROOM_PAD, rect.y + ROOM_PAD,
                      rect.w - 2 * ROOM_PAD, rect.h - 2 * ROOM_PAD)
     paint(grid, room_rect, ROOM)
-    side: Direction = rng.choice(sides) if sides else "N"
+    return room_rect
+
+
+def _door_cell(room_rect: Rect, side: Direction) -> tuple[int, int]:
     if side == "N":
-        dx, dy = room_rect.x + room_rect.w // 2, room_rect.y - 1
-    elif side == "S":
-        dx, dy = room_rect.x + room_rect.w // 2, room_rect.y + room_rect.h
-    elif side == "E":
-        dx, dy = room_rect.x + room_rect.w, room_rect.y + room_rect.h // 2
-    else:
-        dx, dy = room_rect.x - 1, room_rect.y + room_rect.h // 2
+        return room_rect.x + room_rect.w // 2, room_rect.y - 1
+    if side == "S":
+        return room_rect.x + room_rect.w // 2, room_rect.y + room_rect.h
+    if side == "E":
+        return room_rect.x + room_rect.w, room_rect.y + room_rect.h // 2
+    return room_rect.x - 1, room_rect.y + room_rect.h // 2
+
+
+def _corridor_distance(
+    grid: list[int], dx: int, dy: int, side: Direction,
+) -> int | None:
+    """Cells of EMPTY between this door and the first corridor straight out
+    from it, or None if the ray leaves the map or meets anything else first.
+
+    Only CORRIDOR counts. Stopping at a neighbouring ROOM instead would let
+    two rooms link to each other while both stay cut off from the hallways.
+    """
     gw, gh = grid_size()
-    if not (0 <= dx < gw and 0 <= dy < gh):
-        return
+    sx, sy = _STEP[side]
+    x, y = dx + sx, dy + sy
+    gap = 0
+    while 0 <= x < gw and 0 <= y < gh:
+        cell = grid[y * gw + x]
+        if cell == CORRIDOR:
+            return gap
+        if cell != EMPTY:
+            return None
+        gap += 1
+        x, y = x + sx, y + sy
+    return None
+
+
+def _connect_room(
+    grid: list[int], layout: Layout, rng: random.Random,
+    room_rect: Rect, hint_sides: list[Direction],
+) -> None:
+    """Punch a door on the side that actually reaches a hallway, carving a
+    connector across any dead space in between.
+
+    The old code chose the side from `sides_at_block`, i.e. which sides of the
+    leaf touched its block boundary. That boundary is only a hallway when a
+    lane happens to run along it — and `_gap_segments` also treats the
+    atrium's span as occupied on every row and column, so blocks were split at
+    edges with nothing behind them. Rooms then had their one door opening onto
+    solid dead space, sealing the whole block off from the map.
+    """
+    gw, gh = grid_size()
+    candidates: list[tuple[int, int, Direction, int, int]] = []
+    for side in ("N", "S", "E", "W"):
+        dx, dy = _door_cell(room_rect, side)
+        if not (0 <= dx < gw and 0 <= dy < gh):
+            continue
+        gap = _corridor_distance(grid, dx, dy, side)
+        if gap is None:
+            continue
+        # Prefer the shortest connector, then a side the block already faced
+        # (keeps doors on the main hallways where the layout intended them).
+        candidates.append((gap, 0 if side in hint_sides else 1, side, dx, dy))
+
+    if not candidates:
+        return  # no hallway reachable in any direction; leave the room sealed
+    _, _, side, dx, dy = min(candidates)
+
+    # Carve the dead space between the door and the hallway.
+    sx, sy = _STEP[side]
+    x, y = dx + sx, dy + sy
+    while 0 <= x < gw and 0 <= y < gh and grid[y * gw + x] == EMPTY:
+        grid[y * gw + x] = CORRIDOR
+        x, y = x + sx, y + sy
+
     grid[dy * gw + dx] = DOOR
     room = Room(rect=room_rect, archetype=_pick_archetype(rng), front_dir=side)
     room.door_x = (dx + 0.5) * CELL_SIZE
@@ -202,6 +268,96 @@ def _place_room(
         room.door_w = ((dy + 0.5) - (room_rect.y + room_rect.h / 2)) * CELL_SIZE
     layout.rooms.append(room)
     layout.doors.append((room.door_x, room.door_z))
+
+
+def _walkable_component(
+    grid: list[int], start: int, gw: int, gh: int,
+) -> set[int]:
+    """Flood fill of connected non-EMPTY cells from `start`."""
+    seen = {start}
+    queue = [start]
+    while queue:
+        idx = queue.pop()
+        cy, cx = divmod(idx, gw)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = cx + dx, cy + dy
+            if not (0 <= nx < gw and 0 <= ny < gh):
+                continue
+            n = ny * gw + nx
+            if n in seen or grid[n] == EMPTY:
+                continue
+            seen.add(n)
+            queue.append(n)
+    return seen
+
+
+def _carve_to_main(
+    grid: list[int], component: set[int], main: set[int], gw: int, gh: int,
+) -> bool:
+    """Tunnel the shortest path of EMPTY cells from `component` to `main`.
+
+    BFS outward from the whole component at once, so the connector comes out
+    at the closest point rather than wherever a single ray happened to aim.
+    """
+    parent: dict[int, int] = {}
+    queue: list[int] = []
+    for idx in component:
+        cy, cx = divmod(idx, gw)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = cx + dx, cy + dy
+            if not (0 <= nx < gw and 0 <= ny < gh):
+                continue
+            n = ny * gw + nx
+            if grid[n] == EMPTY and n not in parent:
+                parent[n] = idx
+                queue.append(n)
+
+    head = 0
+    while head < len(queue):
+        idx = queue[head]
+        head += 1
+        cy, cx = divmod(idx, gw)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = cx + dx, cy + dy
+            if not (0 <= nx < gw and 0 <= ny < gh):
+                continue
+            n = ny * gw + nx
+            if n in main:
+                # Walk the chain of EMPTY cells back and open it up.
+                cur = idx
+                while cur in parent:
+                    grid[cur] = CORRIDOR
+                    cur = parent[cur]
+                return True
+            if grid[n] == EMPTY and n not in parent:
+                parent[n] = idx
+                queue.append(n)
+    return False
+
+
+def _repair_connectivity(grid: list[int], atrium: Rect) -> None:
+    """Guarantee every walkable cell can be reached from the atrium.
+
+    Door placement links each room to *a* corridor, but a spur can itself be
+    stranded in dead space, so a room could end up connected to nothing that
+    leads anywhere. Rather than special-case each way that happens, sweep the
+    finished grid and tunnel any leftover island back to the main network.
+    """
+    gw, gh = grid_size()
+    start = (atrium.y + atrium.h // 2) * gw + (atrium.x + atrium.w // 2)
+    if grid[start] == EMPTY:
+        return
+    main = _walkable_component(grid, start, gw, gh)
+
+    for idx in range(gw * gh):
+        if grid[idx] == EMPTY or idx in main:
+            continue
+        island = _walkable_component(grid, idx, gw, gh)
+        if _carve_to_main(grid, island, main, gw, gh):
+            # Recompute: the carve added corridor cells to the network too.
+            main = _walkable_component(grid, start, gw, gh)
+        else:
+            main |= island  # unreachable even through empty space; give up
 
 
 def build_layout(rng: random.Random, width: int = 120, height: int = 120) -> Layout:
@@ -232,12 +388,24 @@ def build_layout(rng: random.Random, width: int = 120, height: int = 120) -> Lay
     y_segments = _gap_segments(y_occupied, MARGIN, gh - MARGIN)
     x_segments = _gap_segments(x_occupied, MARGIN, gw - MARGIN)
 
+    # Two passes: paint every room first, then connect them. Door placement
+    # ray-casts across the grid, so it has to run once the map is complete —
+    # otherwise a ray would cross a block whose rooms are not painted yet and
+    # tunnel straight through where a wall is about to appear.
+    placed: list[tuple[Rect, list[Direction]]] = []
     for y0, y1 in y_segments:
         for x0, x1 in x_segments:
             leaves = _bsp_split_block(rng, x0, y0, x1, y1)
             _paint_spurs(grid, layout, leaves, x0, y0, x1, y1)
             for leaf_rect, sides in leaves:
-                _place_room(grid, layout, rng, leaf_rect, sides)
+                room_rect = _paint_room_shell(grid, leaf_rect)
+                if room_rect is not None:
+                    placed.append((room_rect, sides))
+
+    for room_rect, sides in placed:
+        _connect_room(grid, layout, rng, room_rect, sides)
+
+    _repair_connectivity(grid, atrium)
 
     layout.cells = [1 if t != EMPTY else 0 for t in grid]
     return layout
