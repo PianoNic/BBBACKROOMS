@@ -122,6 +122,12 @@ class PlayerConn:
     name: str
     color: str
     ws: WebSocket
+    # False until this conn has been sent its own `lobby_state`. Broadcasts
+    # skip it in the meantime: the conn is registered in `lobby.conns` before
+    # that first send is awaited, so without this gate another player joining
+    # concurrently can land a `lobby_player_join` ahead of it — and the client
+    # drops everything received before `lobby_state` (net/client.ts).
+    ready: bool = False
     # Linked account (OAuth login) or None for guests. Set at connect time from
     # a verified WS ticket; drives whether round rewards are persisted.
     account_id: int | None = None

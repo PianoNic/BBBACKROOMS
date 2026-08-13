@@ -21,7 +21,9 @@ async def broadcast(lobby: Lobby, pkt: dict, exclude: str | None = None) -> None
     lobby paid 100 encodes for one logical broadcast; awaiting the sends in a
     loop also made each client wait on the previous client's flush.
     """
-    targets = [p.ws for p in lobby.conns.values() if p.id != exclude]
+    targets = [
+        p.ws for p in lobby.conns.values() if p.id != exclude and p.ready
+    ]
     if not targets:
         return
     payload = json.dumps(pkt, separators=(",", ":"))
