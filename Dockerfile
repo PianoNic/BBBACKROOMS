@@ -7,7 +7,10 @@
 # and a server that disagree about the wire protocol.
 
 # ---------- stage 1: build the client ----------
-FROM oven/bun:1.3-alpine AS client
+# Pinned to the *build* platform: the output is static JS/CSS/assets, identical
+# for every target arch, so building it once natively beats running Bun under
+# QEMU emulation once per platform in the multi-arch release build.
+FROM --platform=$BUILDPLATFORM oven/bun:1.3-alpine AS client
 WORKDIR /client
 
 # Lockfile first so dependency installs stay cached across source-only changes.

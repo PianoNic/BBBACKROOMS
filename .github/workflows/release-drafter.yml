@@ -1,0 +1,26 @@
+name: Release Drafter
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    permissions:
+      contents: write        # write the draft release
+      pull-requests: write   # apply autolabels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+          # Label every PR as it opens, and only fold merged ones into the
+          # draft — an open PR should not yet appear in the release notes.
+          disable-releaser: ${{ github.event.action != 'closed' || github.event.pull_request.merged != true }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
