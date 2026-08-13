@@ -17,11 +17,11 @@ services:
       retries: 5
       start_period: 10s
 
-  backend:
-    image: pianonic/bbbackrooms-backend:latest
+  app:
+    image: ghcr.io/pianonic/bbbackrooms:latest
     restart: unless-stopped
-    expose:
-      - "8000"
+    ports:
+      - "${PORT:-5367}:8000"
     environment:
       - TURN_TOKEN_ID=${TURN_TOKEN_ID:-}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
@@ -40,7 +40,7 @@ services:
       - MICROSOFT_TENANT=${MICROSOFT_TENANT:-common}
       - SESSION_SECRET=${SESSION_SECRET:-}
       - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
-      - OAUTH_REDIRECT_BASE=${OAUTH_REDIRECT_BASE:-http://localhost:8000}
+      - OAUTH_REDIRECT_BASE=${OAUTH_REDIRECT_BASE:-http://localhost:5367}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5367}
     depends_on:
       postgres:
@@ -54,16 +54,6 @@ services:
       retries: 3
       start_period: 10s
 
-  frontend:
-    image: pianonic/bbbackrooms-frontend:latest
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_started
-    ports:
-      - "${PORT:-5367}:80"
-    networks:
-      - app
 
 networks:
   app:

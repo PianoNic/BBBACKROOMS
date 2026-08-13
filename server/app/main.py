@@ -54,3 +54,16 @@ app.include_router(http_router)
 app.include_router(auth_router)
 app.include_router(shop_router)
 app.include_router(ws_router)
+
+# Serve the built client from the same process, so one image ships the whole
+# game. `app.frontend` wraps StaticFiles and adds the SPA fallback; routers
+# registered above still win, so /healthz, /auth/*, /ws/* are unaffected.
+#
+# The directory only exists in the Docker image (the build stage drops the
+# Vite output there). Running the server from a source checkout skips this —
+# in dev the client is served by Vite on its own port, proxying back here.
+if settings.static_dir.is_dir():
+    app.frontend("/", directory=str(settings.static_dir), fallback="index.html")
+    log.info("serving client from %s", settings.static_dir)
+else:
+    log.info("no client build at %s — API only (dev mode)", settings.static_dir)
