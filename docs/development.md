@@ -61,12 +61,21 @@ pytest
 `requirements.txt` and copies only `app/`, so the runtime image stays free of
 the test toolchain.
 
+## Building the image
+One `Dockerfile` at the repo root builds everything — Bun compiles the client,
+then the output is copied into the Python image as `app/static`:
+```powershell
+docker build -t ghcr.io/pianonic/bbbackrooms:dev .
+```
+Running the server from a source checkout has no `static/` directory, so it
+serves the API only and Vite hosts the client — see [Frontend](#frontend).
+
 ## Configuration (`.env`)
 Copy `.env.example` → `.env`:
 
 | Variable | Effect |
 | --- | --- |
-| `PORT` | Host port of the frontend container (default `5367`). |
+| `PORT` | Host port the game is served on (default `5367`). |
 | `TURN_TOKEN_ID` | Cloudflare Realtime TURN token ID. Required for webcam through restrictive NATs. |
 | `CLOUDFLARE_API_TOKEN` | Paired Cloudflare API token. If either is missing → STUN-only fallback. |
 | `DB_HOST` / `DB_PORT` | PostgreSQL host/port (default `127.0.0.1` / `5432`; `postgres` in compose). |
@@ -80,11 +89,13 @@ Get TURN credentials at *Cloudflare dashboard → Realtime → TURN Server → c
 ```powershell
 docker compose up -d
 ```
-- Pulls `pianonic/bbbackrooms-backend` and `pianonic/bbbackrooms-frontend`.
-- Starts a `postgres:16-alpine` service (data in the `bbb-pgdata` volume); the
-  backend waits for its healthcheck and runs migrations on start.
-- Frontend listens on `$PORT` (default `5367`).
-- Backend stays on the internal bridge network with a `/healthz` healthcheck (30s interval).
+- Pulls `ghcr.io/pianonic/bbbackrooms` — one image holding the API *and* the
+  built client. FastAPI serves the SPA itself (`app.frontend()` in `main.py`),
+  so there is no separate web server and no way to deploy a client and a
+  server that disagree about the wire protocol.
+- Starts a `postgres:18-alpine` service (data in the `bbb-pgdata` volume); the
+  app waits for its healthcheck and runs migrations on start.
+- Listens on `$PORT` (default `5367`), with a `/healthz` healthcheck (30s interval).
 - Stop: `docker compose down` (add `-v` to also drop the database volume).
 
 ## Project conventions
