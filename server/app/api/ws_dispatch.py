@@ -180,8 +180,10 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
         return
     if isinstance(pkt, UsePotionPkt):
         await handle_use_potion(lobby, me)
+        return
     if isinstance(pkt, UseGogglesPkt):
         await handle_use_goggles(lobby, me)
+        return
     if isinstance(pkt, BackToLobbyPkt):
         await handle_back_to_lobby(lobby, me)
         return
