@@ -43,6 +43,7 @@ _ARCHETYPES = (
     ("gym", 1),
     ("cafeteria", 1),
     ("server_room", 1),
+    ("chemistry_lab", 2),
 )
 
 

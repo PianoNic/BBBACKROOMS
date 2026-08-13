@@ -29,6 +29,8 @@ INTERACT_QUESTS: list[tuple[str, ItemType | None, str, int]] = [
     ("printer",         "papers",       "Refill paper in {n} printers",      1),
     ("water_dispenser", None,           "Refill bottles at {n} dispensers",  2),
     ("trophy_case",     "eye",          "Polish {n} trophy cases",           1),
+    ("bunsen_burner",   None,           "Shut off {n} bunsen burners",       3),
+    ("fume_hood",       "key",          "Secure {n} fume hoods",             2),
 ]
 
 # Teamwork quests: the spot only completes while `min_players` living
@@ -67,6 +69,9 @@ SINGULAR_TEXTS: dict[str, str] = {
     "bookshelf": "Search the tall bookshelf — 2 players together",
     "fridge": "Push the fridge aside — 2 players together",
     "gym_mat": "Carry the gym mat — 2 players together",
+    "bunsen_burner": "Shut off the bunsen burner",
+    "fume_hood": "Secure the fume hood",
+    "emergency_shower": "Test the emergency shower",
 }
 
 
