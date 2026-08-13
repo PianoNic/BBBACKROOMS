@@ -65,6 +65,12 @@ PropType = Literal[
     "trophy_case",
     "ball_rack",
     "easel",
+    # Chemistry lab.
+    "lab_bench",
+    "fume_hood",
+    "chemical_shelf",
+    "bunsen_burner",
+    "emergency_shower",
 ]
 
 
