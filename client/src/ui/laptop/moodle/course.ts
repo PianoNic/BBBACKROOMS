@@ -39,7 +39,6 @@ export class MoodleCourseApp implements LaptopApp {
     const main = el<HTMLDivElement>("div", "moodle-main");
 
     const greet = el<HTMLDivElement>("div", "moodle-greet");
-    // Matches the fictional login in `moodle/login.ts` — h.ueli@stud.school.example.
     greet.appendChild(el("h1", "moodle-h1", "Hallo, Hans Ueli!"));
     greet.appendChild(el("span", "moodle-wave", "👋"));
     main.appendChild(greet);
