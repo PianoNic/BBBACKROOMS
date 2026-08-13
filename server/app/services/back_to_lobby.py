@@ -47,6 +47,8 @@ def _reset_runtime_state(lobby: Lobby) -> None:
         p.goggles_until = p.goggles_cooldown_until = 0.0
         p.tasks_done = p.teachers_stunned = p.revives_done = p.items_collected = 0
         p.death_t = p.extracted_t = 0.0
+        p.pose_dirty = False
+        p.last_status = None
 
 
 async def handle_back_to_lobby(lobby: Lobby, me: PlayerConn) -> None:
