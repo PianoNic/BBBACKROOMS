@@ -19,6 +19,10 @@ def _reset_runtime_state(lobby: Lobby) -> None:
     lobby.chairs.clear()
     lobby.chair_projectiles.clear()
     lobby.lockers.clear()
+    # Closets are rebuilt from the new world's props on the next start, so a
+    # surviving entry would leave a phantom hideout at last round's
+    # coordinates — and `hide` resolves by proximity, with no closet id.
+    lobby.hideouts.clear()
     lobby.pickups.clear()
     lobby.teachers.clear()
     lobby.doors.clear()
@@ -49,6 +53,9 @@ def _reset_runtime_state(lobby: Lobby) -> None:
         p.death_t = p.extracted_t = 0.0
         p.pose_dirty = False
         p.last_status = None
+        # Without this a player still tucked in a closet at round end keeps a
+        # dangling hideout id, and the next round drops all their move packets.
+        p.hidden_in = None
 
 
 async def handle_back_to_lobby(lobby: Lobby, me: PlayerConn) -> None:
