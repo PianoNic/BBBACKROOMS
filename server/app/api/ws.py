@@ -84,6 +84,7 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
         lobby.admin_id = pid
 
     await ws.send_json(lobby_room_state(lobby, pid))
+    me.ready = True  # only now may broadcasts reach this conn
     await broadcast(
         lobby,
         {

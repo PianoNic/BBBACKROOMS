@@ -36,7 +36,7 @@ All have `type: "<name>"`. Selection (full list in `packets.py`):
 | `set_name` | `name` (≤24) | Set profile name. |
 | `set_avatar` | `avatar` (≤200 kB data URL) | Set avatar. |
 | `start_game` | — | Admin-only: lobby → round. |
-| `move` | `x, z, yaw` | Position update (server validates + broadcasts). |
+| `move` | `x, z, yaw` | Position update (server validates; relayed in the next batched snapshot). |
 | `interact` | — | E key on focused object. |
 | `chair_pickup` | `chairId` | Pick up a chair. |
 | `chair_throw` | `dirX, dirZ` | Throw the chair. |
@@ -61,7 +61,11 @@ Main ones (see `services/broadcast.py` and the lobby/world services):
 - `lobby_player_join` / `player_leave` — peer updates.
 - `lobby_admin_changed` — new admin after disconnect.
 - `world_init` — grid, spawns, props, lights, tasks, extraction position, your player.
-- Movement / state snapshots from the game tick (players, teachers, doors, pickups).
+- `players_state` — batched pose snapshot at `SNAPSHOT_HZ` (15): every player who
+  moved since the last tick plus all teacher positions, in one packet. Moves are
+  never relayed per-packet — that cost grew with the square of the lobby size.
+  See `services/snapshot.py`.
+- Other state snapshots from the game tick (doors, pickups, chairs).
 - `chat` — broadcast chat message.
 - `webrtc_signal` — relayed peer signal.
 - `revive_progress` — revive UI.

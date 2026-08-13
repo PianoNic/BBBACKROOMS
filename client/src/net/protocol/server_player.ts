@@ -15,9 +15,6 @@ export type ShopResultPkt = {
   balance: number;
   reason: "ok" | "owned" | "insufficient" | "guest" | "unknown" | "error";
 };
-export type PlayerStatePkt = {
-  type: "player_state"; id: string; x: number; z: number; yaw: number;
-};
 export type PlayerLeavePkt = { type: "player_leave"; id: string };
 export type PlayerAvatarPkt = { type: "player_avatar"; id: string; avatar: string };
 
