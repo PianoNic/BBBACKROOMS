@@ -129,12 +129,8 @@ async def _teacher_loop(lobby_id: str) -> None:
             await tick_revives(lobby, now, send_inventory)
             await tick_projectiles(lobby, dt)
             await push_teacher_stuns(lobby, now)
-            await broadcast(lobby, {
-                "type": "teachers_state",
-                "teachers": [
-                    {"id": t.id, "x": t.x, "z": t.z} for t in lobby.teachers
-                ],
-            })
+            # Teacher positions ride along on the batched `players_state`
+            # snapshot (see services/snapshot.py) — no separate fan-out here.
             if not in_grace:
                 await _check_catches(lobby)
             if await _check_game_over(lobby):

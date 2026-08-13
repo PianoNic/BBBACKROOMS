@@ -83,7 +83,6 @@ function distTo(d: GamePacketDeps, x: number, z: number): number {
 export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) => void {
   return (pkt) => routePacket({
     player_join: (p) => { d.remotes.add(p); d.webcam.addPeer(p.id); },
-    player_state: (p) => d.remotes.setState(p.id, p.x, p.z, p.yaw),
     player_avatar: (p) => d.remotes.setAvatar(p.id, p.avatar),
     player_cosmetic: (p) => d.remotes.setCosmetic(p.id, p.equipped),
     player_leave: (p) => {
@@ -147,7 +146,10 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
         playSfx(`${SND}/wrong.ogg`, 0.6);
       }
     },
-    teachers_state: (p) => {
+    // One batched pose snapshot per server tick: moved players + teachers.
+    // `setState` no-ops on unknown ids, so the self entry costs nothing.
+    players_state: (p) => {
+      for (const q of p.players) d.remotes.setState(q.id, q.x, q.z, q.yaw);
       for (const t of p.teachers) d.teachers.setState(t.id, t.x, t.z);
     },
     teacher_ability: (p) => d.teacherEffects.handle(p),

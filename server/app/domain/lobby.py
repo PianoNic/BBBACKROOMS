@@ -158,6 +158,13 @@ class PlayerConn:
     last_voice_noise_t: float = 0.0
     # Hideout (closet) the player is currently hiding in, or None.
     hidden_in: str | None = None
+    # Set when a move packet changes the pose; the teacher tick drains this
+    # into one batched `players_state` snapshot instead of relaying every
+    # move packet to every other player.
+    pose_dirty: bool = False
+    # Last player_status payload pushed to this conn, so unchanged status
+    # (the common case — all timers zero) costs nothing.
+    last_status: tuple[int, float, int, int, float] | None = None
     haste_until: float = 0.0
     haste_factor: float = 1.0
     # Per-round scoreboard counters (zeroed on back-to-lobby). death_t /

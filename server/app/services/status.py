@@ -48,17 +48,25 @@ async def push_player_status(lobby: Lobby, now: float) -> None:
         slow_ms = max(0, int((p.slow_until - now) * 1000))
         stun_ms = max(0, int((p.stun_until - now) * 1000))
         haste_ms = max(0, int((p.haste_until - now) * 1000))
-        try:
-            await p.ws.send_json({
-                "type": "player_status",
-                "slowMs": slow_ms,
-                "slowFactor": p.slow_factor if slow_ms > 0 else 1.0,
-                "stunMs": stun_ms,
-                "hasteMs": haste_ms,
-                "hasteFactor": p.haste_factor if haste_ms > 0 else 1.0,
-            })
-        except Exception:
-            pass
+        slow_factor = p.slow_factor if slow_ms > 0 else 1.0
+        haste_factor = p.haste_factor if haste_ms > 0 else 1.0
+        # Every timer is zero on the overwhelming majority of ticks; only
+        # spend a frame when the payload actually differs from the last one
+        # this player was sent.
+        payload = (slow_ms, slow_factor, stun_ms, haste_ms, haste_factor)
+        if payload != p.last_status:
+            p.last_status = payload
+            try:
+                await p.ws.send_json({
+                    "type": "player_status",
+                    "slowMs": slow_ms,
+                    "slowFactor": slow_factor,
+                    "stunMs": stun_ms,
+                    "hasteMs": haste_ms,
+                    "hasteFactor": haste_factor,
+                })
+            except Exception:
+                pass
         if slow_ms <= 0:
             p.slow_factor = 1.0
         if haste_ms <= 0:

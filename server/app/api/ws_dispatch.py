@@ -30,6 +30,7 @@ from app.services.revive import handle_revive_cancel, handle_revive_start
 from app.services.quests import check_extraction, try_complete_spots
 from app.services.signaling import broadcast_webcam_state, relay_signal
 from app.services.shop import handle_buy_cosmetic, handle_set_cosmetic
+from app.services.snapshot import ensure_snapshot_loop
 from app.services.teacher_loop import ensure_teacher_loop
 
 
@@ -130,6 +131,7 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
             except Exception:
                 pass
         ensure_teacher_loop(lobby)
+        ensure_snapshot_loop(lobby)
         return
 
     # In-game packets — ignore until the world exists.
@@ -140,11 +142,9 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
             return  # pinned inside a closet — ignore movement
         me.x, me.z, me.yaw = pkt.x, pkt.z, pkt.yaw
         track_movement_noise(lobby, me)
-        await broadcast(
-            lobby,
-            {"type": "player_state", "id": me.id, "x": me.x, "z": me.z, "yaw": me.yaw},
-            exclude=me.id,
-        )
+        # No per-packet relay: the teacher tick batches every moved player
+        # into a single `players_state` snapshot (see teacher_loop).
+        me.pose_dirty = True
         await try_complete_spots(lobby, me, require_interact=False)
         await check_extraction(lobby, me)
         return

@@ -101,8 +101,11 @@ export type WorldInit = {
 
 export type WorldGenStartPkt = { type: "world_gen_start" };
 
-export type TeachersStatePkt = {
-  type: "teachers_state";
+/** Batched pose snapshot pushed at `SNAPSHOT_HZ`: `players` carries only
+ *  those who moved since the last tick, `teachers` carries all of them. */
+export type PlayersStatePkt = {
+  type: "players_state";
+  players: { id: string; x: number; z: number; yaw: number }[];
   teachers: { id: string; x: number; z: number }[];
 };
 
