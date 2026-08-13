@@ -45,15 +45,26 @@ def _line_of_sight(
     return True
 
 
-def _nearest_free(lobby: Lobby, x: float, z: float) -> Hideout | None:
+def _nearest_in_range(
+    lobby: Lobby, x: float, z: float,
+) -> tuple[Hideout | None, bool]:
+    """Nearest *free* closet within `HIDE_RADIUS`, plus whether any closet in
+    range was occupied. Free ones always win: standing between a taken closet
+    and a free one must not deny entry just because the taken one is closer."""
     best: Hideout | None = None
     best_d = HIDE_RADIUS * HIDE_RADIUS
+    saw_occupied = False
     for ho in lobby.hideouts.values():
         d = distance_squared_xz(ho.x, ho.z, x, z)
+        if d > HIDE_RADIUS * HIDE_RADIUS:
+            continue
+        if ho.occupied_by is not None:
+            saw_occupied = True
+            continue
         if d <= best_d:
             best_d = d
             best = ho
-    return best
+    return best, saw_occupied
 
 
 async def handle_hide(lobby: Lobby, me: PlayerConn) -> None:
@@ -64,11 +75,10 @@ async def handle_hide(lobby: Lobby, me: PlayerConn) -> None:
         return
     if not is_active(lobby, me):
         return
-    ho = _nearest_free(lobby, me.x, me.z)
+    ho, saw_occupied = _nearest_in_range(lobby, me.x, me.z)
     if ho is None:
-        return
-    if ho.occupied_by is not None:
-        await send_safe(me, {"type": "hide_denied", "reason": "occupied"})
+        if saw_occupied:
+            await send_safe(me, {"type": "hide_denied", "reason": "occupied"})
         return
     grid = lobby.world.grid
     for t in lobby.teachers:
