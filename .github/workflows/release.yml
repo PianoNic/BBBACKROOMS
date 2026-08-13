@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commit the version bump back to main
+      packages: write   # push to GHCR
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "79938743+Pianonic@users.noreply.github.com"
+          git config --local user.name "PianoNic"
+
+      - name: Get version from release tag
+        id: version
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION=${VERSION#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      # Write the version into the tree BEFORE the image is built, so the
+      # running container reports the same version as the release that
+      # produced it. /version is read by the client for the title screen.
+      - name: Stamp the version into the source
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          sed -i "s/^VERSION = .*/VERSION = \"$VERSION\"/" server/app/version.py
+          sed -i "0,/\"version\": \".*\"/s//\"version\": \"$VERSION\"/" client/package.json
+
+          echo "--- server/app/version.py ---"
+          grep '^VERSION' server/app/version.py
+          echo "--- client/package.json ---"
+          grep '"version"' client/package.json | head -1
+
+      - name: Commit the version bump
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          if git diff --quiet server/app/version.py client/package.json; then
+            echo "Already at $VERSION, nothing to commit"
+            exit 0
+          fi
+          git add server/app/version.py client/package.json
+          git commit -m "Release version $VERSION [skip ci]"
+          git push origin HEAD:main
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Prereleases publish their own tag but must not move `latest`.
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,83 @@
+name: Version Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      version:
+        description: 'Specific version (overrides bump_type)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "79938743+Pianonic@users.noreply.github.com"
+          git config --local user.name "PianoNic"
+
+      - name: Setup Node.js (for semver)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install semver
+        run: npm install -g semver
+
+      - name: Get current version
+        id: current
+        run: |
+          CURRENT=$(grep '^VERSION' server/app/version.py | sed 's/.*"\(.*\)".*/\1/')
+          echo "CURRENT=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT"
+
+      - name: Calculate new version
+        id: new
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            NEW="${{ github.event.inputs.version }}"
+          else
+            NEW=$(semver -i "${{ github.event.inputs.bump_type }}" "${{ steps.current.outputs.CURRENT }}")
+          fi
+          echo "NEW=$NEW" >> $GITHUB_OUTPUT
+          echo "New version: $NEW"
+
+      - name: Update version files
+        run: |
+          NEW="${{ steps.new.outputs.NEW }}"
+          sed -i "s/^VERSION = .*/VERSION = \"$NEW\"/" server/app/version.py
+          sed -i "0,/\"version\": \".*\"/s//\"version\": \"$NEW\"/" client/package.json
+          grep '^VERSION' server/app/version.py
+          grep '"version"' client/package.json | head -1
+
+      - name: Commit version bump
+        run: |
+          NEW="${{ steps.new.outputs.NEW }}"
+          if git diff --quiet server/app/version.py client/package.json; then
+            echo "Already at $NEW, nothing to commit"
+            exit 0
+          fi
+          git add server/app/version.py client/package.json
+          git commit -m "Bump version to $NEW [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
