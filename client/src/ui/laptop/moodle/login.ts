@@ -22,7 +22,6 @@ export function buildMoodleLogin(onLogin: () => void): HTMLDivElement {
 
   const user = el<HTMLInputElement>("input", "moodle-login-input");
   user.type = "text";
-  // Fictional student — never a real login. Same shape as a BBB account.
   user.value = "h.ueli@stud.bbbaden.ch";
   user.readOnly = true;
   card.appendChild(user);
