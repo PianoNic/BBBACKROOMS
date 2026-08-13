@@ -103,17 +103,22 @@ def place_paired(
         # of the desk grouping, not a free-floating prop).
         if d < margin_d and d + pa_out <= margin_d:
             continue
-        if not grid.is_free("floor", w, d, pa_along, pa_out):
+        # The chair is drawn on the DESK's w-centre so it stays dead-centre
+        # behind the desk even when desk and chair footprints have different
+        # parities. That shifts it up to half a sub-cell off its own cell, so
+        # reserve every sub-cell it actually covers — otherwise floor clutter
+        # lands in the overhang and clips through it.
+        start = pw + psw / 2 - pa_along / 2
+        res_w = math.floor(start)
+        res_along = math.ceil(start + pa_along) - res_w
+        if res_w < 0 or res_w + res_along > grid.w_cells:
             continue
-        grid.mark("floor", w, d, pa_along, pa_out)
+        if not grid.is_free("floor", res_w, d, res_along, pa_out):
+            continue
+        grid.mark("floor", res_w, d, res_along, pa_out)
         grid.reservations.append(
-            (partner_type, w, d, pa_along, pa_out, "floor"),
+            (partner_type, res_w, d, res_along, pa_out, "floor"),
         )
-        # Use the DESK's w-centre for the chair's world position so the
-        # chair stays dead-centre behind the desk even when the desk's
-        # along-footprint and the chair's along-footprint have different
-        # parities (the integer reservation cell would otherwise land
-        # half a sub-cell off-centre).
         cx, cz = grid.to_world(
             pw + psw / 2 - 0.5, d + pa_out / 2 - 0.5,
         )

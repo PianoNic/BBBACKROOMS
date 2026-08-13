@@ -102,7 +102,17 @@ def place_center(
     """Centred placement, biased toward the room's middle. The outer 2m
     ring is OFF-LIMITS unless the room is too narrow to honour it (then
     `margin` clamps per-axis to whatever still leaves valid positions)."""
-    along, out = spec.footprint
+    # Footprints are declared in mesh-local terms: `along` is the mesh's own
+    # long axis. Centred props are rendered a quarter-turn off the room frame
+    # (see `final_yaw`), so that axis ends up on the grid's OUT axis. Reserve
+    # in the orientation actually drawn, or the occupancy grid disagrees with
+    # the geometry and props overlap despite `is_free` saying otherwise —
+    # gym mats landed 1.0m apart while their meshes are 1.8m long.
+    mesh_along, mesh_out = spec.footprint
+    if yaw is None:
+        along, out = mesh_out, mesh_along
+    else:
+        along, out = mesh_along, mesh_out
     eff_w = min(margin, max(0, (grid.w_cells - along) // 2))
     eff_d = min(margin, max(0, (grid.d_cells - out) // 2))
     ws = list(range(eff_w, grid.w_cells - along - eff_w + 1))
