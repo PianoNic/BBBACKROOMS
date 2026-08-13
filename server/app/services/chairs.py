@@ -74,6 +74,8 @@ async def handle_drop(lobby: Lobby, me: PlayerConn) -> None:
 async def handle_throw(
     lobby: Lobby, me: PlayerConn, dir_x: float, dir_z: float,
 ) -> None:
+    if me.hidden_in is not None:
+        return  # tucked inside a closet — nothing flies out of it
     cid = _player_holding(lobby, me.id)
     if cid is None:
         return
