@@ -74,6 +74,9 @@ change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 
 no-changes-template: 'No changes in this release.'
 
+# The image path is spelled out rather than built from $OWNER/$REPOSITORY:
+# those keep the repository's original casing, and container references must
+# be lowercase — `ghcr.io/PianoNic/BBBACKROOMS` is rejected by the daemon.
 template: |
   ## What's Changed
 
@@ -82,7 +85,7 @@ template: |
   ## Docker
 
   ```
-  docker pull ghcr.io/$OWNER/$REPOSITORY:$RESOLVED_VERSION
+  docker pull ghcr.io/pianonic/bbbackrooms:$RESOLVED_VERSION
   ```
 
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
