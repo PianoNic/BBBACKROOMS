@@ -204,6 +204,31 @@ INVENTORIES: dict[str, list[Slot]] = {
         Slot("fire_extinguisher", count=(1, 1), wall="front", centered=True),
         Slot("pylon", count=(0, 1)),
     ],
+    "chemistry_lab": [
+        # Island benches down the middle, the way a real lab is arranged —
+        # grid_fill keeps an aisle so players can walk between the rows.
+        Slot("lab_bench", count=(0, 99), pattern="grid_fill",
+             aisle_w=1, aisle_d=2, front_reserve=2),
+        Slot("bunsen_burner", count=(2, 5), on="lab_bench"),
+        # Extraction and reagents live against the walls.
+        Slot("fume_hood", count=(1, 2), wall="back"),
+        Slot("whiteboard", count=(1, 1), wall="back", centered=True),
+        Slot("chemical_shelf", count=(2, 4), wall="side_a"),
+        Slot("cupboard", count=(1, 3), wall="side_a"),
+        Slot("chemical_shelf", count=(1, 3), wall="side_b"),
+        Slot("emergency_shower", count=(1, 1), wall="side_b"),
+        Slot("sink", count=(1, 2), wall="side_b"),
+        Slot("fire_extinguisher", count=(1, 1), wall="front", centered=True),
+        # A lab is a teaching room too — front wall keeps class fittings.
+        Slot("bulletin_board", count=(0, 1), wall="front"),
+        Slot("clock", count=(1, 1), wall="front", centered=True),
+        Slot("skeleton", count=(0, 1)),
+        Slot("microscope", count=(0, 2), on="lab_bench"),
+        # Clutter.
+        Slot("trash_can", count=(1, 2)),
+        Slot("papers", count=(1, 3)),
+        Slot("backpack", count=(0, 2)),
+    ],
 }
 
 
