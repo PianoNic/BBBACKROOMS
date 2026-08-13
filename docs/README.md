@@ -1,5 +1,6 @@
 # bbbackrooms — Docs
 
+- [Gameplay](gameplay.md) — tasks, extraction, items, controls, tips.
 - [Architecture](architecture.md) — server/client split, layers, data flow.
 - [Development](development.md) — running locally, `.env`, Docker.
 - [Protocol](protocol.md) — REST, WebSocket, WebRTC signaling.

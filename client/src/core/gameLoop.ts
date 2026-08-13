@@ -7,6 +7,9 @@ import type { FlickerLights } from "../rendering/lights";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
+import { music } from "./music";
+import type { Hideouts } from "../gameplay/hideouts";
+import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
 import type { StaminaBar } from "../ui/stamina";
 import type { InteractPrompt } from "../ui/interactPrompt";
@@ -37,11 +40,13 @@ export type GameDeps = {
   net: NetClient;
   stats: Stats;
   quests: Quests;
+  pings: Pings;
+  hideouts: Hideouts;
   stamina: StaminaBar;
   interactPrompt: InteractPrompt;
   portal: ExtractionPortal;
   spectator: Spectator;
-  state: { extracted: boolean };
+  state: { extracted: boolean; hidden: boolean };
   laptops: Laptops;
   teachers: Teachers;
   teacherEffects: TeacherEffects;
@@ -91,10 +96,11 @@ export function runGameLoop(d: GameDeps): void {
     elapsed += dt;
 
     setCarryingChair(d.chairs.isHoldingChair());
-    if (!d.state.extracted) d.player.update(dt);
+    if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
     d.lights.update(elapsed, d.player.position.x, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
+    d.pings.update(elapsed);
     d.portal.update(elapsed);
     d.teachers.update();
     d.teacherEffects.update();
@@ -109,7 +115,7 @@ export function runGameLoop(d: GameDeps): void {
     } else {
       d.stamina.update(d.player.stamina);
       d.interactPrompt.update(d.ctx.camera, d.player.position, [
-        ...d.quests.getInteractTargets(),
+        ...d.quests.getInteractTargets(d.remotes.positions()),
         ...d.laptops.getInteractTargets(),
         ...d.chairs.getInteractTargets(),
         ...d.pickups.getInteractTargets(),
@@ -117,6 +123,7 @@ export function runGameLoop(d: GameDeps): void {
         ...d.doors.getInteractTargets(),
         ...d.toiletStallDoors.getInteractTargets(),
         ...d.fuseBoxes.getInteractTargets(),
+        ...d.hideouts.getInteractTargets(),
         ...d.corpses.getInteractTargets(d.inventory.hasMedkit()),
       ]);
     }
@@ -124,6 +131,7 @@ export function runGameLoop(d: GameDeps): void {
       items: d.inventory.hasTracker() ? d.pickups.getMapPositions() : [],
       tasks: d.inventory.hasTracker() ? d.quests.getMapPositions() : [],
       teachers: d.inventory.hasGps() ? d.teachers.getMapPositions() : [],
+      pings: d.pings.getMapDots(),
     };
     d.minimap.update(
       d.player.position.x, d.player.position.z, d.player.yaw,
@@ -138,13 +146,19 @@ export function runGameLoop(d: GameDeps): void {
     d.compass.update(d.player.position.x, d.player.position.z, d.player.yaw);
     // Heartbeat picks up nearest non-stunned teacher; silenced while
     // spectating (dead/extracted) since the player is no longer in danger.
-    if (d.state.extracted) d.heartbeat.stop();
-    else d.heartbeat.setNearestDistance(
-      d.teachers.nearestDistance(d.player.position.x, d.player.position.z),
-    );
+    if (d.state.extracted) {
+      d.heartbeat.stop();
+      music.updateThreat(Infinity, elapsed);
+    } else {
+      const nearest = d.teachers.nearestDistance(
+        d.player.position.x, d.player.position.z,
+      );
+      d.heartbeat.setNearestDistance(nearest);
+      music.updateThreat(nearest, elapsed);
+    }
 
     sendAcc += dt;
-    if (!d.state.extracted && sendAcc >= sendInterval) {
+    if (!d.state.extracted && !d.state.hidden && sendAcc >= sendInterval) {
       sendAcc = 0;
       const { x, z } = d.player.position;
       const yaw = d.player.yaw;

@@ -13,7 +13,8 @@ from app.world.teachers import TeacherState
 GAMES = (
     "slots", "dice", "coinflip",
     "teams_call", "teams_dm", "teams_file",
-    "moodle_course", "moodle_file",
+    "moodle_course", "moodle_file", "moodle_quiz",
+    "rpg_battle",
 )
 
 
@@ -53,6 +54,9 @@ class Laptop:
     # teams_*/moodle_*: per-laptop random state (options + correct answer).
     # Casino games (slots/dice/coinflip) leave this empty — they roll fresh.
     challenge: dict = field(default_factory=dict)
+    # rpg_battle: in-flight battle state per player id (HP values). Dropped
+    # when the player reopens the laptop, dies in battle, or wins.
+    battles: dict[str, dict] = field(default_factory=dict)
 
 
 @dataclass
@@ -74,6 +78,17 @@ class Door:
     is_open: bool = False
     # Per-door cooldown so teachers don't flap the same door every tick.
     teacher_cooldown_until: float = 0.0
+
+
+@dataclass
+class Hideout:
+    """A closet a player can hide inside. Invisible to teachers while
+    occupied; one player per closet."""
+    id: str
+    x: float
+    z: float
+    yaw: float
+    occupied_by: str | None = None
 
 
 @dataclass
@@ -107,6 +122,12 @@ class PlayerConn:
     name: str
     color: str
     ws: WebSocket
+    # False until this conn has been sent its own `lobby_state`. Broadcasts
+    # skip it in the meantime: the conn is registered in `lobby.conns` before
+    # that first send is awaited, so without this gate another player joining
+    # concurrently can land a `lobby_player_join` ahead of it — and the client
+    # drops everything received before `lobby_state` (net/client.ts).
+    ready: bool = False
     # Linked account (OAuth login) or None for guests. Set at connect time from
     # a verified WS ticket; drives whether round rewards are persisted.
     account_id: int | None = None
@@ -132,6 +153,24 @@ class PlayerConn:
     # only retrigger after `goggles_cooldown_until` (both monotonic).
     goggles_until: float = 0.0
     goggles_cooldown_until: float = 0.0
+    # Ping rate limit (monotonic seconds of the last accepted ping).
+    last_ping_t: float = 0.0
+    # Noise system: previous move sample (for sprint-speed inference) and
+    # rate-limit stamps for sprint/voice noise emission.
+    last_move_x: float = 0.0
+    last_move_z: float = 0.0
+    last_move_t: float = 0.0
+    last_noise_t: float = 0.0
+    last_voice_noise_t: float = 0.0
+    # Hideout (closet) the player is currently hiding in, or None.
+    hidden_in: str | None = None
+    # Set when a move packet changes the pose; the teacher tick drains this
+    # into one batched `players_state` snapshot instead of relaying every
+    # move packet to every other player.
+    pose_dirty: bool = False
+    # Last player_status payload pushed to this conn, so unchanged status
+    # (the common case — all timers zero) costs nothing.
+    last_status: tuple[int, float, int, int, float] | None = None
     haste_until: float = 0.0
     haste_factor: float = 1.0
     # Per-round scoreboard counters (zeroed on back-to-lobby). death_t /
@@ -189,6 +228,8 @@ class Lobby:
     chair_projectiles: list[ChairProjectile] = field(default_factory=list)
     teachers: list[TeacherState] = field(default_factory=list)
     hallway_rects: list[Rect] = field(default_factory=list)
+    # Queued noise events (x, z, hearing radius) — drained every teacher tick.
+    noise_events: list[tuple[float, float, float]] = field(default_factory=list)
     # World coords of every doorway (cell centers in metres). Teachers stay
     # outside a small radius around these points so they don't camp entrances.
     doors: list[tuple[float, float]] = field(default_factory=list)
@@ -211,6 +252,7 @@ class Lobby:
     potion_puddles: list[tuple[float, float, float, float, float]] = field(default_factory=list)
     pickups: dict[str, Pickup] = field(default_factory=dict)
     lockers: dict[str, Locker] = field(default_factory=dict)
+    hideouts: dict[str, Hideout] = field(default_factory=dict)
     doors_state: dict[str, Door] = field(default_factory=dict)
     # Position recorded at death so corpses are interactable for revive.
     corpses: dict[str, tuple[float, float]] = field(default_factory=dict)

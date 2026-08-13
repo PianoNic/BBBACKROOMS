@@ -91,7 +91,29 @@
       display: flex; gap: 16px; font-size: 14px;
       .coins { color: #ffd24a; }
     }
+    .ach-list {
+      display: flex; flex-direction: column; gap: 6px;
+      margin-top: 6px; width: 320px; max-height: 180px; overflow-y: auto;
+    }
+    .ach-card {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 210, 74, 0.45);
+      border-radius: 8px;
+      padding: 7px 12px;
+      text-align: left;
+      animation: achpop 0.4s ease-out both;
+      .ach-icon { font-size: 22px; }
+      .ach-text { flex: 1; min-width: 0; }
+      .ach-name { font-size: 13px; font-weight: bold; color: #ffd24a; }
+      .ach-desc { font-size: 11px; opacity: 0.75; }
+      .ach-coins { font-size: 13px; font-weight: bold; color: #ffd24a; }
+    }
     .guest-note { font-size: 12px; opacity: 0.6; }
+  }
+  @keyframes achpop {
+    0% { transform: translateY(8px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
   }
   &.lost .rewards .xp-bar .fill { background: $danger; }
 

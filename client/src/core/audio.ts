@@ -40,6 +40,12 @@ export function getSfxDestination(): GainNode | null {
   return sfxGain;
 }
 
+/** Returns the music destination gain — the soundtrack director's output bus. */
+export function getMusicDestination(): GainNode | null {
+  ensureCtx();
+  return musicGain;
+}
+
 async function loadFootsteps(): Promise<void> {
   if (footstepLoadStarted) return;
   footstepLoadStarted = true;
@@ -103,6 +109,15 @@ export function playSfx(url: string, volume = 1, pitch = 1): void {
 /** Preload an sfx so it plays without a network round trip on first use. */
 export function preloadSfx(url: string): void {
   loadSfx(url);
+}
+
+/** One-shot SFX attenuated by distance to the listener. Silent past
+ *  `maxDist`. Use for world events triggered by other players. */
+export function playSfxNear(
+  url: string, dist: number, base = 1, maxDist = 25,
+): void {
+  if (dist > maxDist) return;
+  playSfx(url, base * (1 - dist / maxDist));
 }
 
 /** Play a random footstep sound. Loads on first call. */

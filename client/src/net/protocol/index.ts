@@ -21,7 +21,7 @@ import type {
   SpotRelockedPkt,
   TeacherAbilityPkt,
   TeacherStunsPkt,
-  TeachersStatePkt,
+  PlayersStatePkt,
   WorldGenStartPkt,
   WorldInit,
 } from "./server_world";
@@ -49,7 +49,9 @@ import type {
   PlayerJoinPkt,
   PlayerLeavePkt,
   PlayerRevivedPkt,
-  PlayerStatePkt,
+  PlayerPingPkt,
+  PlayerHiddenPkt,
+  HideDeniedPkt,
   PlayerStatusPkt,
   ReviveProgressPkt,
   ShopResultPkt,
@@ -66,7 +68,7 @@ export * from "./client";
 export type ServerPacket =
   | WorldInit
   | WorldGenStartPkt
-  | TeachersStatePkt
+  | PlayersStatePkt
   | TeacherAbilityPkt
   | TeacherStunsPkt
   | ObjectiveDonePkt
@@ -88,7 +90,6 @@ export type ServerPacket =
   | PlayerJoinPkt
   | PlayerCosmeticPkt
   | ShopResultPkt
-  | PlayerStatePkt
   | PlayerLeavePkt
   | PlayerAvatarPkt
   | PlayerStatusPkt
@@ -99,6 +100,9 @@ export type ServerPacket =
   | DoorStatePkt
   | ReviveProgressPkt
   | PlayerRevivedPkt
+  | PlayerPingPkt
+  | PlayerHiddenPkt
+  | HideDeniedPkt
   | ChairStatePkt
   | ChairThrowStartPkt
   | ChairHitPkt

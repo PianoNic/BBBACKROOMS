@@ -13,7 +13,7 @@ export type InteractTarget = {
   z: number;
   radius: number;
   label: string;
-  kind: "quest" | "laptop" | "chair" | "pickup" | "corpse" | "locker" | "door" | "toilet_stall" | "fuse_box_door" | "fuse_box_lever";
+  kind: "quest" | "laptop" | "chair" | "pickup" | "corpse" | "locker" | "door" | "toilet_stall" | "fuse_box_door" | "fuse_box_lever" | "hide";
   chairId?: string;
   pickupId?: string;
   corpseId?: string;

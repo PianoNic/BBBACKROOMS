@@ -11,9 +11,11 @@ import { showTeacherSlots } from "./ui/teacherSlots";
 import { showPauseMenu } from "./ui/pauseMenu";
 import { captureInput } from "./core/inputCapture";
 import { startAmbient, unlockAudio } from "./core/audio";
+import { music } from "./core/music";
 import { createWebcamMesh } from "./gameplay/webcam";
 import { makeGamePacketHandler } from "./net/gamePackets";
 import { installGameInput } from "./core/gameInput";
+import { installVoiceNoise } from "./gameplay/voiceNoise";
 import { buildScene } from "./core/sceneSetup";
 import { getSettings, onSettingsChange, updateSetting } from "./core/settings";
 import { ensureCatalog } from "./gameplay/cosmetics";
@@ -76,7 +78,7 @@ async function main(): Promise<void> {
   const gogglesState = { activeUntilMs: 0, cooldownUntilMs: 0 };
   net.onPacket(makeGamePacketHandler({
     init, net, webcam, proximityVoice: s.proximityVoice,
-    remotes: s.remotes, quests: s.quests, laptops: s.laptops,
+    remotes: s.remotes, quests: s.quests, pings: s.pings, laptops: s.laptops,
     teachers: s.teachers, teacherById: s.teacherById,
     teacherEffects: s.teacherEffects, chairs: s.chairs, corpses: s.corpses,
     pickups: s.pickups, lockers: s.lockers, doors: s.doors, inventory: s.inventory,
@@ -104,6 +106,12 @@ async function main(): Promise<void> {
       void webcam.setLocalEnabled(false);
     }
   });
+  installVoiceNoise(
+    net, webcam,
+    () => getSettings().voiceMode === "open"
+      || (getSettings().voiceMode === "ptt" && voice.pttHeld),
+    () => !s.state.extracted,
+  );
   installGameInput({
     net, camera: ctx.camera, state: s.state, reviveState,
     interactPrompt: s.interactPrompt, laptop: s.laptop, chairs: s.chairs,
@@ -122,6 +130,9 @@ async function main(): Promise<void> {
   const enterGame = (): void => {
     unlockAudio();
     startAmbient();
+    if (init.phase === "tasks" || init.phase === "escape") {
+      music.setPhase(init.phase);
+    }
     captureInput(ctx.renderer.domElement);
   };
 
@@ -181,7 +192,7 @@ async function main(): Promise<void> {
   runGameLoop({
     ctx, net, stats,
     player: s.player, lights: s.lights, remotes: s.remotes, minimap: s.minimap,
-    quests: s.quests, stamina: s.stamina, interactPrompt: s.interactPrompt,
+    quests: s.quests, pings: s.pings, hideouts: s.hideouts, stamina: s.stamina, interactPrompt: s.interactPrompt,
     portal: s.portal, spectator: s.spectator, state: s.state,
     laptops: s.laptops, teachers: s.teachers, teacherEffects: s.teacherEffects,
     chairs: s.chairs, pickups: s.pickups, lockers: s.lockers, doors: s.doors,

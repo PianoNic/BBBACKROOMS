@@ -86,6 +86,24 @@ class PickupCollectPkt(BaseModel):
     pickupId: str
 
 
+class PingPkt(BaseModel):
+    """Mark a world spot for teammates. Server stamps the sender + colour."""
+    type: Literal["ping"]
+    x: float
+    z: float
+
+
+class HidePkt(BaseModel):
+    """Toggle hiding in the nearest closet (enter or exit)."""
+    type: Literal["hide"]
+
+
+class VoiceNoisePkt(BaseModel):
+    """Client mic picked up speech — emits a noise at the server-known
+    player position (rate-limited server-side)."""
+    type: Literal["voice_noise"]
+
+
 class ReviveStartPkt(BaseModel):
     type: Literal["revive_start"]
     targetId: str
@@ -157,7 +175,7 @@ ClientPacket = Annotated[
         WebRTCSignalPkt, WebcamStatePkt,
         PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
         UseGogglesPkt, BackToLobbyPkt, LockerOpenPkt, DoorTogglePkt,
-        SetCosmeticPkt, BuyCosmeticPkt,
+        SetCosmeticPkt, BuyCosmeticPkt, PingPkt, VoiceNoisePkt, HidePkt,
     ],
     Field(discriminator="type"),
 ]

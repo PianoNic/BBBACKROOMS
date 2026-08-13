@@ -6,6 +6,7 @@ import type {
   LaptopGame,
   LobbyPlayer,
   RosterEntry,
+  RpgBattle,
   SelfCosmetics,
 } from "./types";
 
@@ -61,4 +62,5 @@ export type GambleResultPkt = {
   sum?: number;
   outcome?: "heads" | "tails";
   choice?: string;
+  battle?: RpgBattle;
 };

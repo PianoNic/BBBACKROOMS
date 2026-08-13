@@ -15,9 +15,6 @@ export type ShopResultPkt = {
   balance: number;
   reason: "ok" | "owned" | "insufficient" | "guest" | "unknown" | "error";
 };
-export type PlayerStatePkt = {
-  type: "player_state"; id: string; x: number; z: number; yaw: number;
-};
 export type PlayerLeavePkt = { type: "player_leave"; id: string };
 export type PlayerAvatarPkt = { type: "player_avatar"; id: string; avatar: string };
 
@@ -114,4 +111,25 @@ export type WebcamStateBroadcastPkt = {
   type: "webcam_state";
   id: string;
   on: boolean;
+};
+
+export type PlayerPingPkt = {
+  type: "player_ping";
+  id: string;
+  color: string;
+  x: number;
+  z: number;
+};
+
+export type PlayerHiddenPkt = {
+  type: "player_hidden";
+  id: string;
+  hidden: boolean;
+  x: number;
+  z: number;
+};
+
+export type HideDeniedPkt = {
+  type: "hide_denied";
+  reason: "seen" | "occupied";
 };

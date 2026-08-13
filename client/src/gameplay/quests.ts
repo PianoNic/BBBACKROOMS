@@ -1,5 +1,6 @@
 import type { ItemType, Objective } from "../net/protocol";
 import { SPOT_BASE_Y, buildSpot, type SpotVisuals } from "./questSpot";
+import { withinRadiusXZ } from "../core/geom";
 import * as THREE from "three";
 
 function labelForItem(item: ItemType | null): string {
@@ -71,6 +72,11 @@ export class Quests {
     for (const fn of this.listeners) fn();
   }
 
+  spotPosition(id: string, spotIdx: number): { x: number; z: number } | null {
+    const sObj = this.entries.get(id)?.obj.spots[spotIdx];
+    return sObj ? { x: sObj.x, z: sObj.z } : null;
+  }
+
   list(): Objective[] { return [...this.entries.values()].map((e) => e.obj); }
 
   /** World positions of every undone task spot — used by the tracker item
@@ -94,13 +100,22 @@ export class Quests {
   }
   total(): number { return this.entries.size; }
 
-  getInteractTargets(): QuestInteractTarget[] {
+  /** `others` are the remote players' positions — used to show a live
+   *  headcount on co-op spots ("together (1/2)"). */
+  getInteractTargets(others: { x: number; z: number }[] = []): QuestInteractTarget[] {
     const out: QuestInteractTarget[] = [];
     for (const e of this.entries.values()) {
       if (!e.obj.interact || e.obj.done) continue;
-      const label = labelForItem(e.obj.item);
+      const min = e.obj.min_players ?? 1;
       for (const s of e.obj.spots) {
         if (s.done) continue;
+        let label = labelForItem(e.obj.item);
+        if (min > 1) {
+          const near = 1 + others.filter(
+            (o) => withinRadiusXZ(o.x, o.z, s.x, s.z, e.obj.radius),
+          ).length;
+          label = `together (${Math.min(near, min)}/${min})`;
+        }
         out.push({
           x: s.x, z: s.z, radius: e.obj.radius, label, kind: "quest",
           anchorX: s.anchor_x ?? undefined,

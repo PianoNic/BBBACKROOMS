@@ -57,6 +57,14 @@ PropType = Literal[
     "chalkboard",
     "coat_rack",
     "microscope",
+    # Specialty rooms (music, biology, art, sports, fish).
+    "aquarium",
+    "skeleton",
+    "piano",
+    "water_dispenser",
+    "trophy_case",
+    "ball_rack",
+    "easel",
 ]
 
 

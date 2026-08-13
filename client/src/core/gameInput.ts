@@ -18,7 +18,7 @@ import type { ReviveBar } from "../ui/reviveBar";
 export type GameInputDeps = {
   net: NetClient;
   camera: THREE.PerspectiveCamera;
-  state: { extracted: boolean };
+  state: { extracted: boolean; hidden: boolean };
   reviveState: ReviveState;
   interactPrompt: InteractPrompt;
   laptop: LaptopOverlay;
@@ -46,6 +46,11 @@ export function installGameInput(d: GameInputDeps): void {
 function onKeyDown(d: GameInputDeps, e: KeyboardEvent): void {
   if (d.state.extracted || d.laptop.isOpen()) return;
   if (!document.pointerLockElement) return;
+  if (d.state.hidden) {
+    // Inside a closet only E (climb out) works.
+    if (e.code === "KeyE" && !e.repeat) d.net.send({ type: "hide" });
+    return;
+  }
   if (e.code === "KeyE") {
     if (e.repeat) return;
     handleInteract(d);
@@ -66,11 +71,28 @@ function onKeyDown(d: GameInputDeps, e: KeyboardEvent): void {
   if (e.code === "KeyV" && !e.repeat && !d.voice.isToggleOn()) {
     d.voice.setActive(true);
   }
+  if (e.code === "KeyX" && !e.repeat) {
+    sendPing(d);
+  }
+}
+
+/** Ping the spot the camera looks at: intersect the view ray with the floor
+ *  plane, clamped so sky-gazing still drops a marker a few meters ahead. */
+function sendPing(d: GameInputDeps): void {
+  const origin = new THREE.Vector3();
+  d.camera.getWorldPosition(origin);
+  const dir = new THREE.Vector3();
+  d.camera.getWorldDirection(dir);
+  let t = 18;
+  if (dir.y < -0.02) t = Math.min(40, -origin.y / dir.y);
+  const target = origin.addScaledVector(dir, t);
+  d.net.send({ type: "ping", x: target.x, z: target.z });
 }
 
 function handleInteract(d: GameInputDeps): void {
   const cur = d.interactPrompt.current;
   if (cur?.kind === "laptop") { d.net.send({ type: "gamble_open" }); return; }
+  if (cur?.kind === "hide") { d.net.send({ type: "hide" }); return; }
   if (cur?.kind === "chair" && cur.chairId) {
     d.chairs.requestPickup(d.net, cur.chairId); return;
   }
@@ -120,6 +142,7 @@ function onClick(d: GameInputDeps): void {
     return;
   }
   if (!document.pointerLockElement || d.laptop.isOpen()) return;
+  if (d.state.hidden) return;  // inside a closet only E works
   if (d.chairs.isHoldingChair()) {
     const fwd = new THREE.Vector3();
     d.camera.getWorldDirection(fwd);

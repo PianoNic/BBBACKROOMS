@@ -34,6 +34,15 @@ export type PlayerScore = {
 
 /** The viewing player's own XP/coins/level result for the round. Drives the
  *  level-up animation. `saved` is false for guests (shown but not persisted). */
+export type AchievementUnlocked = {
+  id: string;
+  name: string;
+  description: string;
+  coins: number;
+  icon: string;
+  saved: boolean;
+};
+
 export type SelfRewards = {
   xpEarned: number;
   coinsEarned: number;
@@ -43,6 +52,7 @@ export type SelfRewards = {
   xpForNextLevel: number;
   leveledUp: boolean;
   saved: boolean;
+  achievements?: AchievementUnlocked[];
 };
 
 /** End-of-round stats summary, attached to game_won/game_lost (and to
@@ -91,8 +101,11 @@ export type WorldInit = {
 
 export type WorldGenStartPkt = { type: "world_gen_start" };
 
-export type TeachersStatePkt = {
-  type: "teachers_state";
+/** Batched pose snapshot pushed at `SNAPSHOT_HZ`: `players` carries only
+ *  those who moved since the last tick, `teachers` carries all of them. */
+export type PlayersStatePkt = {
+  type: "players_state";
+  players: { id: string; x: number; z: number; yaw: number }[];
   teachers: { id: string; x: number; z: number }[];
 };
 

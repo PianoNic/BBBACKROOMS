@@ -14,6 +14,8 @@ import { buildPropColliders } from "../world/colliders";
 import { FlickerLights } from "../rendering/lights";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
+import { Hideouts } from "../gameplay/hideouts";
+import { Pings } from "../gameplay/pings";
 import { Quests } from "../gameplay/quests";
 import { TaskBoard } from "../ui/taskboard";
 import { Minimap } from "../ui/minimap";
@@ -69,6 +71,11 @@ export function buildScene(
   ctx.scene.add(quests.group);
   new TaskBoard(quests);
 
+  const pings = new Pings();
+  ctx.scene.add(pings.group);
+
+  const hideouts = new Hideouts(init.props);
+
   const portal = new ExtractionPortal(
     init.extraction.x, init.extraction.z, init.extraction.radius,
   );
@@ -81,6 +88,7 @@ export function buildScene(
   const deadSet = new Set(init.deadPlayers ?? []);
   const state = {
     extracted: init.extractedPlayers.includes(init.selfId) || deadSet.has(init.selfId),
+    hidden: false,
   };
   if (state.extracted) spectator.activate();
   for (const id of deadSet) {
@@ -101,6 +109,11 @@ export function buildScene(
   );
   preloadJumpscareImages((init.teachers ?? []).map((t) => `/teachers/${t.image}`));
   preloadSfx("/sounds/jumpscare/scream.wav");
+  for (const f of [
+    "door-open", "door-close", "locker-open", "lever", "fusebox-door",
+    "pickup", "task-done", "objective-done", "revive", "ping", "throw",
+    "chair-impact", "extract", "escape-phase", "win", "wrong",
+  ]) preloadSfx(`/sounds/actions/${f}.ogg`);
 
   const corpses = new Corpses();
   ctx.scene.add(corpses.group);
@@ -151,7 +164,7 @@ export function buildScene(
   webcam.setPeers(init.players.map((p) => p.id));
 
   return {
-    state, player, remotes, quests, portal, spectator, minimap, stamina,
+    state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, lights, proximityVoice,

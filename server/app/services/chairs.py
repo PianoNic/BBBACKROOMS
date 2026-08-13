@@ -14,6 +14,7 @@ import time as _time
 from app.domain.lobby import ChairProjectile, Lobby, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
+from app.services.noise import CHAIR_THROW_RADIUS, emit_noise
 from app.world.constants import CELL_SIZE
 from app.world.geom import within_radius, within_radius_xz
 
@@ -25,6 +26,11 @@ TEACHER_HIT_RADIUS = 0.85     # m
 PLAYER_HIT_RADIUS = 0.7       # m
 TEACHER_STUN_S = 3.0          # how long a chair-to-the-face stuns a teacher
 PLAYER_STUN_S = 1.5           # friendly-fire stun on players
+# Max distance the projectile may advance between collision samples. The tick
+# is 8 Hz, so a whole step is THROW_SPEED / 8 = 1.75 m — twice the teacher hit
+# radius, which let chairs tunnel clean through a target between two samples.
+# Sub-stepping keeps every sample overlapping the last.
+SUBSTEP_DISTANCE = 0.35       # m
 
 
 def _chair_state_pkt(lobby: Lobby, chair_id: str) -> dict:
@@ -73,6 +79,8 @@ async def handle_drop(lobby: Lobby, me: PlayerConn) -> None:
 async def handle_throw(
     lobby: Lobby, me: PlayerConn, dir_x: float, dir_z: float,
 ) -> None:
+    if me.hidden_in is not None:
+        return  # tucked inside a closet — nothing flies out of it
     cid = _player_holding(lobby, me.id)
     if cid is None:
         return
@@ -102,6 +110,8 @@ async def handle_throw(
         "x": me.x, "z": me.z,
         "vx": dir_x * THROW_SPEED, "vz": dir_z * THROW_SPEED,
     })
+    # A flying chair is the loudest thing in the school.
+    emit_noise(lobby, me.x, me.z, CHAIR_THROW_RADIUS)
 
 
 def _cell_blocks(cells: list[int], width: int, height: int, x: float, z: float) -> bool:
@@ -121,42 +131,57 @@ async def tick_projectiles(lobby: Lobby, dt: float) -> None:
     now = _time.monotonic()
     alive: list[ChairProjectile] = []
     for proj in lobby.chair_projectiles:
-        nx = proj.x + proj.vx * dt
-        nz = proj.z + proj.vz * dt
         hit_id: str | None = None
         hit_kind: str | None = None
+        wall = False
+        # Walk the step in overlapping sub-steps so nothing is skipped, and so
+        # a wall crossed mid-step stops the chair before anything behind it.
+        step_dist = math.hypot(proj.vx, proj.vz) * dt
+        steps = max(1, math.ceil(step_dist / SUBSTEP_DISTANCE))
+        sub_dt = dt / steps
+        cx, cz = proj.x, proj.z          # last safe position
+        nx, nz = proj.x, proj.z          # current sample
+        for _ in range(steps):
+            nx = cx + proj.vx * sub_dt
+            nz = cz + proj.vz * sub_dt
 
-        # Teacher hits.
-        for t in lobby.teachers:
-            if within_radius_xz(t.x, t.z, nx, nz, TEACHER_HIT_RADIUS):
-                t.stun_until = max(t.stun_until, now + TEACHER_STUN_S)
-                owner = lobby.conns.get(proj.owner_id)
-                if owner is not None:
-                    owner.teachers_stunned += 1
-                hit_id, hit_kind = t.id, "teacher"
-                break
-
-        # Player friendly-fire (skip the thrower).
-        if hit_id is None:
-            for p in lobby.conns.values():
-                if p.id == proj.owner_id:
-                    continue
-                if p.id in lobby.dead or p.id in lobby.extracted:
-                    continue
-                if within_radius_xz(p.x, p.z, nx, nz, PLAYER_HIT_RADIUS):
-                    p.stun_until = max(p.stun_until, now + PLAYER_STUN_S)
-                    hit_id, hit_kind = p.id, "player"
+            # Teacher hits.
+            for t in lobby.teachers:
+                if within_radius_xz(t.x, t.z, nx, nz, TEACHER_HIT_RADIUS):
+                    t.stun_until = max(t.stun_until, now + TEACHER_STUN_S)
+                    owner = lobby.conns.get(proj.owner_id)
+                    if owner is not None:
+                        owner.teachers_stunned += 1
+                    hit_id, hit_kind = t.id, "teacher"
                     break
 
-        # Wall hit.
-        wall = hit_id is None and _cell_blocks(cells, gw, gh, nx, nz)
+            # Player friendly-fire (skip the thrower).
+            if hit_id is None:
+                for p in lobby.conns.values():
+                    if p.id == proj.owner_id:
+                        continue
+                    if p.id in lobby.dead or p.id in lobby.extracted:
+                        continue
+                    if within_radius_xz(p.x, p.z, nx, nz, PLAYER_HIT_RADIUS):
+                        p.stun_until = max(p.stun_until, now + PLAYER_STUN_S)
+                        hit_id, hit_kind = p.id, "player"
+                        break
+
+            if hit_id is not None:
+                break
+            # Wall hit.
+            if _cell_blocks(cells, gw, gh, nx, nz):
+                wall = True
+                break
+            cx, cz = nx, nz
+
         timed_out = (now - proj.spawn_t) > THROW_LIFETIME
 
         if hit_id is not None or wall or timed_out:
             chair = lobby.chairs.get(proj.chair_id)
             if chair is not None:
                 # Land where the chair stops, clamped to a walkable cell.
-                lx, lz = (proj.x, proj.z) if wall else (nx, nz)
+                lx, lz = (cx, cz) if wall else (nx, nz)
                 chair.x, chair.z = lx, lz
                 chair.yaw = math.atan2(proj.vx, proj.vz)
                 await broadcast(lobby, {

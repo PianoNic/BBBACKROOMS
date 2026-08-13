@@ -6,11 +6,20 @@ read here; OAuth/session settings are added alongside in the accounts stage.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Where the Docker build drops the Vite output. Absent in a source checkout,
+# where Vite serves the client itself — see `main.py`.
+_DEFAULT_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="", extra="ignore")
+
+    # Built SPA served by the API process, so one image ships the whole game.
+    static_dir: Path = _DEFAULT_STATIC_DIR
 
     # Postgres connection. Defaults target a local dev database; compose
     # overrides DB_HOST=postgres (the service name on the internal network).

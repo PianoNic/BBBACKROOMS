@@ -11,6 +11,7 @@ from app.services.abilities import apply_ability_events
 from app.services.broadcast import broadcast
 from app.services.chairs import push_teacher_stuns, tick_projectiles
 from app.services.doors import maybe_teacher_toggle
+from app.services.noise import assign_noise_to_teachers
 from app.services.pickups import send_inventory
 from app.services.revive import cancel_revives_for, tick_revives
 from app.services.status import (
@@ -39,6 +40,7 @@ async def _check_catches(lobby: Lobby) -> None:
     alive = [
         p for p in lobby.conns.values()
         if p.id not in lobby.dead and p.id not in lobby.extracted
+        and p.hidden_in is None
     ]
     for p in alive:
         for t in lobby.teachers:
@@ -92,12 +94,17 @@ async def _teacher_loop(lobby_id: str) -> None:
             alive = [
                 p for p in lobby.conns.values()
                 if p.id not in lobby.dead and p.id not in lobby.extracted
+                and p.hidden_in is None
             ]
             positions = [(p.x, p.z) for p in alive]
             now = _time.monotonic()
             in_grace = now < lobby.grace_until
             # Freeze teachers during the start-grace window so they can't
             # close distance during the reveal modal and instakill on tick 12.
+            if in_grace:
+                lobby.noise_events.clear()
+            else:
+                assign_noise_to_teachers(lobby, now)
             if not in_grace:
                 teachers_tick(
                     lobby.teachers, lobby.world.grid.cells, lobby.hallway_rects,
@@ -122,12 +129,8 @@ async def _teacher_loop(lobby_id: str) -> None:
             await tick_revives(lobby, now, send_inventory)
             await tick_projectiles(lobby, dt)
             await push_teacher_stuns(lobby, now)
-            await broadcast(lobby, {
-                "type": "teachers_state",
-                "teachers": [
-                    {"id": t.id, "x": t.x, "z": t.z} for t in lobby.teachers
-                ],
-            })
+            # Teacher positions ride along on the batched `players_state`
+            # snapshot (see services/snapshot.py) — no separate fan-out here.
             if not in_grace:
                 await _check_catches(lobby)
             if await _check_game_over(lobby):

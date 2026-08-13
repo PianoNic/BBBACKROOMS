@@ -1,0 +1,121 @@
+@use "variables" as *;
+
+// =========================================================================
+// BBB QUEST (rpg_battle laptop minigame) — dark dungeon browser game.
+// =========================================================================
+$rpg-bg: #15101f;
+$rpg-panel: #221a33;
+$rpg-border: #3c2f57;
+$rpg-gold: #e8c558;
+$rpg-text: #e8e2f4;
+$rpg-muted: #9b8fb8;
+
+.rpg-app {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column;
+  background:
+    radial-gradient(ellipse at 50% 0%, #2a2040 0%, $rpg-bg 65%);
+  color: $rpg-text;
+  font-family: 'Courier New', monospace;
+  padding: 22px 28px;
+  min-height: 540px;
+}
+
+.rpg-header {
+  text-align: center;
+  margin-bottom: 18px;
+  .rpg-title {
+    font-size: 30px; font-weight: 700; letter-spacing: 4px;
+    color: $rpg-gold;
+    text-shadow: 0 0 18px rgba(232, 197, 88, 0.35);
+  }
+  .rpg-subtitle { color: $rpg-muted; font-size: 14px; margin-top: 4px; }
+}
+
+.rpg-arena {
+  display: flex; align-items: stretch; justify-content: center;
+  gap: 22px;
+  margin-bottom: 16px;
+
+  .rpg-vs {
+    align-self: center;
+    font-size: 22px; font-weight: 700; color: $rpg-gold;
+  }
+
+  .rpg-fighter {
+    width: 230px;
+    background: $rpg-panel;
+    border: 1px solid $rpg-border;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+
+    .rpg-sprite { font-size: 58px; line-height: 1; }
+    .rpg-name {
+      font-size: 15px; font-weight: 700;
+      max-width: 100%;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .rpg-hp {
+      width: 100%; height: 14px;
+      background: #0d0a14;
+      border: 1px solid $rpg-border;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .rpg-hp-fill {
+      height: 100%;
+      transition: width 360ms ease;
+    }
+    &.boss .rpg-hp-fill { background: linear-gradient(90deg, #a3263a, #e0445c); }
+    &.player .rpg-hp-fill { background: linear-gradient(90deg, #2c8a4b, #4cc472); }
+
+    .rpg-hp-text { font-size: 12px; color: $rpg-muted; }
+
+    &.rpg-shake { animation: rpg-shake 320ms; }
+  }
+}
+
+@keyframes rpg-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+
+.rpg-log {
+  background: rgba(13, 10, 20, 0.8);
+  border: 1px solid $rpg-border;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-height: 86px;
+  margin-bottom: 16px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+
+  .rpg-log-line { font-size: 13px; line-height: 1.6; }
+  .rpg-log-line:last-child { color: $rpg-gold; }
+}
+
+.rpg-actions {
+  display: flex; justify-content: center; gap: 14px;
+
+  .rpg-action {
+    flex: 0 1 190px;
+    background: $rpg-panel;
+    border: 1px solid $rpg-border;
+    border-radius: 8px;
+    padding: 12px 10px;
+    color: $rpg-text;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: border-color 120ms, transform 80ms;
+
+    &:hover { border-color: $rpg-gold; transform: translateY(-2px); }
+    &:active { transform: translateY(0); }
+
+    .rpg-action-label { font-size: 15px; font-weight: 700; }
+    .rpg-action-sub { font-size: 11px; color: $rpg-muted; }
+  }
+}
