@@ -142,6 +142,7 @@ function onClick(d: GameInputDeps): void {
     return;
   }
   if (!document.pointerLockElement || d.laptop.isOpen()) return;
+  if (d.state.hidden) return;  // inside a closet only E works
   if (d.chairs.isHoldingChair()) {
     const fwd = new THREE.Vector3();
     d.camera.getWorldDirection(fwd);
