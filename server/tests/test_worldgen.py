@@ -82,16 +82,7 @@ class TestConnectivity:
     """An objective the players cannot walk to soft-locks the whole round —
     extraction only opens once every objective is done."""
 
-    @pytest.mark.parametrize("style", [
-        pytest.param(
-            s,
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="issue #51: hallway seals ~72% of the map off from spawn",
-            ) if s == "hallway" else (),
-        )
-        for s in STYLES
-    ])
+    @pytest.mark.parametrize("style", STYLES)
     @pytest.mark.parametrize("seed", SEEDS)
     def test_every_objective_spot_is_reachable_from_spawn(self, style, seed):
         size = 40
@@ -124,10 +115,19 @@ class TestConnectivity:
         cx, cz = cell_of(world.extraction.x, world.extraction.z)
         assert (cx, cz) in reach, f"{style}: nobody can reach extraction"
 
-    def test_the_walkable_area_is_one_connected_region(self, world_medium):
-        """Isolated pockets are where props and spots go to die."""
-        world, _ = world_medium
-        size = world.grid.width
+    @pytest.mark.parametrize("style", STYLES)
+    @pytest.mark.parametrize("seed", SEEDS)
+    def test_the_walkable_area_is_one_connected_region(self, style, seed):
+        """Every walkable cell must be reachable from spawn.
+
+        Isolated pockets are where props and spots go to die — and issue #51
+        was exactly this: the hallway layout sealed ~72% of the map behind
+        doors that opened onto dead space.
+        """
+        size = 40
+        world, _ = generate(
+            seed=seed, width=size, height=size, objective_count=6, style=style,
+        )
         cells = world.grid.cells
         walkable = {
             (x, z)
@@ -137,9 +137,9 @@ class TestConnectivity:
         }
         reach = reachable_from(cells, size, size, cell_of(world.spawn.x, world.spawn.z))
         orphans = walkable - reach
-        # A few sealed cells are tolerable; a whole wing is not.
-        assert len(orphans) < len(walkable) * 0.02, (
-            f"{len(orphans)} of {len(walkable)} walkable cells are cut off"
+        assert not orphans, (
+            f"{style}/seed={seed}: {len(orphans)} of {len(walkable)} walkable "
+            f"cells are cut off from spawn, e.g. {sorted(orphans)[:5]}"
         )
 
 
