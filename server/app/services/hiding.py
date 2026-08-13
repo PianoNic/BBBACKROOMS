@@ -87,6 +87,10 @@ async def handle_hide(lobby: Lobby, me: PlayerConn) -> None:
         if _line_of_sight(grid.cells, grid.width, grid.height, t.x, t.z, me.x, me.z):
             await send_safe(me, {"type": "hide_denied", "reason": "seen"})
             return
+    # A chair can't come into the closet with you — drop it where you stood,
+    # otherwise it stays invisibly "held" by a player who has no way to use it.
+    from app.services.chairs import release_chairs_held_by
+    await release_chairs_held_by(lobby, me.id)
     ho.occupied_by = me.id
     me.hidden_in = ho.id
     me.x, me.z = ho.x, ho.z
