@@ -48,6 +48,19 @@ bun run build      # tsc -b && vite build
 bun run preview    # serves dist/
 ```
 
+## Tests
+Service-level tests for the server live in `server/tests`. They build `Lobby`
+objects directly instead of going through a WebSocket, so they need no running
+backend and no database.
+```powershell
+cd server
+pip install -r requirements-dev.txt
+pytest
+```
+`requirements-dev.txt` is deliberately separate: the Dockerfile installs only
+`requirements.txt` and copies only `app/`, so the runtime image stays free of
+the test toolchain.
+
 ## Configuration (`.env`)
 Copy `.env.example` → `.env`:
 
