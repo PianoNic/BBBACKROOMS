@@ -24,20 +24,20 @@ export function chromeFor(game: LaptopGame): ChromeSpec {
   }
   if (game.startsWith("moodle_")) {
     return {
-      url: "https://moodle.school.example/",
-      tabTitle: "Moodle - BBB Baden",
+      url: "https://moodle.bbbackrooms.ch/",
+      tabTitle: "Moodle - BBB",
       brandLabel: "Moodle BBB",
     };
   }
   if (game === "rpg_battle") {
     return {
-      url: "https://games.school.example/bbb-quest",
+      url: "https://games.bbbackrooms.ch/bbb-quest",
       tabTitle: "BBB Quest",
       brandLabel: "BBB Quest",
     };
   }
   return {
-    url: "https://www.school.example/online-casino",
+    url: "https://www.bbbackrooms.ch/online-casino",
     tabTitle: `BBB-Casino - ${game}`,
     brandLabel: "BBB-Casino",
   };

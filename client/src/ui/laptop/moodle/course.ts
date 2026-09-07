@@ -1,5 +1,5 @@
 /** Moodle "Startseite" dashboard — player must open the course matching
- *  the hint. Mirrors moodle.school.example: centered greeting + course search,
+ *  the hint. Mirrors moodle.bbbackrooms.ch: centered greeting + course search,
  *  "Last Visited" / "All Courses" headers and a card grid with banner,
  *  course-id badge and a red "Go to Course" button. */
 import type { LaptopApp } from "../app";

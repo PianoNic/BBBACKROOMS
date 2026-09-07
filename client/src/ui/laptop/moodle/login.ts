@@ -1,5 +1,5 @@
 /** Moodle login splash shown before every Moodle challenge — mirrors
- *  moodle.school.example: campus backdrop, white card with the BBB logo, the
+ *  moodle.bbbackrooms.ch: campus backdrop, white card with the BBB logo, the
  *  expired-session notice and a prefilled login form. One click on
  *  "Anmelden" fakes a keystroke burst, then hands over to the app. */
 import { el } from "../../dom";
@@ -12,7 +12,7 @@ export function buildMoodleLogin(onLogin: () => void): HTMLDivElement {
   const logo = document.createElement("img");
   logo.className = "moodle-login-logo";
   logo.src = "/bbb-logo.jpg";
-  logo.alt = "BBB Berufsfachschule";
+  logo.alt = "BBB";
   card.appendChild(logo);
 
   card.appendChild(el(
@@ -22,7 +22,7 @@ export function buildMoodleLogin(onLogin: () => void): HTMLDivElement {
 
   const user = el<HTMLInputElement>("input", "moodle-login-input");
   user.type = "text";
-  user.value = "h.ueli@stud.school.example";
+  user.value = "h.ueli";
   user.readOnly = true;
   card.appendChild(user);
 
