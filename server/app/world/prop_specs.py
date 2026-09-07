@@ -133,6 +133,21 @@ PROP_SPECS: dict[str, PropSpec] = {
     # easel: tripod with canvas → 2 x 2 (corner)
     "easel":             PropSpec((2, 2), _CORNER),
 
+    # === Chemistry lab ===
+    # lab_bench: island worktop 2.0 x 1.0 → 4 x 2 (center).
+    # Offers "desk_top" rather than a layer of its own so the existing
+    # desk-top props (microscope) work on it too. Burners only appear in
+    # the lab inventory, where the bench is the only surface offering it.
+    "lab_bench":         PropSpec((4, 2), _CENTER, offers_layer="desk_top"),
+    # fume_hood: cabinet 1.4 x 0.7 → 3 x 2 (wall)
+    "fume_hood":         PropSpec((3, 2), _WALL),
+    # chemical_shelf: 1.2 x 0.32 → 3 x 1 (wall)
+    "chemical_shelf":    PropSpec((3, 1), _WALL),
+    # bunsen_burner: 0.22 base + hose → 1 x 1 on a bench top
+    "bunsen_burner":     PropSpec((1, 1), _ONTOP, requires_layer="desk_top"),
+    # emergency_shower: pipe + head reaching 0.48 out → 2 x 1 (wall)
+    "emergency_shower":  PropSpec((2, 1), _WALL),
+
     # === Floor: no wall constraint, can land in walking lanes ===
     "chair":             PropSpec((1, 1), _FLOOR),
     "trash_can":         PropSpec((1, 1), _FLOOR),

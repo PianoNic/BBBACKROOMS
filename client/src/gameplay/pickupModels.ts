@@ -19,26 +19,25 @@ function buildMedkit(): THREE.Group {
 
 // Lazily loaded once + shared. Reuses the same Texture across all potion
 // pickups so we're not re-decoding the JPG for every can in the level.
-let _elTonyTex: THREE.Texture | null = null;
-function elTonyTexture(): THREE.Texture {
-  if (!_elTonyTex) {
-    _elTonyTex = new THREE.TextureLoader().load("/el-tony-logo.jpg");
-    _elTonyTex.colorSpace = THREE.SRGBColorSpace;
-    _elTonyTex.anisotropy = 4;
+let _labelTex: THREE.Texture | null = null;
+function labelTexture(): THREE.Texture {
+  if (!_labelTex) {
+    _labelTex = new THREE.TextureLoader().load("/potion-label.jpg");
+    _labelTex.colorSpace = THREE.SRGBColorSpace;
+    _labelTex.anisotropy = 4;
   }
-  return _elTonyTex;
+  return _labelTex;
 }
 
 function buildPotion(): THREE.Group {
   const g = new THREE.Group();
-  // El Tony Mate-style can. Stubby / wide proportions (fat short can, not
-  // a slim energy drink). Navy body, gold bands at top + bottom (the
-  // aztec ribbon pattern simplified to solid rings), real logo wrapped
-  // around the front, exposed aluminium lid + base.
+  // Mate energy can. Stubby / wide proportions (fat short can, not a slim
+  // energy drink). Navy body, gold bands at top + bottom, generic label
+  // wrapped around the front, exposed aluminium lid + base.
   const navyMat = new THREE.MeshLambertMaterial({ color: 0x506c95 });
   const silverMat = new THREE.MeshLambertMaterial({ color: 0xc8ccd2 });
   const goldMat = new THREE.MeshLambertMaterial({ color: 0xf2c130 });
-  const logoMat = new THREE.MeshBasicMaterial({ map: elTonyTexture() });
+  const logoMat = new THREE.MeshBasicMaterial({ map: labelTexture() });
 
   const RADIUS = 0.13;
   const HEIGHT = 0.30;

@@ -20,15 +20,9 @@ const wallTexture = loadTiled("/textures/wall.png", [1, 1.5]);
 const floorTexture = loadTiled("/textures/floor.png", [1, 1]);
 const ceilingTexture = loadTiled("/textures/ceiling.png", [1, 1]);
 
-const PAINTING_FILES: ReadonlyArray<string> = [
-  "1.png", "2.png", "3.jpeg", "4.jpeg", "5.png", "6.jpeg",
-  "7.png", "8.png", "9.png", "10.png", "11.png", "12.jpeg",
-  "13.jpeg", "14.jpeg", "15.png", "16.png", "17.jpeg", "18.png",
-  "19.jpeg", "20.jpeg", "21.jpeg", "22.jpeg", "23.jpeg", "24.jpeg",
-  "25.jpeg", "26.jpeg", "27.jpeg", "28.jpeg", "29.png", "30.png",
-  "31.png", "32.png", "33.jpeg", "34.png", "35.png", "36.png",
-  "37.png", "38.png", "39.jpeg", "40.jpeg", "41.png", "42.jpeg",
-];
+const PAINTING_FILES: ReadonlyArray<string> = Array.from(
+  { length: 42 }, (_, i) => `painting-${String(i + 1).padStart(2, "0")}.png`,
+);
 const paintingMaterials = PAINTING_FILES.map(
   (f) => new THREE.MeshLambertMaterial({ map: loadPainting(`/textures/paintings/${f}`) }),
 );

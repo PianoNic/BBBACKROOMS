@@ -1,5 +1,5 @@
 /** Moodle "Startseite" dashboard — player must open the course matching
- *  the hint. Mirrors moodle.school.example: centered greeting + course search,
+ *  the hint. Mirrors moodle.bbbackrooms.ch: centered greeting + course search,
  *  "Last Visited" / "All Courses" headers and a card grid with banner,
  *  course-id badge and a red "Go to Course" button. */
 import type { LaptopApp } from "../app";
@@ -39,7 +39,7 @@ export class MoodleCourseApp implements LaptopApp {
     const main = el<HTMLDivElement>("div", "moodle-main");
 
     const greet = el<HTMLDivElement>("div", "moodle-greet");
-    greet.appendChild(el("h1", "moodle-h1", "Hallo, Niclas Dario Rafael Erismann!"));
+    greet.appendChild(el("h1", "moodle-h1", "Hallo, Hans Ueli!"));
     greet.appendChild(el("span", "moodle-wave", "👋"));
     main.appendChild(greet);
 

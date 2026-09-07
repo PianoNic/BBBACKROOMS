@@ -3,7 +3,7 @@
 </p>
 <p align="center">
   <strong>bbbackrooms</strong><br/>
-  Backrooms-Horror in der BBB Baden. Tasks lösen, den Lehrern ausweichen, in der Aula raus.
+  Backrooms-Horror in der BBB. Tasks lösen, den Lehrern ausweichen, in der Aula raus.
 </p>
 <p align="center">
   <a href="https://github.com/PianoNic/BBBACKROOMS"><img src="https://badgetrack.pianonic.ch/badge?tag=bbbackrooms&label=visits&color=c9a227&style=flat" alt="visits" /></a>
@@ -16,7 +16,7 @@
 
 ## Was ist bbbackrooms?
 
-Ein Multiplayer-Horrorspiel, das in der BBB Baden spielt. Bis zu 100 Schüler stecken in einer
+Ein Multiplayer-Horrorspiel, das in der BBB spielt. Bis zu 100 Schüler stecken in einer
 Backrooms-Version der Schule fest, während patrouillierende Lehrer die Gänge ablaufen — jeder mit
 seiner eigenen Fähigkeit.
 
