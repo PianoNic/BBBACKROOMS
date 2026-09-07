@@ -1,5 +1,5 @@
-/** Top navbar for the Moodle (BBB Baden) theme.
- *  Mirrors moodle.school.example — white bar, BBB logo on the left, dark nav
+/** Top navbar for the Moodle (BBB) theme.
+ *  Mirrors moodle.bbbackrooms.ch — white bar, BBB logo on the left, dark nav
  *  items with a red underline on the active one, and bell / chat / avatar
  *  icons on the right. */
 import { el } from "../../dom";
@@ -20,7 +20,7 @@ export function buildMoodleNav(active: NavKey): HTMLDivElement {
   const logo = document.createElement("img");
   logo.className = "moodle-logo-img";
   logo.src = "/bbb-logo.jpg";
-  logo.alt = "BBB Berufsfachschule";
+  logo.alt = "BBB";
   left.appendChild(logo);
   nav.appendChild(left);
 

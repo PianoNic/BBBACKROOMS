@@ -15,7 +15,7 @@ const SECTIONS: Section[] = [
   {
     title: "Setup",
     bullets: [
-      "Bis zu 100 Spieler werden in der BBB Baden eingesperrt.",
+      "Bis zu 100 Spieler werden in der BBB eingesperrt.",
       "Lehrer patrouillieren die Schule und versuchen euch zu erwischen.",
       "Jeder Lehrer hat eine eigene Fähigkeit (Bälle werfen, Bussen verteilen, Boden vereisen, ...).",
     ],
