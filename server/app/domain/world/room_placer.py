@@ -9,10 +9,10 @@ from __future__ import annotations
 import math
 import random
 
-from app.schemas.world import Prop
-from app.world.prop_specs import SUB_CELL, PropSpec
-from app.world.room_grid import ALL_WALLS, RoomGrid, Wall
-from app.world.room_placer_stack import place_on
+from app.application.dtos.world import Prop
+from app.domain.world.prop_specs import SUB_CELL, PropSpec
+from app.domain.world.room_grid import ALL_WALLS, RoomGrid, Wall
+from app.domain.world.room_placer_stack import place_on
 
 __all__ = [
     "place_wall", "place_any_wall", "place_center",

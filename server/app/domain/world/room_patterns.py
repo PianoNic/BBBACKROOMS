@@ -10,10 +10,10 @@ from __future__ import annotations
 import math
 import random
 
-from app.schemas.world import Prop
-from app.world.prop_specs import PropSpec
-from app.world.room_grid import RoomGrid
-from app.world.room_placer import CENTER_MARGIN_SUBCELLS, place_center
+from app.application.dtos.world import Prop
+from app.domain.world.prop_specs import PropSpec
+from app.domain.world.room_grid import RoomGrid
+from app.domain.world.room_placer import CENTER_MARGIN_SUBCELLS, place_center
 
 
 def place_grid_fill(

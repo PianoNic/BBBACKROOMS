@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import deque
 
-from app.world.constants import CELL_SIZE
+from app.domain.world.constants import CELL_SIZE
 
 WALKABLE = 1
 

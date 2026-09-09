@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.world.constants import CELL_SIZE, MAP_SIZES
-from app.world.generator import _LAYOUT_BUILDERS, generate
+from app.domain.world.constants import CELL_SIZE, MAP_SIZES
+from app.domain.world.generator import _LAYOUT_BUILDERS, generate
 
 from .worldgen_helpers import cell_of, is_walkable, nearest_walkable, reachable_from
 

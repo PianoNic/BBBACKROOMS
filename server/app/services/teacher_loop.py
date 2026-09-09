@@ -6,7 +6,7 @@ import random
 import time as _time
 
 from app.domain.lobby import Lobby
-from app.domain.lobby_store import get_lobby
+from app.game.lobby_store import get_lobby
 from app.services.abilities import apply_ability_events
 from app.services.broadcast import broadcast
 from app.services.chairs import push_teacher_stuns, tick_projectiles
@@ -19,10 +19,10 @@ from app.services.status import (
     apply_potion_puddles,
     push_player_status,
 )
-from app.world.geom import within_radius
-from app.world.physics import TEACHER_CATCH_RADIUS, TEACHER_TICK_HZ
-from app.world.teachers import collect_events as collect_teacher_events
-from app.world.teachers import tick as teachers_tick
+from app.domain.world.geom import within_radius
+from app.domain.world.physics import TEACHER_CATCH_RADIUS, TEACHER_TICK_HZ
+from app.domain.world.teachers import collect_events as collect_teacher_events
+from app.domain.world.teachers import tick as teachers_tick
 
 
 _teacher_tasks: dict[str, asyncio.Task] = {}

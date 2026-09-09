@@ -11,8 +11,8 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from app.world.constants import CELL_SIZE
-from app.world.layout._types import (
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.layout._types import (
     CORRIDOR,
     DOOR,
     EMPTY,

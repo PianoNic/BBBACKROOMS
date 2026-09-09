@@ -1,7 +1,7 @@
 """Grid pathfinding used by the teacher AI (issue #50)."""
 from __future__ import annotations
 
-from app.world.pathfind import find_path_cells
+from app.domain.world.pathfind import find_path_cells
 
 W = H = 8
 

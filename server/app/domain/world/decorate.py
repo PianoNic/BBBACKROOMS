@@ -8,10 +8,10 @@ from __future__ import annotations
 import math
 import random
 
-from app.schemas.world import Light, Prop
-from app.world.constants import CELL_SIZE, HALL_LIGHT_SPACING, HALL_THICKNESS
-from app.world.decorator import decorate_atrium, decorate_room
-from app.world.layout import Layout, Rect, Room
+from app.application.dtos.world import Light, Prop
+from app.domain.world.constants import CELL_SIZE, HALL_LIGHT_SPACING, HALL_THICKNESS
+from app.domain.world.decorator import decorate_atrium, decorate_room
+from app.domain.world.layout import Layout, Rect, Room
 
 
 def _hallway_lights(hall: Rect) -> list[Light]:

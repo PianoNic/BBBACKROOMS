@@ -10,8 +10,8 @@ from app.domain.lobby import Laptop, Lobby, PlayerConn
 from app.services.broadcast import broadcast
 from app.services.laptop_challenges import is_correct
 from app.services.rpg_battle import play_rpg
-from app.world.geom import distance_squared_xz
-from app.world.physics import LAPTOP_INTERACT_RADIUS
+from app.domain.world.geom import distance_squared_xz
+from app.domain.world.physics import LAPTOP_INTERACT_RADIUS
 
 SLOT_SYMBOLS = 3
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.world.generator import _LAYOUT_BUILDERS, generate
+from app.domain.world.generator import _LAYOUT_BUILDERS, generate
 from tools.analyze_layout import _overlaps
 
 STYLES = sorted(_LAYOUT_BUILDERS)
@@ -41,7 +41,7 @@ def test_no_overlaps_at_other_map_sizes(size):
 def test_the_detector_ignores_legitimate_stacking():
     """A microwave is supposed to sit inside its counter's footprint — if the
     detector flagged that, the tests above would pass for the wrong reason."""
-    from app.schemas.world import Prop
+    from app.application.dtos.world import Prop
     from tools.analyze_layout import _stacking_pair
 
     assert _stacking_pair("microwave", "counter")

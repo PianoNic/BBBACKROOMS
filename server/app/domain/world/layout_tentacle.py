@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import random
 
-from app.world.constants import CELL_SIZE
-from app.world.layout._rooms import place_outward
-from app.world.layout._types import (
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.layout._rooms import place_outward
+from app.domain.world.layout._types import (
     CORRIDOR,
     DOOR,
     EMPTY,

@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import random
 
-from app.world.constants import CELL_SIZE
-from app.world.generator import generate
-from app.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME
-from app.world.teacher_spawn import spawn_teachers
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.generator import generate
+from app.domain.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME
+from app.domain.world.teacher_spawn import spawn_teachers
 
 from .worldgen_helpers import cell_of, is_walkable, reachable_from
 

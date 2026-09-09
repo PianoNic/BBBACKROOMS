@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import random
 
-from app.schemas.world import Prop
-from app.world.prop_specs import PropSpec
-from app.world.room_grid import ALL_WALLS, RoomGrid
+from app.application.dtos.world import Prop
+from app.domain.world.prop_specs import PropSpec
+from app.domain.world.room_grid import ALL_WALLS, RoomGrid
 
 
 def place_on(

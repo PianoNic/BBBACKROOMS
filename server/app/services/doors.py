@@ -14,7 +14,7 @@ from app.domain.lobby import Lobby, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.services.noise import DOOR_RADIUS, emit_noise
-from app.world.geom import within_radius_xz
+from app.domain.world.geom import within_radius_xz
 
 DOOR_REACH = 3.5
 TEACHER_TOGGLE_RADIUS = 1.0

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import heapq
 
-from app.world.layout._types import CORRIDOR, EMPTY, grid_size
+from app.domain.world.layout._types import CORRIDOR, EMPTY, grid_size
 
 
 def block_in_grid(b: tuple[int, int]) -> bool:

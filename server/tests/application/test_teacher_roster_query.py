@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.application.queries.get_teacher_roster_query import GetTeacherRosterHandler, GetTeacherRosterQuery
-from app.world.teacher_roster import TEACHER_ROSTER, roster_dto
+from app.domain.world.teacher_roster import TEACHER_ROSTER, roster_dto
 
 
 def test_roster_dto_matches_roster_length():

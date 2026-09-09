@@ -5,7 +5,7 @@ import time as _time
 
 from app.domain.lobby import Lobby, PlayerConn
 from app.services.broadcast import broadcast
-from app.world.geom import within_radius
+from app.domain.world.geom import within_radius
 
 
 async def try_complete_spots(

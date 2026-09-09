@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import random
 
-from app.world.layout._astar import astar_2x2
-from app.world.layout._types import (
+from app.domain.world.layout._astar import astar_2x2
+from app.domain.world.layout._types import (
     CORRIDOR,
     EMPTY,
     Direction,

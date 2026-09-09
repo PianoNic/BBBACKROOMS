@@ -47,7 +47,7 @@ from app.infrastructure.persistence.repositories.peewee_profile_repository impor
 from app.infrastructure.realtime.cloudflare_ice_server_provider import CloudflareIceServerProvider
 from app.infrastructure.security.hmac_token_service import token_service
 from app.version import VERSION
-from app.world.teacher_roster import TEACHER_ROSTER
+from app.domain.world.teacher_roster import TEACHER_ROSTER
 
 _log = logging.getLogger("bbb.mediator")
 

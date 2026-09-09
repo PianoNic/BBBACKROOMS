@@ -1,6 +1,6 @@
 """Lobby lifecycle: starting the game, building outbound state DTOs.
 
-The store (`app.domain.lobby_store`) owns create/get/delete; this module
+The store (`app.game.lobby_store`) owns create/get/delete; this module
 handles "moving the lobby into running" and serialising its state for the
 client. Pure async functions, no FastAPI dependency."""
 from __future__ import annotations
@@ -12,9 +12,9 @@ import time as _time
 
 from app.domain.lobby import GAMES, Chair, Door, Hideout, Laptop, Lobby, Locker, PlayerConn
 from app.services.laptop_challenges import make_challenge
-from app.world.generator import generate
-from app.world.pickups import fill_lockers
-from app.world.teachers import spawn_teachers, to_dto
+from app.domain.world.generator import generate
+from app.domain.world.pickups import fill_lockers
+from app.domain.world.teachers import spawn_teachers, to_dto
 
 
 # Seconds of safety after game start so the slot-machine reveal can play out
@@ -96,7 +96,7 @@ def start_lobby(lobby: Lobby) -> None:
 
 def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
     """Snapshot of a lobby's waiting room for a freshly connected player."""
-    from app.world.teachers import roster_dto
+    from app.domain.world.teachers import roster_dto
     me = lobby.conns.get(self_id)
     return {
         "type": "lobby_state",

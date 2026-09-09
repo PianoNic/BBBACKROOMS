@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import random
 
-from app.schemas.world import Prop
-from app.world.inventories import (
+from app.application.dtos.world import Prop
+from app.domain.world.inventories import (
     ATRIUM_INVENTORY, INVENTORIES, Slot,
 )
-from app.world.layout import Rect, Room
-from app.world.prop_specs import get as get_spec
-from app.world.room_grid import RoomGrid, SUB_CELL
-from app.world.room_patterns import place_grid_fill, place_paired
-from app.world.room_placer import (
+from app.domain.world.layout import Rect, Room
+from app.domain.world.prop_specs import get as get_spec
+from app.domain.world.room_grid import RoomGrid, SUB_CELL
+from app.domain.world.room_patterns import place_grid_fill, place_paired
+from app.domain.world.room_placer import (
     place_any_wall, place_center, place_corner, place_floor, place_on,
     place_wall,
 )

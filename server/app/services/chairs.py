@@ -15,8 +15,8 @@ from app.domain.lobby import ChairProjectile, Lobby, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.services.noise import CHAIR_THROW_RADIUS, emit_noise
-from app.world.constants import CELL_SIZE
-from app.world.geom import within_radius, within_radius_xz
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.geom import within_radius, within_radius_xz
 
 
 PICKUP_RADIUS = 3.0           # m — must be this close to grab

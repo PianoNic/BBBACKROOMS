@@ -10,9 +10,9 @@ from __future__ import annotations
 import math
 from typing import Literal
 
-from app.world.frame import Frame, make_frame
-from app.world.layout import Room
-from app.world.prop_specs import SUB_CELL, PropSpec
+from app.domain.world.frame import Frame, make_frame
+from app.domain.world.layout import Room
+from app.domain.world.prop_specs import SUB_CELL, PropSpec
 
 Wall = Literal["front", "back", "side_a", "side_b"]
 ALL_WALLS: tuple[Wall, ...] = ("front", "back", "side_a", "side_b")

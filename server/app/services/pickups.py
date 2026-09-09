@@ -10,7 +10,7 @@ import time as _time
 from app.domain.lobby import Lobby, PlayerConn
 from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
-from app.world.geom import within_radius
+from app.domain.world.geom import within_radius
 
 PICKUP_RADIUS = 3.0
 POTION_DURATION = 8.0
