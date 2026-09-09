@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 
 from fastapi import WebSocket
 
-from app.schemas.world import WorldInit
-from app.world.layout import Rect
-from app.world.teachers import TeacherState
+from app.application.dtos.world import WorldInit
+from app.domain.world.layout import Rect
+from app.domain.world.teachers import TeacherState
 
 
 GAMES = (

@@ -9,7 +9,7 @@ from __future__ import annotations
 import random
 
 from app.domain.lobby import Locker
-from app.world.constants import SCALE_REFERENCE_CELLS
+from app.domain.world.constants import SCALE_REFERENCE_CELLS
 
 # Per-pickup spawn rules. `base` = count on the reference-size (120²) map;
 # the actual count scales with the map's cell-area but is clamped to

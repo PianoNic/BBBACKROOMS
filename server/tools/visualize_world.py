@@ -19,11 +19,11 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from app.world.constants import CELL_SIZE
-from app.world import decorator as _dec_mod
-from app.world.generator import generate
-from app.world.prop_specs import SUB_CELL, get as get_spec
-from app.world.room_grid import RoomGrid
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world import decorator as _dec_mod
+from app.domain.world.generator import generate
+from app.domain.world.prop_specs import SUB_CELL, get as get_spec
+from app.domain.world.room_grid import RoomGrid
 
 PIXELS_PER_METRE = 8
 PAD_CELLS = 4  # blank border around the grid so the red boundary is visible
@@ -299,7 +299,7 @@ def _draw_room_boundaries(draw, layout, px_per_cell: int) -> None:
     edge — where the floor-plan generator is actually allowed to drop
     rooms and corridors). The void outside is the safety strip.
     Magenta = hallway / atrium rects (corridor bounding boxes)."""
-    from app.world.constants import MARGIN
+    from app.domain.world.constants import MARGIN
     draw.rectangle(
         [MARGIN * px_per_cell, MARGIN * px_per_cell,
          (layout.width - MARGIN) * px_per_cell - 1,

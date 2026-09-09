@@ -10,7 +10,7 @@ from __future__ import annotations
 import time as _time
 from dataclasses import dataclass
 
-from app.world.teachers import TeacherState, line_of_sight
+from app.domain.world.teachers import TeacherState, line_of_sight
 
 # Each entry: (cooldown_s, range_m). range_m=0 means "no proximity check".
 # Only abilities listed here fire periodic events; the rest are passives.

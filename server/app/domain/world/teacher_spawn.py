@@ -9,11 +9,11 @@ from __future__ import annotations
 import random
 import secrets
 
-from app.world.constants import CELL_SIZE
-from app.world.layout import Rect
-from app.world.teacher_events import ABILITY_EVENTS
-from app.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME
-from app.world.teachers import TeacherState, _set_grid
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.layout import Rect
+from app.domain.world.teacher_events import ABILITY_EVENTS
+from app.domain.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME
+from app.domain.world.teachers import TeacherState, _set_grid
 
 
 def spawn_teachers(

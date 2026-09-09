@@ -5,8 +5,8 @@ from __future__ import annotations
 import random
 from collections import deque
 
-from app.world.layout_tentacle import build_layout
-from app.world.layout._types import CORRIDOR, DOOR, ROOM
+from app.domain.world.layout_tentacle import build_layout
+from app.domain.world.layout._types import CORRIDOR, DOOR, ROOM
 
 
 def reachable_from_atrium(layout) -> set[tuple[int, int]]:

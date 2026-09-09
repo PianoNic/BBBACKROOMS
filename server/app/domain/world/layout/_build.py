@@ -4,10 +4,10 @@ from __future__ import annotations
 import random
 from collections import deque
 
-from app.world.constants import CELL_SIZE
-from app.world.layout._corridors import atrium_door_pairs, connect_rooms
-from app.world.layout._rooms import pick_door, place_outward
-from app.world.layout._types import (
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.layout._corridors import atrium_door_pairs, connect_rooms
+from app.domain.world.layout._rooms import pick_door, place_outward
+from app.domain.world.layout._types import (
     ATRIUM_SIZE,
     CORRIDOR,
     DOOR,

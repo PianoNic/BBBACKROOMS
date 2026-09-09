@@ -15,8 +15,8 @@ from app.domain.lobby import Hideout, Lobby, PlayerConn
 from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
 from app.services.noise import emit_noise
-from app.world.constants import CELL_SIZE
-from app.world.geom import distance_squared_xz, wall_forward, within_radius_xz
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.geom import distance_squared_xz, wall_forward, within_radius_xz
 
 HIDE_RADIUS = 2.2      # m — how close the player must stand to enter
 SEEN_RADIUS = 9.0      # m — a watching teacher this close blocks entry

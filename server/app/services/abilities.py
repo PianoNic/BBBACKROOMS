@@ -25,9 +25,9 @@ from app.services._abilities_effects import (
     delayed_puddle, delayed_slow, delayed_stun,
 )
 from app.services.broadcast import broadcast
-from app.world.constants import CELL_SIZE
-from app.world.geom import distance_squared
-from app.world.teachers import AbilityEvent, TeacherState
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.geom import distance_squared
+from app.domain.world.teachers import AbilityEvent, TeacherState
 
 
 def _pick_random_room_point(

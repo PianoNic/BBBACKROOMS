@@ -4,11 +4,11 @@ from __future__ import annotations
 import random
 import secrets
 
-from app.schemas.world import ItemType, Objective, Prop, Spot
-from app.world._quest_items import FALLBACK, ITEMS_BY_ARCHETYPE
-from app.world.constants import CELL_SIZE
-from app.world.geom import wall_forward
-from app.world.layout import Layout
+from app.application.dtos.world import ItemType, Objective, Prop, Spot
+from app.domain.world._quest_items import FALLBACK, ITEMS_BY_ARCHETYPE
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.geom import wall_forward
+from app.domain.world.layout import Layout
 
 FIND_COUNT = 4
 

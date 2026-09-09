@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from app.world.room_grid import Wall
+from app.domain.world.room_grid import Wall
 
 Pattern = Literal["default", "grid_fill", "paired"]
 

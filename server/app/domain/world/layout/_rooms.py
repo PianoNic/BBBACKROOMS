@@ -5,13 +5,13 @@ from __future__ import annotations
 import random
 from collections import deque
 
-from app.world.constants import (
+from app.domain.world.constants import (
     CLASSROOM_DEPTH_MAX,
     CLASSROOM_DEPTH_MIN,
     CLASSROOM_WIDTH_MAX,
     CLASSROOM_WIDTH_MIN,
 )
-from app.world.layout._types import (
+from app.domain.world.layout._types import (
     ATRIUM_GAP,
     EMPTY,
     MAX_BFS_ROOMS,

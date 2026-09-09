@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 from app.services import chairs as chairs_svc
-from app.world.teachers import TeacherState
+from app.domain.world.teachers import TeacherState
 
 from .conftest import add_chair, add_player, make_lobby
 

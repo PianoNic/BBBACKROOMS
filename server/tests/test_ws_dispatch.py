@@ -15,7 +15,7 @@ from pydantic import ValidationError
 
 from app.api import ws
 from app.api.ws_dispatch import dispatch
-from app.schemas.packets import ClientPacketAdapter, PackAnnouncePkt
+from app.application.dtos.packets import ClientPacketAdapter, PackAnnouncePkt
 from app.services.lobby_service import lobby_room_state
 
 from .conftest import add_player, make_lobby

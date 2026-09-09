@@ -7,7 +7,7 @@ import secrets
 from fastapi import WebSocket
 
 from app.domain.lobby import ChatMessage, Lobby, PlayerConn
-from app.schemas.packets import (
+from app.application.dtos.packets import (
     ChairDropPkt, ChairPickupPkt, ChairThrowPkt, ChatSendPkt, DoorTogglePkt,
     GamblePlayPkt, LobbySettingsPkt, LockerOpenPkt, MovePkt, SetAvatarPkt,
     SetNamePkt, StartGamePkt, WebRTCSignalPkt, WebcamStatePkt,
@@ -95,7 +95,7 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
                 s for s in pkt.selectedTeachers if isinstance(s, str)
             ]
         if pkt.mapSize is not None:
-            from app.world.constants import MAP_SIZES
+            from app.domain.world.constants import MAP_SIZES
             allowed = set(MAP_SIZES.values())
             if pkt.mapSize in allowed:
                 lobby.map_size = pkt.mapSize

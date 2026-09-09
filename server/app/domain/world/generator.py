@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import random
 
-from app.schemas.world import ExtractionZone, Grid, RosterEntry, Spawn, WorldInit
-from app.world.constants import CELL_SIZE, DEFAULT_MAP_CELLS
-from app.world.decorate import decorate
-from app.world.layout import Layout, build_layout
-from app.world.layout_bsp import build_layout as build_layout_bsp
-from app.world.layout_hallway import build_layout as build_layout_hallway
-from app.world.layout_tentacle import build_layout as build_layout_tentacle
-from app.world.quests import build_objectives
-from app.world.teachers import TEACHER_ROSTER
+from app.application.dtos.world import ExtractionZone, Grid, RosterEntry, Spawn, WorldInit
+from app.domain.world.constants import CELL_SIZE, DEFAULT_MAP_CELLS
+from app.domain.world.decorate import decorate
+from app.domain.world.layout import Layout, build_layout
+from app.domain.world.layout_bsp import build_layout as build_layout_bsp
+from app.domain.world.layout_hallway import build_layout as build_layout_hallway
+from app.domain.world.layout_tentacle import build_layout as build_layout_tentacle
+from app.domain.world.quests import build_objectives
+from app.domain.world.teachers import TEACHER_ROSTER
 
 _LAYOUT_BUILDERS = {
     "baseline": build_layout,

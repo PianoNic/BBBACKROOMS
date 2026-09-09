@@ -3,7 +3,7 @@ The narrative half — what's lost in a teacher room vs. a server room —
 lives here so the quest engine stays focused on placement logic."""
 from __future__ import annotations
 
-from app.schemas.world import ItemType
+from app.application.dtos.world import ItemType
 
 ItemEntry = tuple[str, ItemType]
 

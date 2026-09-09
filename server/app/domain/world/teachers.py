@@ -6,7 +6,7 @@ Spawn placement lives in `teacher_spawn`, ability events in
 `teacher_events`, roster data in `teacher_roster`.
 
 Re-exports `spawn_teachers`, `TEACHER_ROSTER`, `AbilityEvent`, and
-`collect_events` so existing import sites (`from app.world.teachers import
+`collect_events` so existing import sites (`from app.domain.world.teachers import
 …`) keep working."""
 from __future__ import annotations
 
@@ -15,9 +15,9 @@ import random
 import time as _time
 from dataclasses import dataclass, field
 
-from app.schemas.world import Teacher
-from app.world.constants import CELL_SIZE
-from app.world.layout import Rect
+from app.application.dtos.world import Teacher
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.layout import Rect
 
 
 @dataclass
@@ -106,7 +106,7 @@ def tick(
     height: int = 120,
 ) -> None:
     """Advance every non-stunned teacher one AI step."""
-    from app.world.teacher_ai import step_teacher
+    from app.domain.world.teacher_ai import step_teacher
 
     _set_grid(width, height)
     now = _time.monotonic()
@@ -120,11 +120,11 @@ def tick(
 # Back-compat re-exports — callers used to import these directly from
 # this module. Keeping them here means we don't have to chase every import
 # site every time the internal layout changes.
-from app.world.teacher_events import (  # noqa: E402
+from app.domain.world.teacher_events import (  # noqa: E402
     AbilityEvent, ABILITY_EVENTS, PROJECTILE_ABILITIES, collect_events,
 )
-from app.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME, roster_dto  # noqa: E402
-from app.world.teacher_spawn import spawn_teachers  # noqa: E402
+from app.domain.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME, roster_dto  # noqa: E402
+from app.domain.world.teacher_spawn import spawn_teachers  # noqa: E402
 
 __all__ = [
     "TeacherState", "spawn_teachers", "to_dto", "tick",

@@ -10,16 +10,16 @@ from __future__ import annotations
 import math
 import random
 
-from app.world.constants import CELL_SIZE
-from app.world.geom import distance_squared_xz
-from app.world.layout import Rect
-from app.world.pathfind import find_path_cells
-from app.world.physics import (
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.geom import distance_squared_xz
+from app.domain.world.layout import Rect
+from app.domain.world.pathfind import find_path_cells
+from app.domain.world.physics import (
     TEACHER_ARRIVE_DIST as ARRIVE_DIST,
     TEACHER_CHASE_RADIUS as CHASE_RADIUS,
     TEACHER_SPEED as SPEED,
 )
-from app.world.teachers import TeacherState, line_of_sight, get_grid_dims
+from app.domain.world.teachers import TeacherState, line_of_sight, get_grid_dims
 
 # How often (seconds) to re-plan a BFS path. Chasing a moving player needs
 # regular updates; patrolling can stay on its plan until the path is empty.

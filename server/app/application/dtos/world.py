@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from app.schemas.prop_types import ItemType, PropType
+from app.application.dtos.prop_types import ItemType, PropType
 
 __all__ = [
     "Spawn", "Grid", "Light", "PropType", "Prop", "ItemType", "Spot",
@@ -77,7 +77,7 @@ class Teacher(BaseModel):
     image: str  # filename under /teachers/, e.g. "001-Alma-Egli.jpg"
     name: str
     subject: str
-    ability: str  # ability id, see app/world/teachers.py
+    ability: str  # ability id, see app/domain/world/teachers.py
     x: float
     z: float
 

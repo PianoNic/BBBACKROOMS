@@ -14,8 +14,8 @@ from app.db.accounts_repo import get_account
 from app.db.engine import db_available
 from app.domain.cosmetics.cosmetic_catalog import cosmetic_catalog
 from app.domain.lobby import PlayerConn
-from app.domain.lobby_store import delete_lobby, get_lobby
-from app.schemas.packets import ClientPacketAdapter
+from app.game.lobby_store import delete_lobby, get_lobby
+from app.application.dtos.packets import ClientPacketAdapter
 from app.services.broadcast import broadcast
 from app.services.lobby_service import lobby_room_state
 from app.services.revive import cancel_revives_for

@@ -28,9 +28,9 @@ import math
 import statistics
 from collections import Counter, defaultdict, deque
 
-from app.world.constants import CELL_SIZE
-from app.world.generator import _LAYOUT_BUILDERS, generate
-from app.world.prop_specs import PROP_SPECS, SUB_CELL
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.generator import _LAYOUT_BUILDERS, generate
+from app.domain.world.prop_specs import PROP_SPECS, SUB_CELL
 
 STEPS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 

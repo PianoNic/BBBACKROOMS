@@ -11,8 +11,8 @@ import math
 from dataclasses import dataclass
 from typing import Callable
 
-from app.world.constants import CELL_SIZE
-from app.world.layout import Room
+from app.domain.world.constants import CELL_SIZE
+from app.domain.world.layout import Room
 
 Placer = Callable[[float, float], tuple[float, float]]
 

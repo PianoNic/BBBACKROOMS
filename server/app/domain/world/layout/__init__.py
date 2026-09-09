@@ -10,8 +10,8 @@ Algorithm overview:
      (`_corridors` module).
   5. Erase rooms / corridor stubs that the MST couldn't connect.
 """
-from app.world.layout._build import build_layout
-from app.world.layout._types import (
+from app.domain.world.layout._build import build_layout
+from app.domain.world.layout._types import (
     CORRIDOR,
     DOOR,
     EMPTY,

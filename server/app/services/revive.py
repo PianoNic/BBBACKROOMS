@@ -11,7 +11,7 @@ import time as _time
 from app.domain.lobby import Lobby, PlayerConn, Revive
 from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
-from app.world.geom import within_radius_xz
+from app.domain.world.geom import within_radius_xz
 
 REVIVE_RADIUS = 4.0
 REVIVE_MOVE_TOLERANCE = 1.4  # m — reviver must hold still

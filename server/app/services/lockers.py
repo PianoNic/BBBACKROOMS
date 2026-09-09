@@ -12,7 +12,7 @@ from app.domain.lobby import Lobby, Pickup, PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.services.noise import LOCKER_RADIUS, emit_noise
-from app.world.geom import wall_forward, within_radius_xz
+from app.domain.world.geom import wall_forward, within_radius_xz
 
 LOCKER_OPEN_RADIUS = 3.5
 # Distance from the locker's wall-mount position to the centre of its

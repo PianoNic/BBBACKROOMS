@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from app.domain.lobby import Lobby
-from app.world.geom import within_radius, within_radius_xz
+from app.domain.world.geom import within_radius, within_radius_xz
 
 EQUATION_AURA_RADIUS = 6.0
 EQUATION_AURA_FACTOR = 0.7
