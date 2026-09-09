@@ -152,16 +152,15 @@ export function runGameLoop(d: GameDeps): void {
     d.compass.update(d.player.position.x, d.player.position.z, d.player.yaw);
     // Heartbeat picks up nearest non-stunned teacher; silenced while
     // spectating (dead/extracted) since the player is no longer in danger.
+    const nearest = d.state.extracted
+      ? Infinity
+      : d.teachers.nearestDistance(d.player.position.x, d.player.position.z);
     if (d.state.extracted) {
       d.heartbeat.stop();
-      music.updateThreat(Infinity, elapsed);
     } else {
-      const nearest = d.teachers.nearestDistance(
-        d.player.position.x, d.player.position.z,
-      );
       d.heartbeat.setNearestDistance(nearest);
-      music.updateThreat(nearest, elapsed);
     }
+    music.updateThreat(nearest, elapsed);
 
     sendAcc += dt;
     if (!d.state.extracted && !d.state.hidden && sendAcc >= sendInterval) {
@@ -181,7 +180,8 @@ export function runGameLoop(d: GameDeps): void {
       listenerPos.x, listenerPos.y, listenerPos.z,
       listenerDir.x, listenerDir.y, listenerDir.z,
     );
-    d.ctx.render(dt);
+    d.ctx.ambience.update(dt, elapsed, nearest);
+    d.ctx.render();
     d.stats.end();
     requestAnimationFrame(frame);
   };
