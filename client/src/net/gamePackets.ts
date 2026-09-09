@@ -26,6 +26,9 @@ import type { TaskCompass } from "../ui/compass";
 import type { ReviveBar } from "../ui/reviveBar";
 import type { WebcamMesh } from "../gameplay/webcam";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
+import type { AmbienceParticles } from "../rendering/particles";
+import type { Ambience } from "../rendering/pipeline";
+import { AMBIENCE } from "../rendering/ambience";
 import { playSfx, playSfxNear } from "../core/audio";
 import { music } from "../core/music";
 import { hideHideOverlay, showHideOverlay } from "../ui/hideOverlay";
@@ -35,6 +38,7 @@ import {
 } from "../ui/victory";
 import { jumpscare } from "../ui/jumpscare";
 import { setStatus } from "../core/playerStatus";
+import { shake } from "../gameplay/cameraShake";
 
 export type ReviveState = { active: boolean };
 
@@ -43,6 +47,8 @@ export type GamePacketDeps = {
   net: NetClient;
   webcam: WebcamMesh;
   proximityVoice: ProximityVoice;
+  particles: AmbienceParticles;
+  ambience: Ambience;
   remotes: RemotePlayers;
   quests: Quests;
   pings: Pings;
@@ -75,6 +81,12 @@ const SND = "/sounds/actions";
 /** Distance from the local player to a world point — for SFX attenuation. */
 function distTo(d: GamePacketDeps, x: number, z: number): number {
   return Math.hypot(d.player.position.x - x, d.player.position.z - z);
+}
+
+function shakeFalloff(d: GamePacketDeps, x: number, z: number, strength: number): void {
+  const dist = distTo(d, x, z);
+  const falloff = 1 - dist / AMBIENCE.cues.shakeRadius;
+  if (falloff > 0) shake(strength * falloff);
 }
 
 /** Returns a packet dispatcher closed over the given dependencies. */
@@ -158,10 +170,13 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
     chair_throw_start: (p) => {
       d.chairs.applyThrowStart(p);
       playSfxNear(`${SND}/throw.ogg`, distTo(d, p.x, p.z), 0.8);
+      shakeFalloff(d, p.x, p.z, AMBIENCE.cues.shakeThrow);
     },
     chair_hit: (p) => {
       d.chairs.applyHit(p);
+      d.particles.puffAt(p.x, 0.1, p.z);
       playSfxNear(`${SND}/chair-impact.ogg`, distTo(d, p.x, p.z), 0.9);
+      shakeFalloff(d, p.x, p.z, AMBIENCE.cues.shakeChair);
     },
     teacher_stuns: (p) => {
       for (const t of p.teachers) d.teachers.setStun(t.id, t.ms);
@@ -217,6 +232,7 @@ function handleKilled(
   p: { id: string; x: number; z: number; by: string },
 ): void {
   if (p.id === d.init.selfId) {
+    d.ambience.flashAndCut();
     const t = d.teacherById.get(p.by);
     if (t) jumpscare(`/teachers/${t.image}`, t.name, t.subject);
     d.corpses.add(p.id, p.x, p.z, d.init.selfColor);
@@ -237,6 +253,7 @@ function handleHidden(
   playSfxNear(`${SND}/locker-open.ogg`, distTo(d, p.x, p.z), 0.7);
   if (p.id === d.init.selfId) {
     d.state.hidden = p.hidden;
+    d.ambience.setHidden(p.hidden);
     d.player.spawn(p.x, p.z, d.player.yaw);
     if (p.hidden) showHideOverlay();
     else hideHideOverlay();

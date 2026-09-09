@@ -8,6 +8,8 @@ import { circleHitsAny } from "../world/colliders";
 import { getSettings } from "../core/settings";
 import { playFootstep } from "../core/audio";
 import { isStunned, speedMultiplier } from "../core/playerStatus";
+import { AMBIENCE } from "../rendering/ambience";
+import { readShakeOffset, tickShake } from "./cameraShake";
 
 const WALK_SPEED = 5.0;
 const SPRINT_SPEED = 8.5;
@@ -36,6 +38,8 @@ export class Player {
   private bobPhase = 0;
   private bobY = 0;
   private stepCooldown = 0;
+  private swayPhase = 0;
+  private breathPhase = 0;
 
   constructor(
     private readonly camera: FreeCamera,
@@ -50,6 +54,8 @@ export class Player {
     this.pitch = 0;
     this.bobPhase = 0;
     this.bobY = 0;
+    this.swayPhase = 0;
+    this.breathPhase = 0;
     this.stamina = STAMINA_MAX;
     this.camera.fov = (getSettings().fov * Math.PI) / 180;
     this.syncCamera();
@@ -110,6 +116,7 @@ export class Player {
     if (stepDist > 0) {
       this.bobPhase += stepDist * BOB_FREQ;
       this.bobY = Math.sin(this.bobPhase) * BOB_AMOUNT;
+      this.swayPhase += dt * 2 * Math.PI * AMBIENCE.cues.swayHz;
       this.stepCooldown -= dt;
       if (this.stepCooldown <= 0) {
         const volume = this.crouching ? 0.18 : this.sprinting ? 1.0 : 0.7;
@@ -119,8 +126,11 @@ export class Player {
     } else {
       this.bobPhase = 0;
       this.bobY *= 0.7;
+      this.swayPhase = 0;
       this.stepCooldown = 0;
     }
+    this.breathPhase += dt * 2 * Math.PI * AMBIENCE.cues.breathHz;
+    tickShake(dt);
 
     const baseFov = getSettings().fov;
     const targetFov = this.sprinting ? baseFov + SPRINT_FOV_BONUS : baseFov;
@@ -154,7 +164,14 @@ export class Player {
   }
 
   private syncCamera(): void {
-    this.camera.position.set(this.position.x, this.position.y + this.bobY, this.position.z);
-    setCameraOrientation(this.camera, this.yaw, this.pitch);
+    const breathY = Math.sin(this.breathPhase) * AMBIENCE.cues.breathAmount;
+    const swayYaw = Math.sin(this.swayPhase) * AMBIENCE.cues.swayAmount;
+    const shakeOffset = readShakeOffset();
+    this.camera.position.set(
+      this.position.x, this.position.y + this.bobY + breathY, this.position.z,
+    );
+    setCameraOrientation(
+      this.camera, this.yaw + swayYaw + shakeOffset.yaw, this.pitch + shakeOffset.pitch,
+    );
   }
 }

@@ -4,10 +4,12 @@ import { getSettings, onSettingsChange } from "./settings";
 import type { createRenderContext } from "../rendering/renderer";
 import type { Player } from "../gameplay/player";
 import type { FlickerLights } from "../rendering/lights";
+import type { AmbienceParticles } from "../rendering/particles";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
 import { music } from "./music";
+import { AutoQuality } from "./autoQuality";
 import type { Hideouts } from "../gameplay/hideouts";
 import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
@@ -28,6 +30,7 @@ import type { Corpses } from "../gameplay/corpses";
 import type { InventoryHud } from "../ui/inventory";
 import type { TaskCompass } from "../ui/compass";
 import type { Heartbeat } from "./heartbeat";
+import type { HorrorAudio } from "./horrorAudio";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
 import type { SpatialListener } from "./spatialAudio";
 import { updateSpatialAudio } from "./spatialAudio";
@@ -38,6 +41,7 @@ export type GameDeps = {
   ctx: ReturnType<typeof createRenderContext>;
   player: Player;
   lights: FlickerLights;
+  particles: AmbienceParticles;
   remotes: RemotePlayers;
   minimap: Minimap;
   net: NetClient;
@@ -63,6 +67,7 @@ export type GameDeps = {
   inventory: InventoryHud;
   compass: TaskCompass;
   heartbeat: Heartbeat;
+  horrorAudio: HorrorAudio;
   proximityVoice: ProximityVoice;
   audioListener: SpatialListener;
   gogglesState: { activeUntilMs: number; cooldownUntilMs: number };
@@ -75,6 +80,7 @@ export function runGameLoop(d: GameDeps): void {
   let last = performance.now();
   let lastRender = 0;
   let elapsed = 0;
+  const autoQuality = new AutoQuality();
 
   const applyShowFps = (visible: boolean) => {
     d.stats.dom.style.display = visible ? "block" : "none";
@@ -98,10 +104,12 @@ export function runGameLoop(d: GameDeps): void {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     elapsed += dt;
+    autoQuality.sample(dt);
 
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
-    d.lights.update(elapsed, d.player.position.x, d.player.position.z);
+    d.lights.update(dt, elapsed, d.player.position.x, d.player.position.z);
+    d.particles.update(d.player.position.x, d.player.position.y, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
     d.pings.update(elapsed);
@@ -152,16 +160,16 @@ export function runGameLoop(d: GameDeps): void {
     d.compass.update(d.player.position.x, d.player.position.z, d.player.yaw);
     // Heartbeat picks up nearest non-stunned teacher; silenced while
     // spectating (dead/extracted) since the player is no longer in danger.
+    const nearest = d.state.extracted
+      ? Infinity
+      : d.teachers.nearestDistance(d.player.position.x, d.player.position.z);
     if (d.state.extracted) {
       d.heartbeat.stop();
-      music.updateThreat(Infinity, elapsed);
     } else {
-      const nearest = d.teachers.nearestDistance(
-        d.player.position.x, d.player.position.z,
-      );
       d.heartbeat.setNearestDistance(nearest);
-      music.updateThreat(nearest, elapsed);
     }
+    music.updateThreat(nearest, elapsed);
+    d.horrorAudio.update(elapsed, nearest, d.player.position.x, d.player.position.z);
 
     sendAcc += dt;
     if (!d.state.extracted && !d.state.hidden && sendAcc >= sendInterval) {
@@ -181,7 +189,8 @@ export function runGameLoop(d: GameDeps): void {
       listenerPos.x, listenerPos.y, listenerPos.z,
       listenerDir.x, listenerDir.y, listenerDir.z,
     );
-    d.ctx.render(dt);
+    d.ctx.ambience.update(dt, elapsed, nearest);
+    d.ctx.render();
     d.stats.end();
     requestAnimationFrame(frame);
   };

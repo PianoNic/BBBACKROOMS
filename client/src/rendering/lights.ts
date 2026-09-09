@@ -1,40 +1,79 @@
 import { PointLight } from "@babylonjs/core/Lights/pointLight";
+import { SpotLight } from "@babylonjs/core/Lights/spotLight";
+import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Light } from "../net/protocol";
 import { WALL_HEIGHT } from "../world/builder";
-import { activeScene, basicMaterial, box, group, lambertMaterial } from "./babylon";
+import { AMBIENCE, tierFeatures, type GraphicsTier } from "./ambience";
+import { getSettings, onSettingsChange } from "../core/settings";
+import { mulberry32, seedFromPos } from "../world/propBuilders/_common";
+import { activeScene, basicMaterial, box, color3, group, lambertMaterial } from "./babylon";
 
-// Babylon's StandardMaterial uses a linear point-light falloff
-// (1 - d/range) instead of the inverse-square curve three.js used, so the
-// intensity/range pair below is fitted to the old 28-candela / decay-2
-// curve across the 3–12 m band that actually shows on screen.
-const BASE_INTENSITY = 1.8;
-const RANGE = 11;
-// Number of real `PointLight`s active at any moment. WebGL caps the
-// fragment-shader uniform vectors at ~1024, and every light eats a chunk
-// of that budget — keeping the pool small avoids shader-compile failures.
-const POOL_SIZE = 6;
+const SPOT_COUNT = 4;
+const POINT_COUNT = AMBIENCE.tube.poolSize - SPOT_COUNT;
+
+type Pattern = "stable" | "buzzing" | "dying" | "strobing";
 
 type Fixture = {
   x: number;
   z: number;
-  diffuser: StandardMaterial;
+  material: StandardMaterial;
+  pattern: Pattern;
+  phase: number;
+  rate: number;
+  cycleLen: number;
   seed: number;
-  intensity: number; // current flicker factor 0..1
+  intensity: number;
 };
+
+function hash01(seed: number): number {
+  let t = (seed + 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function flickerFactor(f: Fixture, elapsed: number): number {
+  const t = elapsed + f.phase;
+  if (f.pattern === "stable") {
+    const ripple = Math.sin(t * f.rate * Math.PI * 2);
+    return 1 - 0.02 * (0.5 - 0.5 * ripple);
+  }
+  if (f.pattern === "buzzing") {
+    const ripple = Math.sin(t * f.rate * Math.PI * 2);
+    return 1 - 0.06 * (0.5 - 0.5 * ripple);
+  }
+  if (f.pattern === "strobing") {
+    return Math.sin(t * f.rate * Math.PI * 2) > 0 ? 1 : 0.05;
+  }
+  const idx = Math.floor(t / f.cycleLen);
+  const local = t / f.cycleLen - idx;
+  const base = f.seed + idx * 2654435761;
+  if (hash01(base) >= 0.8) return 1;
+  const dropStart = 0.5 + hash01(base + 1) * 0.4;
+  const dropDur = 0.04 + hash01(base + 2) * 0.14;
+  return local >= dropStart && local < dropStart + dropDur ? 0.03 : 1;
+}
 
 export class FlickerLights {
   readonly group = group("lights");
   private readonly fixtures: Fixture[] = [];
-  private readonly pool: PointLight[] = [];
+  private readonly spots: SpotLight[] = [];
+  private readonly pool: (SpotLight | PointLight)[] = [];
+  private readonly tubeColor: Color3;
+  private shadowGenerators: ShadowGenerator[] = [];
+  private casters: AbstractMesh[] = [];
+  private tier: GraphicsTier;
+  private activeBlackout: { x: number; z: number; endTime: number } | null = null;
 
   constructor(positions: Light[]) {
     const ceilY = WALL_HEIGHT - 0.04;
     const scene = activeScene();
     const frameMat = lambertMaterial(0x2a2a2e, "lightFrame");
-    const tubeMat = basicMaterial(0xfff5d6, "lightTube");
+    this.tubeColor = color3(AMBIENCE.tube.color);
 
     for (const p of positions) {
       const fixture = group("fixture");
@@ -46,13 +85,14 @@ export class FlickerLights {
       const capR = box(0.06, 0.09, 0.5, frameMat);
       capR.position.set(0.77, ceilY - 0.01, 0);
       fixture.add(capL, capR);
-      const tube1 = box(1.4, 0.025, 0.05, tubeMat);
+
+      const fixtureMat = basicMaterial(this.tubeColor.clone(), "lightFixtureGlow");
+      const tube1 = box(1.4, 0.025, 0.05, fixtureMat);
       tube1.position.set(0, ceilY - 0.045, -0.1);
-      const tube2 = box(1.4, 0.025, 0.05, tubeMat);
+      const tube2 = box(1.4, 0.025, 0.05, fixtureMat);
       tube2.position.set(0, ceilY - 0.045, 0.1);
       fixture.add(tube1, tube2);
-      const diffuser = basicMaterial(0xfff1c2, "lightDiffuser");
-      const panel = box(1.5, 0.04, 0.44, diffuser);
+      const panel = box(1.5, 0.04, 0.44, fixtureMat);
       panel.position.set(0, ceilY - 0.07, 0);
       fixture.add(panel);
 
@@ -66,39 +106,115 @@ export class FlickerLights {
         m.freezeWorldMatrix();
       }
 
+      const seed = seedFromPos(p.x, p.z, 37.1, 61.7);
+      const rng = mulberry32(seed);
+      const r = rng();
+      const pattern: Pattern =
+        r < 0.55 ? "stable" : r < 0.75 ? "buzzing" : r < 0.90 ? "dying" : "strobing";
+      const phase = rng() * 1000;
+      let rate = 0;
+      let cycleLen = 0;
+      if (pattern === "stable") rate = 6 + rng() * 6;
+      else if (pattern === "buzzing") rate = 30 + rng() * 25;
+      else if (pattern === "strobing") rate = 4 + rng() * 6;
+      else cycleLen = 4 + rng() * 5;
+
       this.fixtures.push({
-        x: p.x, z: p.z, diffuser,
-        seed: Math.random() * 1000, intensity: 1.0,
+        x: p.x, z: p.z, material: fixtureMat,
+        pattern, phase, rate, cycleLen, seed, intensity: 1,
       });
     }
 
-    // Pool of real point lights. Repositioned each frame to the nearest
-    // fixtures so the shader sees a constant light count and only ever
-    // compiles the program once.
-    for (let i = 0; i < POOL_SIZE; i++) {
-      const pl = new PointLight(`flicker${i}`, new Vector3(0, ceilY - 0.15, 0), scene);
-      pl.diffuse = new Color3(1, 0.945, 0.761);
+    for (let i = 0; i < SPOT_COUNT; i++) {
+      const sl = new SpotLight(
+        `flickerSpot${i}`, new Vector3(0, ceilY - 0.15, 0), new Vector3(0, -1, 0),
+        AMBIENCE.tube.spotAngle, AMBIENCE.tube.spotExponent, scene,
+      );
+      sl.diffuse = this.tubeColor.clone();
+      sl.specular = Color3.Black();
+      sl.range = AMBIENCE.tube.range;
+      sl.intensity = 0;
+      this.spots.push(sl);
+      this.pool.push(sl);
+    }
+    for (let i = 0; i < POINT_COUNT; i++) {
+      const pl = new PointLight(`flickerPoint${i}`, new Vector3(0, ceilY - 0.15, 0), scene);
+      pl.diffuse = this.tubeColor.clone();
       pl.specular = Color3.Black();
-      pl.range = RANGE;
+      pl.range = AMBIENCE.tube.range;
       pl.intensity = 0;
       this.pool.push(pl);
     }
+
+    this.tier = getSettings().graphicsTier;
+    this.rebuildShadows(this.tier);
+    onSettingsChange((s) => {
+      if (s.graphicsTier !== this.tier) this.setTier(s.graphicsTier);
+    });
   }
 
-  /** Per-frame: update flicker intensity on every fixture and re-target
-   *  the point-light pool to the N nearest fixtures. */
-  update(elapsed: number, px = 0, pz = 0): void {
+  setShadowCasters(meshes: AbstractMesh[]): void {
+    this.casters = meshes.slice();
+    for (const gen of this.shadowGenerators) {
+      for (const m of this.casters) gen.addShadowCaster(m, false);
+    }
+  }
+
+  addShadowCaster(mesh: AbstractMesh): void {
+    this.casters.push(mesh);
+    for (const gen of this.shadowGenerators) gen.addShadowCaster(mesh, false);
+  }
+
+  setTier(tier: GraphicsTier): void {
+    this.tier = tier;
+    this.rebuildShadows(tier);
+  }
+
+  private rebuildShadows(tier: GraphicsTier): void {
+    for (const gen of this.shadowGenerators) gen.dispose();
+    this.shadowGenerators = [];
+    const count = Math.min(tierFeatures(tier).shadowLights, SPOT_COUNT);
+    const mapSize = tierFeatures(tier).shadowMapSize;
+    for (let i = 0; i < count; i++) {
+      const gen = new ShadowGenerator(mapSize, this.spots[i]);
+      gen.usePercentageCloserFiltering = true;
+      gen.filteringQuality = ShadowGenerator.QUALITY_LOW;
+      gen.darkness = AMBIENCE.tube.shadowDarkness;
+      gen.blurKernel = AMBIENCE.tube.shadowBlurKernel;
+      for (const m of this.casters) gen.addShadowCaster(m, false);
+      this.shadowGenerators.push(gen);
+    }
+  }
+
+  update(dt: number, elapsed: number, px = 0, pz = 0): void {
+    if (this.activeBlackout) {
+      if (elapsed >= this.activeBlackout.endTime) this.activeBlackout = null;
+    } else if (this.fixtures.length > 0
+      && Math.random() < AMBIENCE.tube.blackoutChancePerSecond * dt) {
+      const epicentre = this.fixtures[Math.floor(Math.random() * this.fixtures.length)];
+      const duration = AMBIENCE.tube.blackoutMinS
+        + Math.random() * (AMBIENCE.tube.blackoutMaxS - AMBIENCE.tube.blackoutMinS);
+      this.activeBlackout = { x: epicentre.x, z: epicentre.z, endTime: elapsed + duration };
+    }
+
+    const blackout = this.activeBlackout;
+    const radius2 = AMBIENCE.tube.blackoutRadius * AMBIENCE.tube.blackoutRadius;
+    const floor = AMBIENCE.tube.emissiveFloor;
+
     for (const f of this.fixtures) {
-      const t = elapsed + f.seed;
-      const dip = Math.sin(t * 13) * Math.sin(t * 1.7) > 0.85 ? 0.15 : 1.0;
-      const jitter = 0.92 + Math.sin(t * 40) * 0.04;
-      f.intensity = dip * jitter;
-      f.diffuser.emissiveColor.set(
-        f.intensity, f.intensity * 0.95, f.intensity * 0.78,
+      const raw = flickerFactor(f, elapsed);
+      let shown = raw < floor ? floor : raw;
+      if (blackout) {
+        const dx = f.x - blackout.x;
+        const dz = f.z - blackout.z;
+        if (dx * dx + dz * dz <= radius2) shown = 0;
+      }
+      f.intensity = shown;
+      f.material.emissiveColor.set(
+        this.tubeColor.r * shown, this.tubeColor.g * shown, this.tubeColor.b * shown,
       );
     }
-    // Find the POOL_SIZE nearest fixtures to (px, pz). Linear scan is
-    // fine: 300 fixtures × small N is <1ms.
+
     if (this.fixtures.length === 0) return;
     const distances: { i: number; d: number }[] = [];
     for (let i = 0; i < this.fixtures.length; i++) {
@@ -116,7 +232,7 @@ export class FlickerLights {
       }
       const f = this.fixtures[distances[k].i];
       slot.position.set(f.x, WALL_HEIGHT - 0.19, f.z);
-      slot.intensity = BASE_INTENSITY * f.intensity;
+      slot.intensity = AMBIENCE.tube.baseIntensity * f.intensity;
     }
   }
 }

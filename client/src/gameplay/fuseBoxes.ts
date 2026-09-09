@@ -7,8 +7,20 @@ import type { NetClient } from "../net/client";
 import type { Prop } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { playSfx } from "../core/audio";
-import { Group, box, group } from "../rendering/babylon";
+import type { StandardMaterial } from "../rendering/babylon";
+import { Group, box, color3, group, lambertMaterial } from "../rendering/babylon";
+import { registerGlowMesh } from "../rendering/pipeline";
 import { M } from "../world/propBuilders/_common";
+
+let knobMat: StandardMaterial | null = null;
+
+function fuseKnobMaterial(): StandardMaterial {
+  if (!knobMat) {
+    knobMat = lambertMaterial(0xd03030, "fuseKnob");
+    knobMat.emissiveColor = color3(0x3a0c0c);
+  }
+  return knobMat;
+}
 
 const LEVER_ROWS = 2;
 const LEVER_COLS = 3;
@@ -108,9 +120,10 @@ export class FuseBoxes {
         const arm = box(0.025, 0.10, 0.025, M(0xb8b8c0));
         arm.position.set(0, -0.05, 0);
         pivot.add(arm);
-        const knob = box(0.04, 0.04, 0.035, M(0xd03030));
+        const knob = box(0.04, 0.04, 0.035, fuseKnobMaterial());
         knob.position.set(0, -0.11, 0);
         pivot.add(knob);
+        registerGlowMesh(knob);
         root.add(pivot);
         // World-space xz for this lever (used by interact-prompt range).
         const wx = p.x + lx * cosY;

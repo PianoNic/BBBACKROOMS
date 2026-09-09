@@ -12,6 +12,7 @@ import { buildWorld } from "../world/builder";
 import { buildProps } from "../world/props";
 import { buildPropColliders } from "../world/colliders";
 import { FlickerLights } from "../rendering/lights";
+import { AmbienceParticles } from "../rendering/particles";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
 import { Hideouts } from "../gameplay/hideouts";
@@ -39,6 +40,7 @@ import { InventoryHud } from "../ui/inventory";
 import { ReviveBar } from "../ui/reviveBar";
 import { TaskCompass } from "../ui/compass";
 import { Heartbeat } from "./heartbeat";
+import { HorrorAudio } from "./horrorAudio";
 import { preloadJumpscareImages } from "../ui/jumpscare";
 import { preloadSfx } from "./audio";
 import { showVictory, showGameOver } from "../ui/victory";
@@ -55,7 +57,9 @@ export function buildScene(
 ) {
   const world = buildWorld(init.grid);
   const lights = new FlickerLights(init.lights);
-  buildProps(init.props);
+  const particles = new AmbienceParticles(ctx.scene);
+  const propsGroup = buildProps(init.props);
+  lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.group.getChildMeshes()]);
   const propColliders = buildPropColliders(init.props);
 
   const remotes = new RemotePlayers();
@@ -131,6 +135,7 @@ export function buildScene(
   document.body.appendChild(compass.element);
   compass.setEnabled(inventory.hasCompass());
   const heartbeat = new Heartbeat();
+  const horrorAudio = new HorrorAudio(audioListener);
 
   const input = new InputState(ctx.canvas);
   const player = new Player(ctx.camera, input, world, propColliders);
@@ -150,6 +155,6 @@ export function buildScene(
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
-    inventory, reviveBar, compass, heartbeat, lights, proximityVoice,
+    inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice, particles,
   };
 }

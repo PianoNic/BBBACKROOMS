@@ -38,6 +38,9 @@ Vollständige Liste: [items.md](items.md).
 | **V** | Push-to-Talk (falls aktiviert) |
 | **X** | Ping — markiert eine Stelle für das Team |
 
+## Grafik
+Drei Stufen unter Optionen → Grafik: **Niedrig** (keine Schatten, kein SSAO/Glow, keine Volumetrics — läuft auf schwacher Hardware), **Mittel** (Standard, mit Schatten, SSAO, Glow und PBR-Oberflächen) und **Hoch** (zusätzlich Volumetric-Licht und mehr Staubpartikel). Ein PBR-Oberflächenwechsel wirkt erst in der nächsten Runde. Bricht die Framezeit dauerhaft ein, schaltet das Spiel automatisch einmalig auf Niedrig zurück und informiert per Banner — danach kann man die Stufe wieder frei wählen.
+
 ## Tips
 - Bleibt zusammen — Wiederbeleben ist zuverlässiger als Soloplay.
 - Proximity-Chat nutzen: Lehrer-Schritte sind hörbar, bevor man sie sieht.

@@ -1,5 +1,7 @@
 /** Persistent player settings. Single store, subscribers apply on change. */
 
+import type { GraphicsTier } from "../rendering/ambience";
+
 export type Settings = {
   fov: number;          // 60..110
   pixelation: number;   // 1..8 (RenderPixelatedPass pixelSize)
@@ -25,6 +27,7 @@ export type Settings = {
   /** "off" blocks the camera from being enabled at all (pause-menu CAM
    *  button becomes a no-op + any active webcam track is stopped). */
   cameraMode: "off" | "on";
+  graphicsTier: GraphicsTier;
 };
 
 const KEY = "bbb_settings";
@@ -47,6 +50,7 @@ export const DEFAULTS: Settings = {
   noiseGateThresholdDb: -45,
   voiceMode: "ptt",
   cameraMode: "on",
+  graphicsTier: "mittel",
 };
 
 let current: Settings = load();

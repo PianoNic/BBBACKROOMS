@@ -5,7 +5,8 @@
  *  collect the lot into one big merged mesh per material for perf. */
 import type { Prop, PropType } from "../net/protocol";
 import { mergeStaticMeshes } from "../rendering/staticMerge";
-import { group, type Group } from "../rendering/babylon";
+import { Basic, group, type Group } from "../rendering/babylon";
+import { registerGlowMesh } from "../rendering/pipeline";
 import { EXTRA_BUILDERS } from "./propsExtra";
 import type { Builder } from "./propBuilders/_common";
 
@@ -30,5 +31,11 @@ export function buildProps(props: Prop[]): Group {
   // Collapse the per-prop sub-meshes into a few merged meshes per
   // material — without this we'd issue tens of thousands of draw calls
   // per frame. See `rendering/staticMerge.ts`.
-  return mergeStaticMeshes(stage);
+  const merged = mergeStaticMeshes(stage);
+  const exitFace = Basic(0x2bd14a);
+  const exitArrow = Basic(0xf6f6f4);
+  for (const m of merged.getChildMeshes()) {
+    if (m.material === exitFace || m.material === exitArrow) registerGlowMesh(m);
+  }
+  return merged;
 }
