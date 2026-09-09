@@ -3,6 +3,8 @@ import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { Scene } from "@babylonjs/core/scene";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
+import { SSAO2RenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssao2RenderingPipeline";
+import { VolumetricLightScatteringPostProcess } from "@babylonjs/core/PostProcesses/volumetricLightScatteringPostProcess";
 import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imageProcessingConfiguration";
 import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
@@ -32,6 +34,15 @@ function applyGlowQueue(layer: GlowLayer): void {
   }
 }
 
+let currentAmbience: Ambience | null = null;
+let pendingVolumetricMesh: AbstractMesh | null = null;
+
+export function registerVolumetricEmitter(mesh: AbstractMesh): void {
+  if (mesh.isDisposed()) return;
+  pendingVolumetricMesh = mesh;
+  currentAmbience?.attachVolumetricEmitter(mesh);
+}
+
 function clamp01(v: number): number {
   if (v < 0) return 0;
   if (v > 1) return 1;
@@ -49,14 +60,25 @@ export class Ambience {
   private readonly camera: FreeCamera;
   private readonly canvas: HTMLCanvasElement;
   private renderPipeline: DefaultRenderingPipeline;
+  private ssaoPipeline: SSAO2RenderingPipeline | null = null;
+  private volumetric: VolumetricLightScatteringPostProcess | null = null;
   private glowLayer: GlowLayer | null = null;
+  private colorCurves!: ColorCurves;
   private tier: GraphicsTier;
   private unsubscribe: (() => void)[] = [];
 
   private fogDensity = AMBIENCE.fog.density;
   private vignetteWeight = AMBIENCE.vignette.weight;
   private aberrationAmount = AMBIENCE.aberration.idle;
+  private saturation = AMBIENCE.tone.saturation;
+  private readonly baseExposure = AMBIENCE.tone.exposure;
+  private readonly baseContrast = AMBIENCE.tone.contrast;
   private currentPixelation: number;
+
+  private hidden = false;
+  private heartPhase = 0;
+  private caughtState: "idle" | "flash" | "black" = "idle";
+  private caughtTimer = 0;
 
   constructor(engine: Engine, scene: Scene, camera: FreeCamera, canvas: HTMLCanvasElement) {
     this.engine = engine;
@@ -70,8 +92,10 @@ export class Ambience {
     scene.fogColor = color3(AMBIENCE.fog.color);
     scene.fogDensity = this.fogDensity;
 
+    this.ssaoPipeline = this.buildSSAO(this.tier);
     this.renderPipeline = this.buildPipeline(this.tier);
     this.buildGlow(this.tier);
+    this.volumetric = this.buildVolumetric(this.tier, pendingVolumetricMesh);
 
     this.applySize();
     window.addEventListener("resize", this.applySize);
@@ -83,6 +107,47 @@ export class Ambience {
       }
       if (s.graphicsTier !== this.tier) this.setTier(s.graphicsTier);
     }));
+
+    currentAmbience = this;
+  }
+
+  private buildSSAO(tier: GraphicsTier): SSAO2RenderingPipeline | null {
+    const features = tierFeatures(tier);
+    if (!features.ssao) return null;
+    const ssao = AMBIENCE.ssao;
+    const pipeline = new SSAO2RenderingPipeline(
+      "ambienceSSAO", this.scene, features.ssaoRatio, [this.camera],
+    );
+    pipeline.radius = ssao.radius;
+    pipeline.totalStrength = ssao.totalStrength;
+    pipeline.base = ssao.base;
+    pipeline.samples = ssao.samples;
+    pipeline.maxZ = ssao.maxZ;
+    pipeline.minZAspect = ssao.minZAspect;
+    return pipeline;
+  }
+
+  private buildVolumetric(
+    tier: GraphicsTier, mesh: AbstractMesh | null,
+  ): VolumetricLightScatteringPostProcess | null {
+    if (!tierFeatures(tier).volumetric) return null;
+    if (!mesh || mesh.isDisposed()) return null;
+    const v = AMBIENCE.volumetric;
+    const vls = new VolumetricLightScatteringPostProcess(
+      "ambienceVolumetric", v.ratio, this.camera, mesh as Mesh, v.samples,
+    );
+    vls.exposure = v.exposure;
+    vls.decay = v.decay;
+    vls.weight = v.weight;
+    vls.density = v.density;
+    return vls;
+  }
+
+  attachVolumetricEmitter(mesh: AbstractMesh): void {
+    if (mesh.isDisposed()) return;
+    if (!tierFeatures(this.tier).volumetric) return;
+    this.volumetric?.dispose(this.camera);
+    this.volumetric = this.buildVolumetric(this.tier, mesh);
   }
 
   private buildPipeline(tier: GraphicsTier): DefaultRenderingPipeline {
@@ -132,6 +197,7 @@ export class Ambience {
     colorCurves.highlightsDensity = AMBIENCE.tone.highlightsDensity;
     imageProcessing.colorCurves = colorCurves;
     imageProcessing.colorCurvesEnabled = true;
+    this.colorCurves = colorCurves;
 
     return pipeline;
   }
@@ -161,6 +227,7 @@ export class Ambience {
     const fog = AMBIENCE.fog;
     const vignette = AMBIENCE.vignette;
     const aberration = AMBIENCE.aberration;
+    const cues = AMBIENCE.cues;
 
     const breath = Math.sin(elapsed * 2 * Math.PI * fog.breathHz);
     let fogTarget = fog.density + breath * fog.breathAmount;
@@ -175,21 +242,75 @@ export class Ambience {
       aberrationTarget = aberrationTarget + (aberration.chase - aberrationTarget) * t;
     }
 
+    let saturationTarget = AMBIENCE.tone.saturation;
+    let lerpRate = fog.lerp;
+    if (this.hidden) {
+      vignetteTarget = cues.hiddenVignette;
+      saturationTarget = cues.hiddenSaturation;
+      lerpRate = cues.hiddenLerp;
+    }
+
     this.fogDensity = expLerp(this.fogDensity, fogTarget, fog.lerp, dt);
-    this.vignetteWeight = expLerp(this.vignetteWeight, vignetteTarget, fog.lerp, dt);
+    this.vignetteWeight = expLerp(this.vignetteWeight, vignetteTarget, lerpRate, dt);
     this.aberrationAmount = expLerp(this.aberrationAmount, aberrationTarget, fog.lerp, dt);
+    this.saturation = expLerp(this.saturation, saturationTarget, lerpRate, dt);
 
     this.scene.fogDensity = this.fogDensity;
     this.renderPipeline.imageProcessing.vignetteWeight = this.vignetteWeight;
     this.renderPipeline.chromaticAberration.aberrationAmount = this.aberrationAmount;
+    this.colorCurves.globalSaturation = this.saturation;
+
+    const heartHz = cues.heartPulseHzFar + (cues.heartPulseHzNear - cues.heartPulseHzFar) * t;
+    this.heartPhase += dt * 2 * Math.PI * heartHz;
+    const heartPulse = t > 0 ? Math.sin(this.heartPhase) * cues.heartPulseAmount * t : 0;
+
+    this.renderPipeline.imageProcessing.exposure = this.applyCaught(dt, this.baseExposure + heartPulse);
+  }
+
+  private applyCaught(dt: number, baseExposure: number): number {
+    const ip = this.renderPipeline.imageProcessing;
+    if (this.caughtState === "idle") {
+      ip.contrast = this.baseContrast;
+      return baseExposure;
+    }
+    this.caughtTimer += dt * 1000;
+    const cues = AMBIENCE.cues;
+    if (this.caughtState === "flash") {
+      ip.contrast = this.baseContrast * 1.6;
+      if (this.caughtTimer >= cues.caughtFlashMs) {
+        this.caughtState = "black";
+        this.caughtTimer = 0;
+      }
+      return baseExposure + 2.5;
+    }
+    ip.contrast = this.baseContrast;
+    if (this.caughtTimer >= cues.caughtBlackMs) {
+      this.caughtState = "idle";
+      this.caughtTimer = 0;
+      return baseExposure;
+    }
+    return 0;
+  }
+
+  setHidden(on: boolean): void {
+    this.hidden = on;
+  }
+
+  flashAndCut(): void {
+    this.caughtState = "flash";
+    this.caughtTimer = 0;
   }
 
   setTier(tier: GraphicsTier): void {
     this.tier = tier;
     this.renderPipeline.dispose();
+    this.ssaoPipeline?.dispose();
+    this.ssaoPipeline = this.buildSSAO(tier);
     this.renderPipeline = this.buildPipeline(tier);
     this.glowLayer?.dispose();
     this.buildGlow(tier);
+    this.volumetric?.dispose(this.camera);
+    this.volumetric = this.buildVolumetric(tier, pendingVolumetricMesh);
   }
 
   get pipeline(): DefaultRenderingPipeline {
@@ -201,7 +322,10 @@ export class Ambience {
     for (const off of this.unsubscribe) off();
     this.unsubscribe = [];
     this.renderPipeline.dispose();
+    this.ssaoPipeline?.dispose();
+    this.volumetric?.dispose(this.camera);
     this.glowLayer?.dispose();
     if (currentGlowLayer === this.glowLayer) currentGlowLayer = null;
+    if (currentAmbience === this) currentAmbience = null;
   }
 }

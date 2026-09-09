@@ -4,6 +4,7 @@ import { getSettings, onSettingsChange } from "./settings";
 import type { createRenderContext } from "../rendering/renderer";
 import type { Player } from "../gameplay/player";
 import type { FlickerLights } from "../rendering/lights";
+import type { AmbienceParticles } from "../rendering/particles";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
@@ -39,6 +40,7 @@ export type GameDeps = {
   ctx: ReturnType<typeof createRenderContext>;
   player: Player;
   lights: FlickerLights;
+  particles: AmbienceParticles;
   remotes: RemotePlayers;
   minimap: Minimap;
   net: NetClient;
@@ -104,6 +106,7 @@ export function runGameLoop(d: GameDeps): void {
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
     d.lights.update(dt, elapsed, d.player.position.x, d.player.position.z);
+    d.particles.update(d.player.position.x, d.player.position.y, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
     d.pings.update(elapsed);

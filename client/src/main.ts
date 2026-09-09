@@ -90,7 +90,8 @@ async function main(): Promise<void> {
     pickups: s.pickups, lockers: s.lockers, doors: s.doors, inventory: s.inventory,
     compass: s.compass, reviveBar: s.reviveBar, laptop: s.laptop,
     portal: s.portal, spectator: s.spectator, player: s.player,
-    state: s.state, reviveState, gogglesState,
+    state: s.state, reviveState, gogglesState, particles: s.particles,
+    ambience: ctx.ambience,
   }));
   // Voice state: the settings `voiceMode` decides the default ("open" =
   // always live, "ptt" = only while V is held). The pause-menu MIC button
@@ -198,7 +199,7 @@ async function main(): Promise<void> {
   ctx.canvas.focus();
   runGameLoop({
     ctx, net, stats,
-    player: s.player, lights: s.lights, remotes: s.remotes, minimap: s.minimap,
+    player: s.player, lights: s.lights, particles: s.particles, remotes: s.remotes, minimap: s.minimap,
     quests: s.quests, pings: s.pings, hideouts: s.hideouts, stamina: s.stamina, interactPrompt: s.interactPrompt,
     portal: s.portal, spectator: s.spectator, state: s.state,
     laptops: s.laptops, teachers: s.teachers, teacherEffects: s.teacherEffects,

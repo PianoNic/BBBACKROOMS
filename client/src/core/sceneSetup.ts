@@ -12,6 +12,7 @@ import { buildWorld } from "../world/builder";
 import { buildProps } from "../world/props";
 import { buildPropColliders } from "../world/colliders";
 import { FlickerLights } from "../rendering/lights";
+import { AmbienceParticles } from "../rendering/particles";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
 import { Hideouts } from "../gameplay/hideouts";
@@ -56,6 +57,7 @@ export function buildScene(
 ) {
   const world = buildWorld(init.grid);
   const lights = new FlickerLights(init.lights);
+  const particles = new AmbienceParticles(ctx.scene);
   const propsGroup = buildProps(init.props);
   lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.group.getChildMeshes()]);
   const propColliders = buildPropColliders(init.props);
@@ -153,6 +155,6 @@ export function buildScene(
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
-    inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice,
+    inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice, particles,
   };
 }
