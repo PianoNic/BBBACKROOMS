@@ -7,17 +7,7 @@ first unlock; guests see their earned achievements each round with
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class Achievement:
-    id: str
-    name: str
-    description: str
-    coins: int
-    icon: str  # emoji shown on the scoreboard card
-
+from app.domain.achievements.achievement import Achievement
 
 _ITEMS: list[Achievement] = [
     Achievement(
@@ -58,12 +48,21 @@ _ITEMS: list[Achievement] = [
     ),
 ]
 
-CATALOG: dict[str, Achievement] = {a.id: a for a in _ITEMS}
+
+class AchievementCatalog:
+    def __init__(self) -> None:
+        self._items = _ITEMS
+        self._by_id = {a.id: a for a in _ITEMS}
+
+    def get(self, achievement_id: str) -> Achievement | None:
+        return self._by_id.get(achievement_id)
+
+    def to_dto(self, achievement_id: str, saved: bool) -> dict:
+        a = self._by_id[achievement_id]
+        return {
+            "id": a.id, "name": a.name, "description": a.description,
+            "coins": a.coins, "icon": a.icon, "saved": saved,
+        }
 
 
-def to_dto(achievement_id: str, saved: bool) -> dict:
-    a = CATALOG[achievement_id]
-    return {
-        "id": a.id, "name": a.name, "description": a.description,
-        "coins": a.coins, "icon": a.icon, "saved": saved,
-    }
+achievement_catalog = AchievementCatalog()

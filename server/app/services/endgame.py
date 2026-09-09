@@ -15,8 +15,7 @@ import logging
 
 from app.db import accounts_repo
 from app.db.engine import db_available
-from app.domain.achievements import CATALOG as ACHIEVEMENT_CATALOG
-from app.domain.achievements import to_dto as achievement_dto
+from app.domain.achievements.achievement_catalog import achievement_catalog
 from app.domain.lobby import Lobby
 from app.services._helpers import send_safe
 from app.services.achievements import evaluate_round
@@ -73,14 +72,14 @@ async def _apply_achievements(
             try:
                 from app.db import achievements_repo
                 new_ids = await achievements_repo.unlock_new(p.account_id, earned)
-                bonus = sum(ACHIEVEMENT_CATALOG[aid].coins for aid in new_ids)
+                bonus = sum(achievement_catalog.get(aid).coins for aid in new_ids)
                 if bonus:
                     await accounts_repo.apply_round_rewards(p.account_id, 0, bonus)
-                r["achievements"] = [achievement_dto(aid, True) for aid in new_ids]
+                r["achievements"] = [achievement_catalog.to_dto(aid, True) for aid in new_ids]
                 continue
             except Exception as exc:  # noqa: BLE001
                 log.warning("achievement persist failed for %s: %s", p.id, exc)
-        r["achievements"] = [achievement_dto(aid, False) for aid in earned]
+        r["achievements"] = [achievement_catalog.to_dto(aid, False) for aid in earned]
 
 
 async def _send_each(lobby: Lobby, result: str, shared: dict) -> None:

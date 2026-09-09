@@ -11,7 +11,7 @@ import logging
 
 from app.db import cosmetics_repo
 from app.db.engine import db_available
-from app.domain.cosmetics import get_item
+from app.domain.cosmetics.cosmetic_catalog import cosmetic_catalog
 from app.domain.lobby import Lobby, PlayerConn
 from app.services._helpers import send_safe
 from app.services.broadcast import broadcast
@@ -25,7 +25,7 @@ async def handle_set_cosmetic(
     if cosmetic_id is None:  # unequip the slot
         me.equipped_cosmetics.pop(category, None)
     else:
-        item = get_item(cosmetic_id)
+        item = cosmetic_catalog.get(cosmetic_id)
         if item is None or item.category != category:
             return
         if cosmetic_id not in me.owned_cosmetics:  # ownership check
@@ -49,7 +49,7 @@ def _result(cosmetic_id: str, ok: bool, balance: int, reason: str) -> dict:
 
 
 async def handle_buy_cosmetic(lobby: Lobby, me: PlayerConn, cosmetic_id: str) -> None:
-    item = get_item(cosmetic_id)
+    item = cosmetic_catalog.get(cosmetic_id)
     if item is None:
         await send_safe(me, _result(cosmetic_id, False, 0, "unknown"))
         return

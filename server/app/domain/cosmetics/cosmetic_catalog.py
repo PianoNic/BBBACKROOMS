@@ -10,21 +10,9 @@ is category-polymorphic and interpreted client-side:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from app.domain.cosmetics.cosmetic_item import CosmeticItem
 
 CATEGORIES = ("body", "facePattern", "hat", "title")
-
-
-@dataclass(frozen=True)
-class CosmeticItem:
-    id: str
-    category: str
-    name: str
-    price: int
-    rarity: str  # common | rare | epic | legendary
-    asset_ref: str
-    default: bool = False
-
 
 _ITEMS: list[CosmeticItem] = [
     # --- body themes ---
@@ -75,40 +63,43 @@ _ITEMS: list[CosmeticItem] = [
     CosmeticItem("title_king", "title", "Pausenkönig", 1800, "legendary", "Pausenkönig|#ffd24a"),
 ]
 
-CATALOG: dict[str, CosmeticItem] = {it.id: it for it in _ITEMS}
+
+class CosmeticCatalog:
+    def __init__(self) -> None:
+        self._items = _ITEMS
+        self._by_id = {it.id: it for it in _ITEMS}
+
+    def get(self, cosmetic_id: str | None) -> CosmeticItem | None:
+        if cosmetic_id is None:
+            return None
+        return self._by_id.get(cosmetic_id)
+
+    def items(self) -> list[CosmeticItem]:
+        return list(self._items)
+
+    def default_ids(self) -> set[str]:
+        return {it.id for it in self._items if it.default}
+
+    def default_equipped(self) -> dict[str, str]:
+        return {it.category: it.id for it in self._items if it.default}
+
+    def to_dto(self) -> list[dict]:
+        return [
+            {
+                "id": it.id, "category": it.category, "name": it.name,
+                "price": it.price, "rarity": it.rarity,
+                "assetRef": it.asset_ref, "default": it.default,
+            }
+            for it in self._items
+        ]
+
+    def validate_equipped(self, equipped: dict[str, str]) -> dict[str, str]:
+        out: dict[str, str] = {}
+        for category, cosmetic_id in equipped.items():
+            item = self._by_id.get(cosmetic_id)
+            if item is not None and item.category == category:
+                out[category] = cosmetic_id
+        return out
 
 
-def get_item(cosmetic_id: str | None) -> CosmeticItem | None:
-    if cosmetic_id is None:
-        return None
-    return CATALOG.get(cosmetic_id)
-
-
-def default_ids() -> set[str]:
-    return {it.id for it in _ITEMS if it.default}
-
-
-def default_equipped() -> dict[str, str]:
-    """The free default cosmetic for each category (guests start with these)."""
-    return {it.category: it.id for it in _ITEMS if it.default}
-
-
-def catalog_dto() -> list[dict]:
-    return [
-        {
-            "id": it.id, "category": it.category, "name": it.name,
-            "price": it.price, "rarity": it.rarity,
-            "assetRef": it.asset_ref, "default": it.default,
-        }
-        for it in _ITEMS
-    ]
-
-
-def validate_equipped(equipped: dict[str, str]) -> dict[str, str]:
-    """Drop any slot whose value isn't a real cosmetic of that category."""
-    out: dict[str, str] = {}
-    for category, cosmetic_id in equipped.items():
-        item = CATALOG.get(cosmetic_id)
-        if item is not None and item.category == category:
-            out[category] = cosmetic_id
-    return out
+cosmetic_catalog = CosmeticCatalog()
