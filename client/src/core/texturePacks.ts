@@ -24,7 +24,7 @@ const STORE_NAME = "packs";
 const DB_VERSION = 1;
 const ACTIVE_PACK_KEY = "bbb_active_pack";
 
-const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+export const PACK_ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const MAX_STRING_LEN = 64;
 const MAX_IMAGE_BYTES = 512 * 1024;
 const MAX_IMAGE_DIM = 1024;
@@ -151,7 +151,7 @@ export async function importPackFromFile(file: File): Promise<StoredPack> {
   validateManifestShape(manifestRaw);
 
   const id = validateString(manifestRaw.id, "id");
-  if (!ID_RE.test(id)) {
+  if (!PACK_ID_RE.test(id)) {
     throw new Error("pack.json field \"id\" must match /^[a-z0-9][a-z0-9-]{0,63}$/");
   }
   const version = validateString(manifestRaw.version, "version");

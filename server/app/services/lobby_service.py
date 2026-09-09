@@ -96,7 +96,7 @@ def start_lobby(lobby: Lobby) -> None:
 
 def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
     """Snapshot of a lobby's waiting room for a freshly connected player."""
-    from app.world.teachers import TEACHER_ROSTER
+    from app.world.teachers import roster_dto
     me = lobby.conns.get(self_id)
     return {
         "type": "lobby_state",
@@ -113,10 +113,7 @@ def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
         "objectiveCount": lobby.objective_count,
         "packId": lobby.pack_id,
         "packHash": lobby.pack_hash,
-        "roster": [
-            {"image": img, "name": name, "subject": subj, "ability": ab}
-            for (img, name, subj, ab) in TEACHER_ROSTER
-        ],
+        "roster": roster_dto(),
         "players": [
             {
                 "id": p.id, "name": p.name, "color": p.color, "avatar": p.avatar,
