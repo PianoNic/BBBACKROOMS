@@ -5,7 +5,7 @@ import type { Grid, Prop } from "../net/protocol";
 import { getDecalMaterial, getRoomMaterials } from "../rendering/materials";
 import { AMBIENCE, tierFeatures } from "../rendering/ambience";
 import { getSettings } from "../core/settings";
-import { RoomInference, type RoomArchetype } from "./rooms";
+import { RoomInference } from "./rooms";
 import { mulberry32 } from "./propBuilders/_common";
 import { box, group, plane, type Group } from "../rendering/babylon";
 
@@ -16,6 +16,8 @@ export type World = {
   grid: Grid;
   isWall: (cellX: number, cellY: number) => boolean;
   shadowCasters: Mesh[];
+  regionMeshes: Map<number, Mesh[]>;
+  inference: RoomInference;
 };
 
 const FLOOR = 1;
@@ -24,12 +26,24 @@ const WALL_DECAL_Y = 2.1;
 const CEILING_DECAL_MARGIN = 0.02;
 const WALL_FACE_MARGIN = 0.01;
 
-function bake(mesh: Mesh, matrices: Float32Array): void {
+function bake(mesh: Mesh, matrices: Float32Array, cullable: boolean): void {
   mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
   mesh.isPickable = false;
-  mesh.alwaysSelectAsActiveMesh = true;
-  mesh.doNotSyncBoundingInfo = true;
+  if (cullable) {
+    mesh.alwaysSelectAsActiveMesh = false;
+    mesh.doNotSyncBoundingInfo = false;
+    mesh.thinInstanceRefreshBoundingInfo(true);
+  } else {
+    mesh.alwaysSelectAsActiveMesh = true;
+    mesh.doNotSyncBoundingInfo = true;
+  }
   mesh.freezeWorldMatrix();
+}
+
+function addRegionMesh(regionMeshes: Map<number, Mesh[]>, regionId: number, mesh: Mesh): void {
+  const list = regionMeshes.get(regionId);
+  if (list) list.push(mesh);
+  else regionMeshes.set(regionId, [mesh]);
 }
 
 export function buildWorld(grid: Grid, props: Prop[]): World {
@@ -71,49 +85,50 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     if (isFloor(cxi, cyi)) boundary.push([ox, oy]);
   }
 
-  function wallArchetype(x: number, y: number): RoomArchetype {
+  function wallRegion(x: number, y: number): number {
     const neighbours: [number, number][] = [
       [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y],
     ];
     for (const [nx, ny] of neighbours) {
-      if (isFloor(nx, ny)) return inference.archetypeAt(ny * width + nx);
+      if (isFloor(nx, ny)) return inference.regionAt(ny * width + nx);
     }
-    return "hallway";
+    return 0;
   }
 
   const shadowCasters: Mesh[] = [];
-  const floorByArchetype = new Map<RoomArchetype, number[]>();
-  const wallByArchetype = new Map<RoomArchetype, [number, number][]>();
+  const regionMeshes = new Map<number, Mesh[]>();
+  const floorByRegion = new Map<number, number[]>();
+  const wallByRegion = new Map<number, [number, number][]>();
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = y * width + x;
       if (cells[idx] === FLOOR) {
-        const a = inference.archetypeAt(idx);
-        const list = floorByArchetype.get(a);
+        const r = inference.regionAt(idx);
+        const list = floorByRegion.get(r);
         if (list) list.push(idx);
-        else floorByArchetype.set(a, [idx]);
+        else floorByRegion.set(r, [idx]);
       } else if (wallSet.has(idx)) {
-        const a = wallArchetype(x, y);
-        const list = wallByArchetype.get(a);
+        const r = wallRegion(x, y);
+        const list = wallByRegion.get(r);
         if (list) list.push([x, y]);
-        else wallByArchetype.set(a, [[x, y]]);
+        else wallByRegion.set(r, [[x, y]]);
       }
     }
   }
   for (const [bx, by] of boundary) {
-    const a = wallArchetype(bx, by);
-    const list = wallByArchetype.get(a);
+    const r = wallRegion(bx, by);
+    const list = wallByRegion.get(r);
     if (list) list.push([bx, by]);
-    else wallByArchetype.set(a, [[bx, by]]);
+    else wallByRegion.set(r, [[bx, by]]);
   }
 
-  for (const [archetype, idxs] of floorByArchetype) {
-    const matSet = getRoomMaterials(archetype);
-    const floorMesh = plane(cellSize, cellSize, matSet.floor, false, `floors_${archetype}`);
+  for (const [regionId, idxs] of floorByRegion) {
+    const matSet = getRoomMaterials(inference.regionArchetype(regionId));
+    const floorMesh = plane(cellSize, cellSize, matSet.floor, false, `floors_r${regionId}`);
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.bakeCurrentTransformIntoVertices();
-    const ceilMesh = plane(cellSize, cellSize, matSet.ceiling, false, `ceils_${archetype}`);
+    const ceilMesh = plane(cellSize, cellSize, matSet.ceiling, false, `ceils_r${regionId}`);
     ceilMesh.rotation.x = Math.PI / 2;
     ceilMesh.bakeCurrentTransformIntoVertices();
 
@@ -131,15 +146,18 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       tmp.copyToArray(ceilMatrices, i * 16);
     });
     stage.add(floorMesh, ceilMesh);
-    bake(floorMesh, floorMatrices);
-    bake(ceilMesh, ceilMatrices);
+    bake(floorMesh, floorMatrices, true);
+    bake(ceilMesh, ceilMatrices, true);
     floorMesh.receiveShadows = true;
     shadowCasters.push(floorMesh, ceilMesh);
+    addRegionMesh(regionMeshes, regionId, floorMesh);
+    addRegionMesh(regionMeshes, regionId, ceilMesh);
   }
 
-  for (const [archetype, coords] of wallByArchetype) {
+  for (const [regionId, coords] of wallByRegion) {
+    const archetype = inference.regionArchetype(regionId);
     const matSet = getRoomMaterials(archetype);
-    const wallMesh = box(cellSize, WALL_HEIGHT, cellSize, matSet.wall, `walls_${archetype}`);
+    const wallMesh = box(cellSize, WALL_HEIGHT, cellSize, matSet.wall, `walls_r${regionId}`);
     const wallMatrices = new Float32Array(coords.length * 16);
     const tmp = Matrix.Identity();
     coords.forEach(([x, y], i) => {
@@ -149,19 +167,20 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       tmp.copyToArray(wallMatrices, i * 16);
     });
     stage.add(wallMesh);
-    bake(wallMesh, wallMatrices);
+    bake(wallMesh, wallMatrices, true);
     wallMesh.receiveShadows = true;
     shadowCasters.push(wallMesh);
+    addRegionMesh(regionMeshes, regionId, wallMesh);
 
     if (pbr) {
       const config = AMBIENCE.materials.rooms[archetype];
       if (config.dado && matSet.dado && matSet.rail) {
         const dadoHeight = config.dadoHeight ?? 1.0;
         const dadoMesh = box(
-          cellSize + 0.02, dadoHeight, cellSize + 0.02, matSet.dado, `dado_${archetype}`,
+          cellSize + 0.02, dadoHeight, cellSize + 0.02, matSet.dado, `dado_r${regionId}`,
         );
         const railMesh = box(
-          cellSize + 0.05, DADO_RAIL_HEIGHT, cellSize + 0.05, matSet.rail, `rail_${archetype}`,
+          cellSize + 0.05, DADO_RAIL_HEIGHT, cellSize + 0.05, matSet.rail, `rail_r${regionId}`,
         );
         const dadoMatrices = new Float32Array(coords.length * 16);
         const railMatrices = new Float32Array(coords.length * 16);
@@ -175,9 +194,11 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
           tmp2.copyToArray(railMatrices, i * 16);
         });
         stage.add(dadoMesh, railMesh);
-        bake(dadoMesh, dadoMatrices);
-        bake(railMesh, railMatrices);
+        bake(dadoMesh, dadoMatrices, true);
+        bake(railMesh, railMatrices, true);
         shadowCasters.push(dadoMesh, railMesh);
+        addRegionMesh(regionMeshes, regionId, dadoMesh);
+        addRegionMesh(regionMeshes, regionId, railMesh);
       }
     }
   }
@@ -185,12 +206,10 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
   if (pbr && inference.rooms.length > 0) {
     const decalCfg = AMBIENCE.materials.decal;
     const decalMat = getDecalMaterial();
-    const decalMesh = plane(1, 1, decalMat, false, "decals");
-    decalMesh.receiveShadows = false;
+    const composedByRegion = new Map<number, Matrix[]>();
 
-    const composed: Matrix[] = [];
-
-    for (const room of inference.rooms) {
+    inference.rooms.forEach((room, roomIndex) => {
+      const regionId = roomIndex + 1;
       const rng = mulberry32(room.seed);
       const wallCandidates: { wx: number; wy: number; dx: number; dy: number }[] = [];
       for (let y = room.minY; y <= room.maxY; y++) {
@@ -207,6 +226,7 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
         }
       }
 
+      const composed: Matrix[] = [];
       for (let i = 0; i < decalCfg.perRoom; i++) {
         const scale = decalCfg.minScale + rng() * (decalCfg.maxScale - decalCfg.minScale);
         const onCeiling = rng() < 0.5;
@@ -237,15 +257,17 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
           ));
         }
       }
-    }
+      if (composed.length > 0) composedByRegion.set(regionId, composed);
+    });
 
-    if (composed.length === 0) {
-      decalMesh.dispose();
-    } else {
+    for (const [regionId, composed] of composedByRegion) {
+      const decalMesh = plane(1, 1, decalMat, false, `decals_r${regionId}`);
+      decalMesh.receiveShadows = false;
       const decalMatrices = new Float32Array(composed.length * 16);
       composed.forEach((m, i) => m.copyToArray(decalMatrices, i * 16));
       stage.add(decalMesh);
-      bake(decalMesh, decalMatrices);
+      bake(decalMesh, decalMatrices, true);
+      addRegionMesh(regionMeshes, regionId, decalMesh);
     }
   }
 
@@ -254,5 +276,7 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     grid,
     isWall: (cx, cy) => !isFloor(cx, cy),
     shadowCasters,
+    regionMeshes,
+    inference,
   };
 }

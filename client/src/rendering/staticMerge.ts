@@ -56,7 +56,6 @@ export function mergeStaticMeshes(stage: TransformNode): Group {
     merged.parent = out;
     merged.computeWorldMatrix(true);
     merged.freezeWorldMatrix();
-    merged.alwaysSelectAsActiveMesh = true;
     merged.receiveShadows = true;
   }
 

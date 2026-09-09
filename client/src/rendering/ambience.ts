@@ -15,12 +15,13 @@ export type TierFeatures = {
   glow: boolean;
   glowRatio: number;
   pbrSurfaces: boolean;
+  maxLights: number;
 };
 
 export const TIERS: Record<GraphicsTier, TierFeatures> = {
-  niedrig: { shadowLights: 0, shadowMapSize: 256, ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: false },
-  mittel:  { shadowLights: 1, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 0.5, glow: true,  glowRatio: 0.5, pbrSurfaces: true  },
-  hoch:    { shadowLights: 4, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true  },
+  niedrig: { shadowLights: 0, shadowMapSize: 256,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: false, bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: false, maxLights: 3 },
+  mittel:  { shadowLights: 0, shadowMapSize: 512,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 32, fxaa: false, particleScale: 0.5, glow: false, glowRatio: 0.5, pbrSurfaces: true,  maxLights: 4 },
+  hoch:    { shadowLights: 1, shadowMapSize: 1024, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true,  maxLights: 6 },
 };
 
 export function tierFeatures(tier: GraphicsTier): TierFeatures {
@@ -29,8 +30,8 @@ export function tierFeatures(tier: GraphicsTier): TierFeatures {
 
 export const AMBIENCE = {
   tone: {
-    exposure: 0.95,
-    contrast: 1.30,
+    exposure: 0.78,
+    contrast: 1.28,
     saturation: 62,
     shadowsHue: 150,
     shadowsDensity: 34,
@@ -61,15 +62,16 @@ export const AMBIENCE = {
   },
   fog: {
     color: 0x11150e,
-    density: 0.062,
+    density: 0.085,
     breathHz: 0.05,
     breathAmount: 0.006,
     chaseDensity: 0.088,
     lerp: 1.6,
   },
   ambientLight: {
-    color: 0x39424c,
-    intensity: 0.30,
+    skyColor: 0xb7b3a0,
+    groundColor: 0x55544b,
+    intensity: 0.42,
   },
   clearColor: 0x090b08,
   chase: {
@@ -86,15 +88,15 @@ export const AMBIENCE = {
   },
   tube: {
     color: 0xfff2cf,
-    baseIntensity: 3.4,
-    range: 12,
-    poolSize: 6,
-    spotAngle: 1.7,
-    spotExponent: 1,
-    shadowDarkness: 0.32,
-    shadowBlurKernel: 16,
+    baseIntensity: 1.7,
+    range: 10,
+    poolSize: 4,
+    spotAngle: 2.6,
+    spotExponent: 0.05,
+    shadowDarkness: 0.4,
+    shadowBlurKernel: 12,
     shadowMinZ: 0.15,
-    shadowMaxZ: 13,
+    shadowMaxZ: 10,
     shadowBias: 0.00005,
     shadowNormalBias: 0.02,
     emissiveFloor: 0.05,
@@ -134,7 +136,7 @@ export const AMBIENCE = {
     ceilingRoughness: 0.95,
     ceilingMetallic: 0,
     grimeScale: 3.5,
-    grimeStrength: 0.55,
+    grimeStrength: 0.3,
     directIntensity: Math.PI,
     environmentIntensity: 0.35,
     bathroomFloorRoughness: 0.18,
@@ -185,7 +187,7 @@ export const AMBIENCE = {
     environment: {
       url: "/textures/pbr/hdri/creepy_bathroom_1k.hdr",
       size: 128,
-      intensity: 0.2,
+      intensity: 0,
     },
     dadoRail: {
       category: "floor_wood",

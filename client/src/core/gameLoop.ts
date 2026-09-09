@@ -1,7 +1,7 @@
 import Stats from "stats.js";
 import { SEND_HZ } from "./constants";
 import { getSettings, onSettingsChange } from "./settings";
-import type { createRenderContext } from "../rendering/renderer";
+import type { createRenderContext, AmbientLights } from "../rendering/renderer";
 import type { Player } from "../gameplay/player";
 import type { FlickerLights } from "../rendering/lights";
 import type { AmbienceParticles } from "../rendering/particles";
@@ -41,6 +41,7 @@ export type GameDeps = {
   ctx: ReturnType<typeof createRenderContext>;
   player: Player;
   lights: FlickerLights;
+  ambientLights: AmbientLights;
   particles: AmbienceParticles;
   remotes: RemotePlayers;
   minimap: Minimap;
@@ -109,6 +110,7 @@ export function runGameLoop(d: GameDeps): void {
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
     d.lights.update(dt, elapsed, d.player.position.x, d.player.position.z);
+    d.ambientLights.update(d.ctx.scene);
     d.particles.update(d.player.position.x, d.player.position.y, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);

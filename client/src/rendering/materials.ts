@@ -5,7 +5,7 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import type { Material } from "@babylonjs/core/Materials/material";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { MAX_LIGHTS, activeScene, basicMaterial, color3, lambertMaterial } from "./babylon";
+import { activeScene, basicMaterial, color3, lambertMaterial, maxLights } from "./babylon";
 import { AMBIENCE, tierFeatures, type GraphicsTier } from "./ambience";
 import { getSettings } from "../core/settings";
 import { mulberry32 } from "../world/propBuilders/_common";
@@ -31,7 +31,7 @@ function textured(url: string, repeat: [number, number], name: string): Standard
   const mat = new StandardMaterial(name, activeScene());
   mat.diffuseColor = Color3.White();
   mat.specularColor = Color3.Black();
-  mat.maxSimultaneousLights = MAX_LIGHTS;
+  mat.maxSimultaneousLights = maxLights();
   mat.diffuseTexture = loadTiled(url, repeat);
   return mat;
 }
@@ -102,6 +102,10 @@ function ensureEnvironmentTexture(): void {
   if (environmentApplied) return;
   environmentApplied = true;
   const scene = activeScene();
+  if (AMBIENCE.materials.environment.intensity <= 0) {
+    scene.environmentTexture = null;
+    return;
+  }
   try {
     const hdr = new HDRCubeTexture(
       AMBIENCE.materials.environment.url, scene, AMBIENCE.materials.environment.size,
@@ -125,8 +129,7 @@ function loadPbrTexture(
   url: string, gammaSpace: boolean, tier: GraphicsTier, repeat: [number, number],
 ): Texture {
   const hoch = tier === "hoch";
-  const sampling = hoch ? Texture.TRILINEAR_SAMPLINGMODE : Texture.NEAREST_SAMPLINGMODE;
-  const tex = new Texture(url, activeScene(), !hoch, true, sampling);
+  const tex = new Texture(url, activeScene(), false, true, Texture.TRILINEAR_SAMPLINGMODE);
   tex.wrapU = Texture.WRAP_ADDRESSMODE;
   tex.wrapV = Texture.WRAP_ADDRESSMODE;
   tex.uScale = repeat[0];
@@ -136,7 +139,7 @@ function loadPbrTexture(
   return tex;
 }
 
-const NORMAL_STRENGTH = 0.6;
+const NORMAL_STRENGTH = 0.35;
 
 function buildPbrSurface(
   name: string, category: string, tint: number, roughness: number, metallic: number,
@@ -158,8 +161,8 @@ function buildPbrSurface(
   mat.roughness = roughness;
   mat.metallic = metallic;
   mat.directIntensity = AMBIENCE.surfaces.directIntensity;
-  mat.environmentIntensity = environmentIntensity;
-  mat.maxSimultaneousLights = MAX_LIGHTS;
+  mat.environmentIntensity = AMBIENCE.materials.environment.intensity <= 0 ? 0 : environmentIntensity;
+  mat.maxSimultaneousLights = maxLights();
   mat.usePhysicalLightFalloff = false;
   mat.ambientTexture = grime;
   mat.ambientTextureStrength = AMBIENCE.surfaces.grimeStrength;
@@ -254,7 +257,7 @@ export function getDecalMaterial(): Material {
   mat.backFaceCulling = true;
   mat.alpha = AMBIENCE.materials.decal.alpha;
   mat.zOffset = DECAL_Z_OFFSET;
-  mat.maxSimultaneousLights = MAX_LIGHTS;
+  mat.maxSimultaneousLights = maxLights();
   decalMaterial = mat;
   return mat;
 }
@@ -349,7 +352,7 @@ function build(): Record<string, unknown> {
       const mat = new StandardMaterial(`painting${i}`, activeScene());
       mat.diffuseColor = Color3.White();
       mat.specularColor = Color3.Black();
-      mat.maxSimultaneousLights = MAX_LIGHTS;
+      mat.maxSimultaneousLights = maxLights();
       mat.diffuseTexture = loadPainting(`/textures/paintings/${f}`);
       return mat;
     }),

@@ -16,7 +16,8 @@ import type { Material } from "@babylonjs/core/Materials/material";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TargetCamera } from "@babylonjs/core/Cameras/targetCamera";
-import { AMBIENCE } from "./ambience";
+import { AMBIENCE, tierFeatures } from "./ambience";
+import { getSettings } from "../core/settings";
 
 declare module "@babylonjs/core/Meshes/transformNode" {
   interface TransformNode {
@@ -219,10 +220,14 @@ export function color3(hex: number): Color3 {
   );
 }
 
-/** One hemispheric ambient light plus the six-strong flicker pool from
- *  `rendering/lights.ts`; Babylon defaults to four and silently drops the
- *  rest, so every lit material has to raise the cap. */
-export const MAX_LIGHTS = 8;
+/** Hemispheric ambient plus the pooled flicker lights from
+ *  `rendering/lights.ts` that reach a given mesh; Babylon defaults to four
+ *  and silently drops the rest, so every lit material has to raise the cap.
+ *  The budget is tier-scaled: Niedrig never carries more than 2 pooled
+ *  tubes on a mesh, Hoch up to 6, each plus its one hemispheric light. */
+export function maxLights(): number {
+  return tierFeatures(getSettings().graphicsTier).maxLights;
+}
 
 export function lambertMaterial(
   color: Color3 | number, name = "lambert", scene: Scene = activeScene(),
@@ -231,7 +236,7 @@ export function lambertMaterial(
   mat.diffuseColor = typeof color === "number" ? color3(color) : color;
   mat.specularColor = color3(AMBIENCE.surfaces.propSpecularColor);
   mat.specularPower = AMBIENCE.surfaces.propSpecularPower;
-  mat.maxSimultaneousLights = MAX_LIGHTS;
+  mat.maxSimultaneousLights = maxLights();
   return mat;
 }
 
