@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.services import chairs as chairs_svc
+from app.game.broadcaster import Broadcaster
+from app.game.handlers.chair_handler import TEACHER_HIT_RADIUS, ChairHandler
+from app.game.handlers.noise_handler import NoiseHandler
 from app.domain.world.teachers import TeacherState
 
-from .conftest import add_chair, add_player, make_lobby
+from ..conftest import add_chair, add_player, make_lobby
 
 TEACHER_TICK_DT = 1.0 / 8   # the rate tick_projectiles is actually driven at
 
@@ -18,6 +20,10 @@ def add_teacher(lobby, tid: str, x: float, z: float) -> TeacherState:
     return t
 
 
+def make_chair_handler() -> ChairHandler:
+    return ChairHandler(Broadcaster(), NoiseHandler())
+
+
 class TestThrowGuards:
     """#38 — a hidden player cannot launch a chair."""
 
@@ -26,8 +32,9 @@ class TestThrowGuards:
         me = add_player(lobby, "me", x=0.0, z=0.0)
         add_chair(lobby, "c1", 0.0, 0.0, held_by="me")
         me.hidden_in = "h1"
+        chairs = make_chair_handler()
 
-        await chairs_svc.handle_throw(lobby, me, 1.0, 0.0)
+        await chairs.handle_throw(lobby, me, 1.0, 0.0)
 
         # A modified client must not be able to bypass the UI guard.
         assert lobby.chair_projectiles == []
@@ -37,8 +44,9 @@ class TestThrowGuards:
         lobby = make_lobby()
         me = add_player(lobby, "me", x=0.0, z=0.0)
         add_chair(lobby, "c1", 0.0, 0.0, held_by="me")
+        chairs = make_chair_handler()
 
-        await chairs_svc.handle_throw(lobby, me, 1.0, 0.0)
+        await chairs.handle_throw(lobby, me, 1.0, 0.0)
 
         assert len(lobby.chair_projectiles) == 1
         assert lobby.chairs["c1"].held_by is None
@@ -59,10 +67,11 @@ class TestProjectileSweep:
         me = add_player(lobby, "me", x=20.0 + offset, z=20.0 - lead)
         add_chair(lobby, "c1", me.x, me.z, held_by="me")
         teacher = add_teacher(lobby, "t1", 20.0, 20.0)
+        chairs = make_chair_handler()
 
-        await chairs_svc.handle_throw(lobby, me, 0.0, 1.0)
+        await chairs.handle_throw(lobby, me, 0.0, 1.0)
         for _ in range(20):
-            await chairs_svc.tick_projectiles(lobby, TEACHER_TICK_DT)
+            await chairs.tick_projectiles(lobby, TEACHER_TICK_DT)
             if teacher.stun_until > 0.0:
                 return True
             if not lobby.chair_projectiles:
@@ -77,7 +86,7 @@ class TestProjectileSweep:
     # decided hit-or-miss before: a throw can start anywhere within a tick.
     @pytest.mark.parametrize("lead", [3.0, 3.39, 3.78, 4.17, 4.43])
     async def test_every_pass_inside_the_hit_radius_connects(self, offset, lead):
-        assert offset < chairs_svc.TEACHER_HIT_RADIUS   # guard the parametrization
+        assert offset < TEACHER_HIT_RADIUS   # guard the parametrization
         assert await self._throw_past_teacher(offset, lead), (
             f"chair passed through the teacher at offset={offset} lead={lead}"
         )
@@ -92,10 +101,11 @@ class TestProjectileSweep:
         add_chair(lobby, "c1", 20.0, 20.0, held_by="me")
         # CELL_SIZE is 2.0, so this blocks the cell the chair flies into.
         lobby.world.grid.block(10, 12)
+        chairs = make_chair_handler()
 
-        await chairs_svc.handle_throw(lobby, me, 0.0, 1.0)
+        await chairs.handle_throw(lobby, me, 0.0, 1.0)
         for _ in range(20):
-            await chairs_svc.tick_projectiles(lobby, TEACHER_TICK_DT)
+            await chairs.tick_projectiles(lobby, TEACHER_TICK_DT)
             if not lobby.chair_projectiles:
                 break
 

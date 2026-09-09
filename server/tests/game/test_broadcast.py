@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import json
 
-from app.services.broadcast import broadcast
+from app.game.broadcaster import Broadcaster
 
-from .conftest import add_player, make_lobby
+from ..conftest import add_player, make_lobby
 
 
 class TestSingleEncode:
@@ -14,8 +14,9 @@ class TestSingleEncode:
     async def test_every_recipient_gets_the_same_payload_bytes(self):
         lobby = make_lobby()
         players = [add_player(lobby, f"p{i}") for i in range(5)]
+        broadcaster = Broadcaster()
 
-        await broadcast(lobby, {"type": "ping", "n": 1})
+        await broadcaster.broadcast(lobby, {"type": "ping", "n": 1})
 
         payloads = {p.channel.text_sent[0] for p in players}
         assert len(payloads) == 1, "recipients got separately encoded payloads"
@@ -27,8 +28,9 @@ class TestSingleEncode:
         lobby = make_lobby()
         a = add_player(lobby, "a")
         b = add_player(lobby, "b")
+        broadcaster = Broadcaster()
 
-        await broadcast(lobby, {"type": "ping"}, exclude="a")
+        await broadcaster.broadcast(lobby, {"type": "ping"}, exclude="a")
 
         assert a.channel.text_sent == []
         assert len(b.channel.text_sent) == 1
@@ -37,13 +39,14 @@ class TestSingleEncode:
         lobby = make_lobby()
         good = add_player(lobby, "good")
         dead = add_player(lobby, "dead")
+        broadcaster = Broadcaster()
 
         async def boom(_payload):
             raise ConnectionResetError("client vanished")
 
         dead.channel.send_text = boom
 
-        await broadcast(lobby, {"type": "ping"})
+        await broadcaster.broadcast(lobby, {"type": "ping"})
 
         assert len(good.channel.text_sent) == 1
 
@@ -56,8 +59,9 @@ class TestReadyGate:
         joining = add_player(lobby, "joining")
         joining.ready = False   # registered in conns, self-send still in flight
         settled = add_player(lobby, "settled")
+        broadcaster = Broadcaster()
 
-        await broadcast(lobby, {"type": "lobby_player_join", "id": "joining"})
+        await broadcaster.broadcast(lobby, {"type": "lobby_player_join", "id": "joining"})
 
         # The client drops everything received before lobby_state, so an early
         # join packet would be lost and that player missing from the roster.
@@ -68,8 +72,9 @@ class TestReadyGate:
         lobby = make_lobby()
         p = add_player(lobby, "p")
         p.ready = False
-        await broadcast(lobby, {"type": "a"})
+        broadcaster = Broadcaster()
+        await broadcaster.broadcast(lobby, {"type": "a"})
         p.ready = True
-        await broadcast(lobby, {"type": "b"})
+        await broadcaster.broadcast(lobby, {"type": "b"})
 
         assert [json.loads(t)["type"] for t in p.channel.text_sent] == ["b"]

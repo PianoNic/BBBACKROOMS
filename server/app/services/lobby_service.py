@@ -17,7 +17,7 @@ from app.domain.lobbies.laptop import Laptop
 from app.domain.lobbies.lobby import GAMES, Lobby
 from app.domain.lobbies.locker import Locker
 from app.domain.lobbies.player_conn import PlayerConn
-from app.services.laptop_challenges import make_challenge
+from app.domain.world.challenges.laptop_challenge_factory import LaptopChallengeFactory
 from app.domain.world.generator import generate
 from app.domain.world.pickups import fill_lockers
 from app.domain.world.teachers import spawn_teachers, to_dto
@@ -26,6 +26,8 @@ from app.domain.world.teachers import spawn_teachers, to_dto
 # Seconds of safety after game start so the slot-machine reveal can play out
 # without players being caught or stunned mid-modal.
 START_GRACE_S = 12.0
+
+_challenge_factory = LaptopChallengeFactory()
 
 
 def start_lobby(lobby: Lobby) -> None:
@@ -61,7 +63,7 @@ def start_lobby(lobby: Lobby) -> None:
             game = rng.choice(GAMES)
             lobby.laptops[laptop_id] = Laptop(
                 id=laptop_id, x=p.x, z=p.z, yaw=p.yaw, game=game,
-                challenge=make_challenge(game, rng),
+                challenge=_challenge_factory.make_challenge(game, rng),
             )
         elif p.type == "chair":
             cid = secrets.token_hex(3)

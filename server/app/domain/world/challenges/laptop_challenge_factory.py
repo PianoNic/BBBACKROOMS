@@ -146,110 +146,103 @@ RPG_PLAYER_HP = 20
 RPG_BOSS_HP = 22
 
 
-def make_challenge(game: str, rng: random.Random) -> dict:
-    """Roll the random state for one laptop. Empty dict for casino games."""
-    if game == "teams_call":
-        return _teams_call(rng)
-    if game == "teams_dm":
-        return _teams_dm(rng)
-    if game == "teams_file":
-        return _teams_file(rng)
-    if game == "moodle_course":
-        return _moodle_course(rng)
-    if game == "moodle_file":
-        return _moodle_file(rng)
-    if game == "moodle_quiz":
-        return _moodle_quiz(rng)
-    if game == "rpg_battle":
-        return _rpg_battle(rng)
-    return {}
+class LaptopChallengeFactory:
+    def make_challenge(self, game: str, rng: random.Random) -> dict:
+        """Roll the random state for one laptop. Empty dict for casino games."""
+        if game == "teams_call":
+            return self._teams_call(rng)
+        if game == "teams_dm":
+            return self._teams_dm(rng)
+        if game == "teams_file":
+            return self._teams_file(rng)
+        if game == "moodle_course":
+            return self._moodle_course(rng)
+        if game == "moodle_file":
+            return self._moodle_file(rng)
+        if game == "moodle_quiz":
+            return self._moodle_quiz(rng)
+        if game == "rpg_battle":
+            return self._rpg_battle(rng)
+        return {}
 
+    def is_correct(self, game: str, challenge: dict, choice: str | None) -> bool:
+        if not challenge or choice is None:
+            return False
+        return choice == challenge.get("correct")
 
-def is_correct(game: str, challenge: dict, choice: str | None) -> bool:
-    if not challenge or choice is None:
-        return False
-    return choice == challenge.get("correct")
+    # --- per-game generators --------------------------------------------------
 
+    def _teams_call(self, rng: random.Random) -> dict:
+        picks = rng.sample(CHANNELS, k=4)
+        rng.shuffle(picks)
+        target = rng.choice(picks)
+        # The "live" channel is rendered with a pulsing red dot in the client; the
+        # player has to find it among the static channels and click "Beitreten".
+        return {
+            "channels": picks,
+            "correct": target,
+            "host": rng.choice(TEACHER_NAMES),
+        }
 
-# --- per-game generators --------------------------------------------------
+    def _teams_dm(self, rng: random.Random) -> dict:
+        scenario = rng.choice(DM_SCENARIOS)
+        options = [scenario["correct"], *rng.sample(scenario["wrong"], k=3)]
+        rng.shuffle(options)
+        return {
+            "from": rng.choice(TEACHER_NAMES),
+            "question": scenario["question"],
+            "options": options,
+            "correct": scenario["correct"],
+        }
 
-def _teams_call(rng: random.Random) -> dict:
-    picks = rng.sample(CHANNELS, k=4)
-    rng.shuffle(picks)
-    target = rng.choice(picks)
-    # The "live" channel is rendered with a pulsing red dot in the client; the
-    # player has to find it among the static channels and click "Beitreten".
-    return {
-        "channels": picks,
-        "correct": target,
-        "host": rng.choice(TEACHER_NAMES),
-    }
+    def _teams_file(self, rng: random.Random) -> dict:
+        channel = rng.choice(CHANNELS)
+        files = rng.sample(FILE_NAMES, k=5)
+        target = rng.choice(files)
+        # Hint shown to the player: the file the teacher "asked for".
+        return {
+            "channel": channel,
+            "files": files,
+            "correct": target,
+            "hint": target,
+        }
 
+    def _moodle_course(self, rng: random.Random) -> dict:
+        picks = rng.sample(COURSES, k=5)
+        target = rng.choice(picks)
+        return {
+            "courses": [{"name": c[0], "code": c[1]} for c in picks],
+            "correct": target[1],
+            "hint": target[0],  # player sees: "Find course: Programmieren"
+        }
 
-def _teams_dm(rng: random.Random) -> dict:
-    scenario = rng.choice(DM_SCENARIOS)
-    options = [scenario["correct"], *rng.sample(scenario["wrong"], k=3)]
-    rng.shuffle(options)
-    return {
-        "from": rng.choice(TEACHER_NAMES),
-        "question": scenario["question"],
-        "options": options,
-        "correct": scenario["correct"],
-    }
+    def _moodle_file(self, rng: random.Random) -> dict:
+        course = rng.choice(COURSES)
+        files = rng.sample(FILE_NAMES, k=6)
+        target = rng.choice(files)
+        return {
+            "course": {"name": course[0], "code": course[1]},
+            "files": files,
+            "correct": target,
+            "hint": target,
+        }
 
+    def _moodle_quiz(self, rng: random.Random) -> dict:
+        course = rng.choice(COURSES)
+        quiz = rng.choice(QUIZ_QUESTIONS)
+        options = [quiz["correct"], *quiz["wrong"]]
+        rng.shuffle(options)
+        return {
+            "course": {"name": course[0], "code": course[1]},
+            "quizTitle": f"{course[0]} – Abschlusstest",
+            "question": quiz["question"],
+            "options": options,
+            "correct": quiz["correct"],
+        }
 
-def _teams_file(rng: random.Random) -> dict:
-    channel = rng.choice(CHANNELS)
-    files = rng.sample(FILE_NAMES, k=5)
-    target = rng.choice(files)
-    # Hint shown to the player: the file the teacher "asked for".
-    return {
-        "channel": channel,
-        "files": files,
-        "correct": target,
-        "hint": target,
-    }
-
-
-def _moodle_course(rng: random.Random) -> dict:
-    picks = rng.sample(COURSES, k=5)
-    target = rng.choice(picks)
-    return {
-        "courses": [{"name": c[0], "code": c[1]} for c in picks],
-        "correct": target[1],
-        "hint": target[0],  # player sees: "Find course: Programmieren"
-    }
-
-
-def _moodle_file(rng: random.Random) -> dict:
-    course = rng.choice(COURSES)
-    files = rng.sample(FILE_NAMES, k=6)
-    target = rng.choice(files)
-    return {
-        "course": {"name": course[0], "code": course[1]},
-        "files": files,
-        "correct": target,
-        "hint": target,
-    }
-
-
-def _moodle_quiz(rng: random.Random) -> dict:
-    course = rng.choice(COURSES)
-    quiz = rng.choice(QUIZ_QUESTIONS)
-    options = [quiz["correct"], *quiz["wrong"]]
-    rng.shuffle(options)
-    return {
-        "course": {"name": course[0], "code": course[1]},
-        "quizTitle": f"{course[0]} – Abschlusstest",
-        "question": quiz["question"],
-        "options": options,
-        "correct": quiz["correct"],
-    }
-
-
-def _rpg_battle(rng: random.Random) -> dict:
-    return {
-        "boss": rng.choice(TEACHER_NAMES),
-        "playerMaxHp": RPG_PLAYER_HP,
-        "bossMaxHp": RPG_BOSS_HP,
-    }
+    def _rpg_battle(self, rng: random.Random) -> dict:
+        return {
+            "boss": rng.choice(TEACHER_NAMES),
+            "playerMaxHp": RPG_PLAYER_HP,
+            "bossMaxHp": RPG_BOSS_HP,
+        }

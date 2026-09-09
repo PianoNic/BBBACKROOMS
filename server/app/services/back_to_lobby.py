@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.player_conn import PlayerConn
-from app.services.broadcast import broadcast
 from app.services.lobby_service import lobby_room_state
 
 

@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.ws import router as ws_router
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.persistence.engine import database_engine
 from app.presentation.controllers.auth_controller import router as auth_router
@@ -15,6 +14,7 @@ from app.presentation.controllers.lobbies_controller import router as lobbies_ro
 from app.presentation.controllers.roster_controller import router as roster_router
 from app.presentation.controllers.shop_controller import router as shop_router
 from app.presentation.controllers.turn_controller import router as turn_router
+from app.presentation.websocket.game_web_socket_endpoint import router as ws_router
 
 log = logging.getLogger("bbb")
 

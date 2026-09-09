@@ -3,8 +3,8 @@
 Movement lives in `teacher_ai.py`; this module owns the *event* side: each
 teacher carries a cooldown timer that decides when their ranged or area
 ability fires. The dispatch of the actual effect (projectile spawn, slow
-puddle, popup, ...) is handled by `app.services.abilities` — we just emit
-an AbilityEvent describing what should happen."""
+puddle, popup, ...) is handled by `app.game.handlers.ability_handler` — we
+just emit an AbilityEvent describing what should happen."""
 from __future__ import annotations
 
 import time as _time

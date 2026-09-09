@@ -6,6 +6,7 @@ from app.infrastructure.persistence.engine import database_engine
 from app.infrastructure.persistence.repositories.peewee_cosmetic_repository import PeeweeCosmeticRepository
 
 _cosmetics = PeeweeCosmeticRepository(database_engine, cosmetic_catalog)
+cosmetics_repository = _cosmetics
 
 
 async def get_owned(account_id: int) -> set[str]:

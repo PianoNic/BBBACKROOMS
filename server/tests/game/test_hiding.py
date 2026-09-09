@@ -1,10 +1,20 @@
 """Hide-in-closet rules (issues #35, #36, #38)."""
 from __future__ import annotations
 
-from app.services import hiding
+from app.game.broadcaster import Broadcaster
+from app.game.handlers.chair_handler import ChairHandler
+from app.game.handlers.hiding_handler import HidingHandler
+from app.game.handlers.noise_handler import NoiseHandler
 from app.services.back_to_lobby import _reset_runtime_state
 
-from .conftest import add_chair, add_hideout, add_player, make_lobby
+from ..conftest import add_chair, add_hideout, add_player, make_lobby
+
+
+def make_hiding_handler() -> HidingHandler:
+    broadcaster = Broadcaster()
+    noise_handler = NoiseHandler()
+    chair_handler = ChairHandler(broadcaster, noise_handler)
+    return HidingHandler(broadcaster, noise_handler, chair_handler)
 
 
 class TestRoundReset:
@@ -45,6 +55,7 @@ class TestClosetChoice:
         add_player(lobby, "other", x=1.0, z=0.0)
         add_hideout(lobby, "near", 1.0, 0.0, occupied_by="other")
         add_hideout(lobby, "far", 1.8, 0.0)   # still inside HIDE_RADIUS
+        hiding = make_hiding_handler()
 
         await hiding.handle_hide(lobby, me)
 
@@ -56,6 +67,7 @@ class TestClosetChoice:
         me = add_player(lobby, "me", x=0.0, z=0.0)
         add_player(lobby, "other", x=1.0, z=0.0)
         add_hideout(lobby, "only", 1.0, 0.0, occupied_by="other")
+        hiding = make_hiding_handler()
 
         await hiding.handle_hide(lobby, me)
 
@@ -66,6 +78,7 @@ class TestClosetChoice:
         lobby = make_lobby()
         me = add_player(lobby, "me", x=0.0, z=0.0)
         add_hideout(lobby, "far", 50.0, 0.0)
+        hiding = make_hiding_handler()
 
         await hiding.handle_hide(lobby, me)
 
@@ -81,6 +94,7 @@ class TestEnteringWithAChair:
         me = add_player(lobby, "me", x=0.0, z=0.0)
         add_chair(lobby, "c1", 0.0, 0.0, held_by="me")
         add_hideout(lobby, "h1", 1.0, 0.0)
+        hiding = make_hiding_handler()
 
         await hiding.handle_hide(lobby, me)
 

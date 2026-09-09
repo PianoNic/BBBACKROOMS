@@ -5,21 +5,27 @@ import asyncio
 import json
 import secrets
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
-from app.api.ws_dispatch import dispatch
-from app.auth import tokens
-from app.db import cosmetics_repo
-from app.db.accounts_repo import get_account
-from app.db.engine import db_available
-from app.domain.cosmetics.cosmetic_catalog import cosmetic_catalog
+from app.application.abstractions.database_availability import IDatabaseAvailability
+from app.application.abstractions.token_service import ITokenService
+from app.application.dtos.packets import ClientPacketAdapter
+from app.domain.accounts.account_repository import IAccountRepository
+from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog
+from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
 from app.domain.lobbies.player_conn import PlayerConn
+from app.game.game_core import GameCore
 from app.game.lobby_store import delete_lobby, get_lobby
 from app.infrastructure.realtime.web_socket_player_channel import WebSocketPlayerChannel
-from app.application.dtos.packets import ClientPacketAdapter
-from app.services.broadcast import broadcast
+from app.presentation.dependencies import (
+    get_account_repository,
+    get_cosmetic_catalog,
+    get_cosmetic_repository,
+    get_database_availability,
+    get_game_core,
+    get_token_service,
+)
 from app.services.lobby_service import lobby_room_state
-from app.services.revive import cancel_revives_for
 
 
 # How long an empty lobby is kept around after the last player leaves, so
@@ -40,7 +46,16 @@ router = APIRouter()
 
 
 @router.websocket("/ws/{lobby_id}")
-async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
+async def ws_endpoint(
+    ws: WebSocket,
+    lobby_id: str,
+    game_core: GameCore = Depends(get_game_core),
+    token_service: ITokenService = Depends(get_token_service),
+    accounts: IAccountRepository = Depends(get_account_repository),
+    cosmetics: ICosmeticRepository = Depends(get_cosmetic_repository),
+    cosmetic_catalog: CosmeticCatalog = Depends(get_cosmetic_catalog),
+    db_availability: IDatabaseAvailability = Depends(get_database_availability),
+) -> None:
     lobby = get_lobby(lobby_id)
     if lobby is None:
         await ws.close(code=4404)
@@ -63,10 +78,10 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
     name = f"player-{pid[:4]}"
     # Optional account link: the client passes a short-lived ws-ticket from
     # /auth/ws-ticket. Guests send no token and are unaffected.
-    account_id = tokens.read_account_id(ws.query_params.get("token"), "ws")
+    account_id = token_service.read_account_id(ws.query_params.get("token"), "ws")
     linked_account_id: int | None = None
-    if account_id is not None and db_available():
-        acct = await get_account(account_id)
+    if account_id is not None and db_availability.is_available:
+        acct = await accounts.get(account_id)
         if acct is not None:
             linked_account_id = acct.id
             if acct.display_name:
@@ -76,10 +91,10 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
         account_id=linked_account_id,
     )
     # Seed cosmetics: the account's owned/equipped, or the free defaults.
-    if linked_account_id is not None and db_available():
+    if linked_account_id is not None and db_availability.is_available:
         try:
-            me.owned_cosmetics = await cosmetics_repo.get_owned(linked_account_id)
-            me.equipped_cosmetics = await cosmetics_repo.get_equipped(linked_account_id)
+            me.owned_cosmetics = await cosmetics.get_owned(linked_account_id)
+            me.equipped_cosmetics = await cosmetics.get_equipped(linked_account_id)
         except Exception:
             me.owned_cosmetics = cosmetic_catalog.default_ids()
             me.equipped_cosmetics = cosmetic_catalog.default_equipped()
@@ -92,7 +107,7 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
 
     await ws.send_json(lobby_room_state(lobby, pid))
     me.ready = True  # only now may broadcasts reach this conn
-    await broadcast(
+    await game_core.broadcaster.broadcast(
         lobby,
         {
             "type": "lobby_player_join", "id": pid, "name": name, "color": color,
@@ -111,19 +126,20 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
                 pkt = ClientPacketAdapter.validate_python(raw)
             except Exception:
                 continue
-            await dispatch(ws, lobby, me, pkt)
+            await game_core.dispatcher.dispatch(ws, lobby, me, pkt)
     except WebSocketDisconnect:
         pass
     finally:
-        await cancel_revives_for(lobby, pid)
-        from app.services.hiding import free_hideout_for
-        free_hideout_for(lobby, pid)
+        await game_core.revive_handler.cancel_revives_for(lobby, pid)
+        game_core.hiding_handler.free_hideout_for(lobby, pid)
         lobby.conns.pop(pid, None)
-        await broadcast(lobby, {"type": "player_leave", "id": pid})
+        await game_core.broadcaster.broadcast(lobby, {"type": "player_leave", "id": pid})
         if lobby.admin_id == pid:
             lobby.admin_id = next(iter(lobby.conns), None)
             if lobby.admin_id:
-                await broadcast(lobby, {"type": "lobby_admin_changed", "adminId": lobby.admin_id})
+                await game_core.broadcaster.broadcast(
+                    lobby, {"type": "lobby_admin_changed", "adminId": lobby.admin_id},
+                )
         # Fresh empty lobbies that never started a round die immediately.
         # Parked ones (had_game) get a short grace period so players can
         # reload back in after Back-to-Lobby, then they're cleaned up too.
