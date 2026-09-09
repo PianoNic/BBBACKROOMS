@@ -125,6 +125,10 @@ export function playSfxNear(
   playSfx(url, base * (1 - dist / maxDist));
 }
 
+export function preloadFootsteps(): void {
+  void loadFootsteps();
+}
+
 /** Play a random footstep sound. Loads on first call. */
 export function playFootstep(volume = 1): void {
   const c = ensureCtx();

@@ -11,6 +11,7 @@ import { openAdminModal } from "./lobbyAdminModal";
 import { createLobbyMediaControls } from "./lobbyMediaControls";
 import { handleLobbyPacket, type LobbyState } from "./lobbyPackets";
 import { openShopPanel, type ShopHandle } from "./shopPanel";
+import { enterScreen, exitScreen, isTransitioning } from "./screenTransition";
 
 type State = LobbyState;
 
@@ -122,7 +123,13 @@ export function showLobbyRoom(
   }
 
   root.appendChild(panel);
-  document.body.appendChild(root);
+
+  const stage = el<HTMLDivElement>("div", "screen-stage stage-overlay");
+  const screenEl = el<HTMLDivElement>("div", "screen");
+  stage.appendChild(screenEl);
+  screenEl.appendChild(root);
+  document.body.appendChild(stage);
+  void enterScreen(screenEl, "forward");
 
   function buildVolumeSlider(playerId: string): HTMLDivElement {
     const wrap = el<HTMLDivElement>("div", "p-volume");
@@ -244,8 +251,11 @@ export function showLobbyRoom(
     chatInput.value = "";
   };
   startBtn.onclick = () => { if (!startBtn.disabled) client.send({ type: "start_game" }); };
-  leaveBtn.onclick = () => {
+  leaveBtn.onclick = async () => {
+    if (isTransitioning()) return;
     sessionStorage.removeItem("bbb_lobby_resume");
+    sessionStorage.setItem("bbb_menu_back", "1");
+    await exitScreen(screenEl, "back");
     client.close();
     window.location.reload();
   };
@@ -257,5 +267,5 @@ export function showLobbyRoom(
     onPackChange: () => void refreshPackIndicator(),
   }));
 
-  return { dismount: () => { shop?.dismount(); media.dispose(); root.remove(); } };
+  return { dismount: () => { shop?.dismount(); media.dispose(); stage.remove(); } };
 }

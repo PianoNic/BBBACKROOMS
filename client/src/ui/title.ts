@@ -1,5 +1,5 @@
 /** Title-screen orchestrator. Composes main menu, options, and server browser. */
-import { playSfx, unlockAudio } from "../core/audio";
+import { playSfx, preloadFootsteps, unlockAudio } from "../core/audio";
 import { music } from "../core/music";
 import { playIntro } from "./introSplash";
 import { el } from "./dom";
@@ -8,6 +8,7 @@ import { buildServerScreen } from "./serverBrowser";
 import { buildTutorialScreen } from "./tutorialScreen";
 import { buildShopScreen } from "./shopScreen";
 import { getMe, getProviders, loginUrl, logout } from "../net/auth";
+import { enterScreen, exitScreen, isTransitioning, swapScreens, type ScreenDirection } from "./screenTransition";
 
 export { getStoredName, getStoredAvatar, getStoredColor } from "./profilePanel";
 
@@ -236,29 +237,51 @@ export async function showTitleScreen(): Promise<TitleResult> {
   const root = el<HTMLDivElement>("div");
   root.id = "title";
   document.body.appendChild(root);
+  preloadFootsteps();
 
-  const render = (build: (root: HTMLElement) => void) => {
-    root.replaceChildren();
-    buildHeader(root);
-    void playIntro().then(() => music.setState("title"));
-    build(root);
-    buildFootnote();
-    buildSocialLinks();
+  buildHeader(root);
+  const stage = el<HTMLDivElement>("div", "screen-stage");
+  root.appendChild(stage);
+  buildFootnote();
+  buildSocialLinks();
+  void playIntro().then(() => music.setState("title"));
+
+  let currentScreen: HTMLElement | null = null;
+
+  const render = (build: (root: HTMLElement) => void, direction: ScreenDirection) => {
+    if (isTransitioning()) return;
+    const next = el<HTMLDivElement>("div", "screen");
+    build(next);
+    if (!currentScreen) {
+      stage.appendChild(next);
+      currentScreen = next;
+      const backFlag = sessionStorage.getItem("bbb_menu_back");
+      if (backFlag) {
+        sessionStorage.removeItem("bbb_menu_back");
+        void enterScreen(next, "back");
+      }
+      return;
+    }
+    const from = currentScreen;
+    currentScreen = next;
+    void swapScreens(stage, from, next, direction);
   };
 
   return new Promise<TitleResult>((resolve) => {
-    const pick = (id: string, password?: string) => {
+    const pick = async (id: string, password?: string) => {
+      if (isTransitioning()) return;
       sessionStorage.setItem(
         "bbb_lobby_resume", JSON.stringify({ lobbyId: id, password }),
       );
+      if (currentScreen) await exitScreen(currentScreen, "forward");
       root.remove();
       resolve({ lobbyId: id, password });
     };
-    const showMain = () => render((r) => buildMainMenu(r, showServers, showShop, showOptions, showTutorial));
-    const showServers = () => render((r) => buildServerScreen(r, pick, showMain));
-    const showShop = () => render((r) => buildShopScreen(r, showMain));
-    const showOptions = () => render((r) => buildOptionsScreen(r, showMain));
-    const showTutorial = () => render((r) => buildTutorialScreen(r, showMain));
+    const showMain = () => render((r) => buildMainMenu(r, showServers, showShop, showOptions, showTutorial), "back");
+    const showServers = () => render((r) => buildServerScreen(r, pick, showMain), "forward");
+    const showShop = () => render((r) => buildShopScreen(r, showMain), "forward");
+    const showOptions = () => render((r) => buildOptionsScreen(r, showMain), "forward");
+    const showTutorial = () => render((r) => buildTutorialScreen(r, showMain), "forward");
     showMain();
   });
 }
