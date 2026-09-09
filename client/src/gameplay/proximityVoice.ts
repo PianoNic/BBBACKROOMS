@@ -1,13 +1,15 @@
-/** Proximity voice chat: per-peer THREE.PositionalAudio that follows the
+/** Proximity voice chat: per-peer PositionalSound that follows the
  *  speaker's mesh and is dampened when a wall blocks the line of sight.
  *
  *  Audio streams come from the WebRTC media mesh. Distance falloff is
- *  handled natively by Three.js (ref / max / rolloff). LOS occlusion is
- *  applied each frame as a master-volume multiplier — 1.0 clear, 0.4 when
- *  blocked. We keep a hidden muted <audio> element per stream so browsers
- *  treat the MediaStreamSource as "live" (Chrome quirk). */
-import * as THREE from "three";
+ *  handled natively by the WebAudio panner (ref / max / rolloff). LOS
+ *  occlusion is applied each frame as a master-volume multiplier — 1.0
+ *  clear, 0.4 when blocked. We keep a hidden muted <audio> element per
+ *  stream so browsers treat the MediaStreamSource as "live" (Chrome
+ *  quirk). */
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { getSettings, onSettingsChange } from "../core/settings";
+import { PositionalSound, type SpatialListener } from "../core/spatialAudio";
 import { createPS1Filter, type FilterGraph } from "./audioFilter";
 
 const REF_DISTANCE = 3.5;
@@ -18,7 +20,7 @@ const SAMPLE_STEP = 0.4; // fraction of cellSize per LOS sample
 type Cells = { cells: number[]; width: number; height: number; cellSize: number };
 
 type Entry = {
-  audio: THREE.PositionalAudio;
+  audio: PositionalSound;
   source: MediaStreamAudioSourceNode;
   filter: FilterGraph;
   /** Hidden muted audio element — needed in Chrome to keep the stream alive
@@ -29,16 +31,16 @@ type Entry = {
 
 export class ProximityVoice {
   private readonly entries = new Map<string, Entry>();
-  private readonly listener: THREE.AudioListener;
+  private readonly listener: SpatialListener;
   private readonly grid: Cells;
-  private readonly getMesh: (id: string) => THREE.Object3D | null;
+  private readonly getMesh: (id: string) => TransformNode | null;
   private volume = 1;
   private ps1Amount = 0;
 
   constructor(
-    listener: THREE.AudioListener,
+    listener: SpatialListener,
     grid: Cells,
-    getMesh: (id: string) => THREE.Object3D | null,
+    getMesh: (id: string) => TransformNode | null,
   ) {
     this.listener = listener;
     this.grid = grid;
@@ -64,22 +66,20 @@ export class ProximityVoice {
     const mesh = this.getMesh(id);
     if (!mesh) return;
     if (existing) this.disposeEntry(id, existing);
-    const audio = new THREE.PositionalAudio(this.listener);
+    const ctx = this.listener.context;
+    if (!ctx) return;
+    const audio = new PositionalSound(this.listener);
+    if (audio.gain === null) return;
     audio.setRefDistance(REF_DISTANCE);
     audio.setMaxDistance(MAX_DISTANCE);
     audio.setRolloffFactor(ROLLOFF);
     audio.setDistanceModel("inverse");
     audio.setVolume(this.volume);
-    const ctx = this.listener.context;
     const source = ctx.createMediaStreamSource(stream);
     const filter = createPS1Filter(ctx, this.ps1Amount);
     source.connect(filter.input);
     filter.output.connect(audio.gain);
-    // Mark Three.js Audio as stream-backed so internal state matches.
-    (audio as unknown as { hasPlaybackControl: boolean }).hasPlaybackControl = false;
-    (audio as unknown as { sourceType: string }).sourceType = "mediaStreamNode";
-    (audio as unknown as { source: AudioNode }).source = source;
-    mesh.add(audio);
+    audio.attachTo(mesh);
     const sink = document.createElement("audio");
     sink.srcObject = stream;
     sink.muted = true;
@@ -130,8 +130,7 @@ export class ProximityVoice {
   }
 
   private disposeEntry(id: string, e: Entry): void {
-    e.audio.removeFromParent();
-    try { e.audio.disconnect(); } catch { /* noop */ }
+    e.audio.dispose();
     try { e.source.disconnect(); } catch { /* noop */ }
     e.filter.dispose();
     e.sink.srcObject = null;

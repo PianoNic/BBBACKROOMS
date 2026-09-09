@@ -1,6 +1,7 @@
 /** DOM/CSS-side visuals for teacher abilities — overlays, filters, popups.
- *  Pure side-effects on the page; no Three.js. */
-import * as THREE from "three";
+ *  Pure side-effects on the page; the camera type is the only Babylon
+ *  import. */
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { showBanner } from "../ui/banner";
 
 let overlayEl: HTMLDivElement | null = null;
@@ -29,7 +30,7 @@ export function screenFilter(filter: string, ms: number, banner?: string): void 
 }
 
 export function flipGravity(
-  camera: THREE.PerspectiveCamera, ms: number, banner: string,
+  camera: FreeCamera, ms: number, banner: string,
 ): void {
   const start = performance.now();
   showBanner(banner, ms);
