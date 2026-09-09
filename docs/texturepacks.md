@@ -45,8 +45,9 @@ permission for, may go into a pack — kept in memory for the session and
 never written to storage.
 
 Every picked image is processed entirely with `<canvas>`: center-cropped to a
-square, resized to at most 1024 px on a side, and re-encoded as JPEG,
-retrying at lower quality until it fits under 512 KB. The editor never makes
+3:4 portrait — the same shape as the default teacher artwork, which ships at
+512 × 683 — resized to at most 1024 px on the long side, and re-encoded as
+JPEG, retrying at lower quality until it fits under 512 KB. The editor never makes
 a network request itself; the only call in the whole flow is the one that
 fetches the teacher roster when you click **PACK EDITOR**, and it completes
 before the editor opens.

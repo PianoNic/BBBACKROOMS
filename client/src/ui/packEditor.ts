@@ -39,23 +39,34 @@ function encodeCanvas(canvas: HTMLCanvasElement, quality: number): Promise<Blob 
 
 async function processImageFile(file: File): Promise<{ blob: Blob; width: number; height: number }> {
   const bitmap = await createImageBitmap(file);
-  const side = Math.min(bitmap.width, bitmap.height);
-  const sx = (bitmap.width - side) / 2;
-  const sy = (bitmap.height - side) / 2;
-  const outSize = Math.min(side, MAX_IMAGE_DIM);
+  const targetRatio = 3 / 4;
+  const bitmapRatio = bitmap.width / bitmap.height;
+  let cropWidth: number;
+  let cropHeight: number;
+  if (bitmapRatio > targetRatio) {
+    cropHeight = bitmap.height;
+    cropWidth = Math.min(bitmap.width, Math.round(cropHeight * targetRatio));
+  } else {
+    cropWidth = bitmap.width;
+    cropHeight = Math.min(bitmap.height, Math.round(cropWidth / targetRatio));
+  }
+  const sx = (bitmap.width - cropWidth) / 2;
+  const sy = (bitmap.height - cropHeight) / 2;
+  const outHeight = Math.min(cropHeight, MAX_IMAGE_DIM);
+  const outWidth = Math.round(outHeight * targetRatio);
   const canvas = document.createElement("canvas");
-  canvas.width = outSize;
-  canvas.height = outSize;
+  canvas.width = outWidth;
+  canvas.height = outHeight;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     bitmap.close();
     throw new Error("Canvas nicht verfügbar");
   }
-  ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, outSize, outSize);
+  ctx.drawImage(bitmap, sx, sy, cropWidth, cropHeight, 0, 0, outWidth, outHeight);
   bitmap.close();
   for (const quality of QUALITIES) {
     const blob = await encodeCanvas(canvas, quality);
-    if (blob && blob.size <= MAX_IMAGE_BYTES) return { blob, width: outSize, height: outSize };
+    if (blob && blob.size <= MAX_IMAGE_BYTES) return { blob, width: outWidth, height: outHeight };
   }
   throw new Error("Bild zu groß, auch bei niedrigster Qualität");
 }
