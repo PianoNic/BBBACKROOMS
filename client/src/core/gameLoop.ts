@@ -28,6 +28,7 @@ import type { Corpses } from "../gameplay/corpses";
 import type { InventoryHud } from "../ui/inventory";
 import type { TaskCompass } from "../ui/compass";
 import type { Heartbeat } from "./heartbeat";
+import type { HorrorAudio } from "./horrorAudio";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
 import type { SpatialListener } from "./spatialAudio";
 import { updateSpatialAudio } from "./spatialAudio";
@@ -63,6 +64,7 @@ export type GameDeps = {
   inventory: InventoryHud;
   compass: TaskCompass;
   heartbeat: Heartbeat;
+  horrorAudio: HorrorAudio;
   proximityVoice: ProximityVoice;
   audioListener: SpatialListener;
   gogglesState: { activeUntilMs: number; cooldownUntilMs: number };
@@ -161,6 +163,7 @@ export function runGameLoop(d: GameDeps): void {
       d.heartbeat.setNearestDistance(nearest);
     }
     music.updateThreat(nearest, elapsed);
+    d.horrorAudio.update(elapsed, nearest, d.player.position.x, d.player.position.z);
 
     sendAcc += dt;
     if (!d.state.extracted && !d.state.hidden && sendAcc >= sendInterval) {

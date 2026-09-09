@@ -205,7 +205,7 @@ async function main(): Promise<void> {
     chairs: s.chairs, pickups: s.pickups, lockers: s.lockers, doors: s.doors,
     toiletStallDoors: s.toiletStallDoors, fuseBoxes: s.fuseBoxes,
     corpses: s.corpses, inventory: s.inventory, compass: s.compass,
-    heartbeat: s.heartbeat, proximityVoice: s.proximityVoice,
+    heartbeat: s.heartbeat, horrorAudio: s.horrorAudio, proximityVoice: s.proximityVoice,
     audioListener,
     gogglesState,
   });
