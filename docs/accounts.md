@@ -33,14 +33,16 @@ provider.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | From Google Cloud Console. |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | From Microsoft Entra. |
 | `MICROSOFT_TENANT` | `common` (personal + any-org accounts). |
-| `OAUTH_REDIRECT_BASE` | Public base URL of the backend (`http://localhost:8000` dev). |
-| `FRONTEND_URL` | SPA origin the callback returns to; also the CORS origin. |
+| `OAUTH_REDIRECT_BASE` | Public base URL of the backend (`http://localhost:8000` dev, `https://backrooms-baden.ch` production). |
+| `FRONTEND_URL` | SPA origin the callback returns to; also the CORS origin (`http://localhost:5173` dev, `https://backrooms-baden.ch` production). |
 | `SESSION_SECRET` | 32+ random bytes in production; empty = ephemeral dev key. |
 | `SESSION_COOKIE_SECURE` | `true` behind HTTPS, `false` for localhost. |
 
 **Redirect URIs to register** (must match `OAUTH_REDIRECT_BASE` exactly):
-- `http://localhost:8000/auth/google/callback`
-- `http://localhost:8000/auth/microsoft/callback`
+- Dev: `http://localhost:8000/auth/google/callback`
+- Dev: `http://localhost:8000/auth/microsoft/callback`
+- Production: `https://backrooms-baden.ch/auth/google/callback`
+- Production: `https://backrooms-baden.ch/auth/microsoft/callback`
 
 `http://localhost` is accepted for dev by both providers.
 
@@ -51,13 +53,13 @@ provider.
 2. **Google Auth platform → Branding**: set app name + support email; **Audience**: External; add a contact email.
 3. **Data Access**: add scopes `openid`, `profile` (non-sensitive — no verification needed).
 4. **Audience → Test users**: add your own email while in "Testing".
-5. **Clients → Create client → Web application**: add the Google redirect URI above.
+5. **Clients → Create client → Web application**: add both the dev and production Google redirect URIs above.
 6. Copy the **Client ID** and **Client secret** (secret shown once) → `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
 
 ### Microsoft (Microsoft Entra admin center)
 1. Sign in to <https://entra.microsoft.com>.
 2. **App registrations → New registration**. Supported account types: **Any org directory + personal Microsoft accounts** (→ tenant `common`).
-3. Add a **Web** redirect URI (the Microsoft one above) and **Register**.
+3. Add **Web** redirect URIs (both the dev and production Microsoft ones above) and **Register**.
 4. Copy **Application (client) ID** → `MICROSOFT_CLIENT_ID`.
 5. **Certificates & secrets → New client secret**: copy the secret **Value** (shown once) → `MICROSOFT_CLIENT_SECRET`.
 6. **API permissions**: Microsoft Graph delegated `openid`, `profile`, `User.Read` (default).

@@ -24,20 +24,20 @@ export function chromeFor(game: LaptopGame): ChromeSpec {
   }
   if (game.startsWith("moodle_")) {
     return {
-      url: "https://moodle.bbbackrooms.ch/",
+      url: "https://moodle.backrooms-baden.ch/",
       tabTitle: "Moodle",
       brandLabel: "Moodle",
     };
   }
   if (game === "rpg_battle") {
     return {
-      url: "https://games.bbbackrooms.ch/bbb-quest",
+      url: "https://games.backrooms-baden.ch/quest",
       tabTitle: "Schul-Quest",
       brandLabel: "Schul-Quest",
     };
   }
   return {
-    url: "https://www.bbbackrooms.ch/online-casino",
+    url: "https://www.backrooms-baden.ch/casino",
     tabTitle: `Schul-Casino - ${game}`,
     brandLabel: "Schul-Casino",
   };

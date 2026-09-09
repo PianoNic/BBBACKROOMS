@@ -1,5 +1,5 @@
 /** Moodle inside-course view — player picks the right file. Mirrors
- *  moodle.bbbackrooms.ch: course-index sidebar on the left, big course title,
+ *  moodle.backrooms-baden.ch: course-index sidebar on the left, big course title,
  *  tab row, "Alles einklappen" and collapsible section cards whose rows
  *  carry an outlined doc icon plus the file-type suffix. */
 import type { LaptopApp } from "../app";
