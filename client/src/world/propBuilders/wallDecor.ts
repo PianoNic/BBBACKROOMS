@@ -1,7 +1,7 @@
 /** Side- + back-wall decoration: paintings, bookshelves, books piles,
  *  bulletin boards, radiators. Maps, chalkboards and coat racks live in
  *  the sibling `_wallDecorBoards.ts` to keep each file small. */
-import * as THREE from "three";
+import { box, group } from "../../rendering/babylon";
 import { materials } from "../../rendering/materials";
 import { mulberry32, seedFromPos, type Builder } from "./_common";
 import {
@@ -13,24 +13,13 @@ const BOOK_MATS = [
   materials.bookD, materials.bookE,
 ];
 
-const PAINTING_FRAME = new THREE.BoxGeometry(0.72, 0.52, 0.04);
-const PAINTING_ART = new THREE.BoxGeometry(0.6, 0.4, 0.05);
-const SHELF_BODY = new THREE.BoxGeometry(1.2, 1.9, 0.35);
-const SHELF_PLANK = new THREE.BoxGeometry(1.18, 0.03, 0.34);
-const BOOK_SPINE = new THREE.BoxGeometry(0.08, 0.28, 0.22);
-const PILE_BOOK = new THREE.BoxGeometry(0.28, 0.05, 0.22);
-const CORK_BODY = new THREE.BoxGeometry(1.10, 0.78, 0.04);
-const NOTE_GEO = new THREE.BoxGeometry(0.10, 0.09, 0.008);
-const RAD_BODY = new THREE.BoxGeometry(1.5, 0.7, 0.18);
-const RAD_FIN = new THREE.BoxGeometry(0.05, 0.66, 0.19);
-
 const buildPainting: Builder = (prop) => {
-  const g = new THREE.Group();
-  const frame = new THREE.Mesh(PAINTING_FRAME, materials.paintingFrame);
+  const g = group();
+  const frame = box(0.72, 0.52, 0.04, materials.paintingFrame);
   frame.position.y = 1.7;
   g.add(frame);
   const idx = (prop.variant ?? 0) % materials.paintings.length;
-  const art = new THREE.Mesh(PAINTING_ART, materials.paintings[idx]);
+  const art = box(0.6, 0.4, 0.05, materials.paintings[idx]);
   art.position.set(0, 1.7, -0.05);
   g.add(art);
   return g;
@@ -38,13 +27,13 @@ const buildPainting: Builder = (prop) => {
 
 // Tall side-wall shelf. Visible face is local -Z.
 const buildBookshelf: Builder = (prop) => {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(SHELF_BODY, materials.bookshelf);
+  const g = group();
+  const body = box(1.2, 1.9, 0.35, materials.bookshelf);
   body.position.set(0, 0.95, -0.15);
   g.add(body);
   const shelfYs = [0.3, 0.7, 1.1, 1.5];
   for (const y of shelfYs) {
-    const plank = new THREE.Mesh(SHELF_PLANK, materials.bookshelf);
+    const plank = box(1.18, 0.03, 0.34, materials.bookshelf);
     plank.position.set(0, y, -0.15);
     g.add(plank);
   }
@@ -54,8 +43,8 @@ const buildBookshelf: Builder = (prop) => {
     while (x < 0.5) {
       const h = 0.22 + rand() * 0.1;
       const w = 0.06 + rand() * 0.05;
-      const book = new THREE.Mesh(BOOK_SPINE, BOOK_MATS[Math.floor(rand() * BOOK_MATS.length)]);
-      book.scale.set(w / 0.08, h / 0.28, 1);
+      const book = box(0.08, 0.28, 0.22, BOOK_MATS[Math.floor(rand() * BOOK_MATS.length)]);
+      book.scaling.set(w / 0.08, h / 0.28, 1);
       book.position.set(x + w / 2, y + h / 2 + 0.015, -0.22);
       g.add(book);
       x += w + 0.005;
@@ -66,9 +55,9 @@ const buildBookshelf: Builder = (prop) => {
 
 // Small stack of books on a desk/shelf.
 const buildBooksPile: Builder = () => {
-  const g = new THREE.Group();
+  const g = group();
   for (let i = 0; i < 4; i++) {
-    const book = new THREE.Mesh(PILE_BOOK, BOOK_MATS[i % BOOK_MATS.length]);
+    const book = box(0.28, 0.05, 0.22, BOOK_MATS[i % BOOK_MATS.length]);
     book.position.y = 0.78 + i * 0.055;
     book.rotation.y = (i % 2) * 0.08;
     g.add(book);
@@ -79,9 +68,9 @@ const buildBooksPile: Builder = () => {
 // Wall-mounted cork board with sticky notes. Faces local -Z. Body
 // centred at z=0: back at z=+0.02 (just inside the wall), front at -0.02.
 const buildBulletinBoard: Builder = (prop) => {
-  const g = new THREE.Group();
+  const g = group();
   const Y = 1.95;
-  const body = new THREE.Mesh(CORK_BODY, materials.cork);
+  const body = box(1.10, 0.78, 0.04, materials.cork);
   body.position.set(0, Y, 0);
   g.add(body);
   const noteMats = [materials.noteWhite, materials.noteYellow, materials.noteBlue];
@@ -89,7 +78,7 @@ const buildBulletinBoard: Builder = (prop) => {
   for (let i = 0; i < 8; i++) {
     const nx = (rand() - 0.5) * 0.9;
     const ny = Y + (rand() - 0.5) * 0.55;
-    const note = new THREE.Mesh(NOTE_GEO, noteMats[Math.floor(rand() * noteMats.length)]);
+    const note = box(0.10, 0.09, 0.008, noteMats[Math.floor(rand() * noteMats.length)]);
     // Flush against the board's front face: half-thickness 0.004 → -0.024.
     note.position.set(nx, ny, -0.024);
     note.rotation.z = (rand() - 0.5) * 0.3;
@@ -100,12 +89,12 @@ const buildBulletinBoard: Builder = (prop) => {
 
 // Floor-mounted radiator on a side wall. Extends into the room (-Z).
 const buildRadiator: Builder = () => {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(RAD_BODY, materials.radiator);
+  const g = group();
+  const body = box(1.5, 0.7, 0.18, materials.radiator);
   body.position.set(0, 0.45, -0.11);
   g.add(body);
   for (let i = -6; i <= 6; i++) {
-    const fin = new THREE.Mesh(RAD_FIN, materials.radiator);
+    const fin = box(0.05, 0.66, 0.19, materials.radiator);
     fin.position.set(i * 0.11, 0.45, -0.11);
     g.add(fin);
   }

@@ -1,7 +1,6 @@
 /** "How to play" text screen reached from the title menu. Mostly text;
  *  also renders a small showcase of the in-game items rotating in 3D so
  *  players know what to look for. */
-import * as THREE from "three";
 import { el } from "./dom";
 import { buildItemModel } from "../gameplay/itemModels";
 import { buildPickupModel } from "../gameplay/pickups";
@@ -114,12 +113,12 @@ function buildShowcase(): { row: HTMLElement; dispose: () => void } {
   const viewers: Array<{ dispose: () => void }> = [];
   for (const item of SHOWCASE) {
     const tile = el<HTMLDivElement>("div", "tut-item");
-    const model: THREE.Group = item.kind === "pickup"
+    const build = () => (item.kind === "pickup"
       ? buildPickupModel(item.type)
       : item.kind === "chair"
         ? buildChairMesh()
-        : buildItemModel(item.type);
-    const viewer = createItemViewer(model);
+        : buildItemModel(item.type));
+    const viewer = createItemViewer(build);
     viewers.push(viewer);
     tile.appendChild(viewer.canvas);
     tile.appendChild(el("div", "tut-item-name", item.label));
