@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { TeacherInfo } from "../net/protocol";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { distanceSquaredXZ, withinRadiusXZ } from "../core/geom";
+import { resolveTeacherImage } from "../core/texturePacks";
 
 const SPRITE_HEIGHT = 1.9;
 const SPRITE_WIDTH = 1.3;
@@ -61,7 +62,7 @@ export class Teachers {
   }
 
   private spawn(t: TeacherInfo): void {
-    const tex = this.loader.load(`/teachers/${t.image}`);
+    const tex = this.loader.load(resolveTeacherImage(t.ability, -1, `/teachers/${t.image}`));
     tex.colorSpace = THREE.SRGBColorSpace;
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
     const sprite = new THREE.Sprite(mat);

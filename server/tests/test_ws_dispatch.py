@@ -10,7 +10,18 @@ from __future__ import annotations
 import ast
 import pathlib
 
+import pytest
+from pydantic import ValidationError
+
+from app.api import ws
+from app.api.ws_dispatch import dispatch
+from app.schemas.packets import ClientPacketAdapter, PackAnnouncePkt
+from app.services.lobby_service import lobby_room_state
+
+from .conftest import add_player, make_lobby
+
 DISPATCH = pathlib.Path(__file__).resolve().parents[1] / "app" / "api" / "ws_dispatch.py"
+WS_MODULE = pathlib.Path(__file__).resolve().parents[1] / "app" / "api" / "ws.py"
 
 
 def _packet_branches() -> list[ast.If]:
@@ -42,3 +53,86 @@ def test_the_routing_table_is_not_empty():
     # Guards the test above against silently passing if `dispatch` is renamed
     # or restructured into something this parser no longer recognises.
     assert len(_packet_branches()) > 10
+
+
+def test_pack_announce_rejects_extra_field():
+    with pytest.raises(ValidationError):
+        ClientPacketAdapter.validate_python({
+            "type": "pack_announce", "pack_id": "foo-pack",
+            "pack_hash": "a" * 64, "data": "unexpected",
+        })
+
+
+def test_pack_announce_rejects_oversized_pack_id():
+    with pytest.raises(ValidationError):
+        ClientPacketAdapter.validate_python({
+            "type": "pack_announce", "pack_id": "a" * 200, "pack_hash": "a" * 64,
+        })
+
+
+def test_pack_announce_rejects_invalid_pack_hash():
+    with pytest.raises(ValidationError):
+        ClientPacketAdapter.validate_python({
+            "type": "pack_announce", "pack_id": "foo-pack", "pack_hash": "not-hex",
+        })
+
+
+def test_pack_announce_validates():
+    pkt = ClientPacketAdapter.validate_python({
+        "type": "pack_announce", "pack_id": "foo-pack", "pack_hash": "a" * 64,
+    })
+    assert isinstance(pkt, PackAnnouncePkt)
+    assert pkt.pack_id == "foo-pack"
+    assert pkt.pack_hash == "a" * 64
+
+
+async def test_pack_announce_ignored_from_non_host():
+    lobby = make_lobby()
+    host = add_player(lobby, "host")
+    other = add_player(lobby, "other")
+    lobby.admin_id = host.id
+    pkt = PackAnnouncePkt(type="pack_announce", pack_id="foo-pack", pack_hash="a" * 64)
+
+    await dispatch(other.ws, lobby, other, pkt)
+
+    assert lobby.pack_id is None
+    assert lobby.pack_hash is None
+
+
+async def test_pack_announce_from_host_updates_lobby_and_room_state():
+    lobby = make_lobby()
+    host = add_player(lobby, "host")
+    lobby.admin_id = host.id
+    pkt = PackAnnouncePkt(type="pack_announce", pack_id="foo-pack", pack_hash="b" * 64)
+
+    await dispatch(host.ws, lobby, host, pkt)
+
+    assert lobby.pack_id == "foo-pack"
+    assert lobby.pack_hash == "b" * 64
+    state = lobby_room_state(lobby, host.id)
+    assert state["packId"] == "foo-pack"
+    assert state["packHash"] == "b" * 64
+
+
+def test_oversized_frame_exceeds_the_guard_constant():
+    assert len("x" * 100_000) > ws.MAX_WS_MESSAGE_BYTES
+
+
+def test_ws_receive_loop_guards_message_size_before_parsing():
+    tree = ast.parse(WS_MODULE.read_text(encoding="utf-8"))
+    fn = next(
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.AsyncFunctionDef) and n.name == "ws_endpoint"
+    )
+    while_node = next(n for n in ast.walk(fn) if isinstance(n, ast.While))
+    body = while_node.body
+    receive_idx = next(
+        i for i, node in enumerate(body) if "receive_text" in ast.unparse(node)
+    )
+    guard = body[receive_idx + 1]
+    assert isinstance(guard, ast.If)
+    assert "MAX_WS_MESSAGE_BYTES" in ast.unparse(guard.test)
+    assert "len" in ast.unparse(guard.test)
+    assert any(isinstance(s, ast.Continue) for s in guard.body)
+    rest = ast.unparse(body[receive_idx + 2:])
+    assert "json.loads" in rest

@@ -4,6 +4,7 @@ import { el } from "./dom";
 import {
   cameraDeviceRow, camPreviewRow, micDeviceRow, micMeterRow,
 } from "./settingsDevices";
+import { buildTexturePackSection } from "./texturePackRow";
 
 function rangeRow<K extends keyof Settings>(
   label: string,
@@ -135,6 +136,9 @@ export function buildSettingsList(): SettingsList {
   const meterRow = micMeterRow();
   root.appendChild(meterRow.row);
   disposables.push(meterRow.dispose);
+
+  root.appendChild(el("div", "set-section", "TEXTURE PACKS"));
+  root.appendChild(buildTexturePackSection());
 
   const reset = el<HTMLButtonElement>("button", "menu-btn reset", "RESET TO DEFAULTS");
   reset.onclick = () => {

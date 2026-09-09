@@ -52,6 +52,7 @@ All have `type: "<name>"`. Selection (full list in `packets.py`):
 | `chat_send` | `text` (≤300) | Lobby chat. |
 | `back_to_lobby` | — | Return after a round. |
 | `lobby_settings` | … | Admin-only: tune lobby. |
+| `pack_announce` | `pack_id, pack_hash` (both nullable, pattern-capped) | Admin-only: announce the host's [texture pack](texturepacks.md). Never carries asset bytes. |
 | `webrtc_signal` | `to, kind, data` | Server relays offer/answer/ICE to a peer. |
 
 ## Server → Client packets
@@ -60,6 +61,8 @@ Main ones (see `services/broadcast.py` and the lobby/world services):
 - `lobby_room_state` — full lobby snapshot on join.
 - `lobby_player_join` / `player_leave` — peer updates.
 - `lobby_admin_changed` — new admin after disconnect.
+- `lobby_pack` — the host's announced texture pack id + hash (also mirrored in the
+  lobby snapshot as `packId` / `packHash`).
 - `world_init` — grid, spawns, props, lights, tasks, extraction position, your player.
 - `players_state` — batched pose snapshot at `SNAPSHOT_HZ` (15): every player who
   moved since the last tick plus all teacher positions, in one packet. Moves are
