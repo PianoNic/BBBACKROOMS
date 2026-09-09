@@ -11,7 +11,7 @@ import { getMusicDestination, unlockAudio } from "./audio";
 export type MusicState = "title" | "tasks" | "chase" | "escape";
 
 const TRACKS: Record<MusicState, string[]> = {
-  title: ["/sounds/music/bbbackrooms-1.mp3", "/sounds/music/bbbackrooms-2.mp3"],
+  title: ["/sounds/music/backroomsbaden-1.mp3", "/sounds/music/backroomsbaden-2.mp3"],
   tasks: [
     "/sounds/music/liminal-lernatelier-1.mp3",
     "/sounds/music/liminal-lernatelier-2.mp3",

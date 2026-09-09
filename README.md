@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="assets/banner.jpg" width="800" alt="bbbackrooms" />
+  <img src="assets/banner.jpg" width="800" alt="Backrooms Baden" />
 </p>
 <p align="center">
-  <strong>bbbackrooms</strong><br/>
+  <strong>Backrooms Baden</strong><br/>
   Backrooms-Horror in der BBB. Tasks lösen, den Lehrern ausweichen, in der Aula raus.
 </p>
 <p align="center">
-  <a href="https://github.com/PianoNic/BBBACKROOMS"><img src="https://badgetrack.pianonic.ch/badge?tag=bbbackrooms&label=visits&color=c9a227&style=flat" alt="visits" /></a>
+  <a href="https://github.com/PianoNic/BackroomsBaden"><img src="https://badgetrack.pianonic.ch/badge?tag=backroomsbaden&label=visits&color=c9a227&style=flat" alt="visits" /></a>
   <a href="docs/development.md"><img src="https://img.shields.io/badge/Self--Host-Instructions-c9a227.svg" alt="Self-hosting" /></a>
   <a href="docs/README.md"><img src="https://img.shields.io/badge/Documentation-Docs-c9a227.svg" alt="Documentation" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-c9a227.svg" alt="License" /></a>
@@ -14,7 +14,7 @@
 
 ---
 
-## Was ist bbbackrooms?
+## Was ist Backrooms Baden?
 
 Ein Multiplayer-Horrorspiel, das in der BBB spielt. Bis zu 100 Schüler stecken in einer
 Backrooms-Version der Schule fest, während patrouillierende Lehrer die Gänge ablaufen — jeder mit

@@ -38,7 +38,7 @@ export function showLobbyRoom(
   const root = el<HTMLDivElement>("div");
   root.id = "lobby-room";
 
-  root.appendChild(el("h1", undefined, "BBBACKROOMS"));
+  root.appendChild(el("h1", undefined, "BACKROOMS BADEN"));
   const sysbar = el<HTMLDivElement>("div", "sysbar");
   sysbar.appendChild(el("span", undefined, `SYS://LOBBY/${initial.id}`));
   const lockTxt = initial.hasPassword ? "🔒 " : "";

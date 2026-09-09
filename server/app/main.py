@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     await db_disconnect()
 
 
-app = FastAPI(title="bbbackrooms server", lifespan=lifespan)
+app = FastAPI(title="Backrooms Baden server", lifespan=lifespan)
 
 # Credentialed auth (session cookie) requires a specific origin — the CORS spec
 # forbids "*" with credentials. In dev that's the Vite origin (FRONTEND_URL); in

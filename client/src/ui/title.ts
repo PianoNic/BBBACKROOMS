@@ -66,7 +66,7 @@ function buildHeader(root: HTMLElement): void {
   sysbar.appendChild(el("span", "sysbar-label", "SYS://ROOM_INDEX"));
   sysbar.appendChild(el("span", "rec", "REC"));
   root.appendChild(sysbar);
-  const logo = el<HTMLHeadingElement>("h1", undefined, "BBBACKROOMS");
+  const logo = el<HTMLHeadingElement>("h1", undefined, "BACKROOMS BADEN");
   logo.onclick = () => {
     unlockAudio();
     playSfx("/sounds/actions/logo-sting.ogg", 0.85);
@@ -87,7 +87,7 @@ async function fetchVersion(): Promise<string> {
   return cachedVersion;
 }
 
-const GITHUB_URL = "https://github.com/PianoNic/BBBACKROOMS";
+const GITHUB_URL = "https://github.com/PianoNic/BackroomsBaden";
 const DISCORD_URL = "https://discord.gg/EwJ4x2GvvG";
 
 function buildFootnote(): void {
@@ -96,10 +96,10 @@ function buildFootnote(): void {
   if (!root) return;
   const note = el<HTMLDivElement>("div", "footnote");
   const today = new Date().toISOString().slice(0, 10);
-  note.textContent = `BBBKRMS · v… · ${today}`;
+  note.textContent = `BACKROOMS BADEN · v… · ${today}`;
   root.appendChild(note);
   fetchVersion().then((v) => {
-    note.textContent = `BBBKRMS · v${v} · ${today}`;
+    note.textContent = `BACKROOMS BADEN · v${v} · ${today}`;
   });
 }
 

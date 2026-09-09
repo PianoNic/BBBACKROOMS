@@ -1,4 +1,4 @@
-# bbbackrooms — Docs
+# Backrooms Baden — Docs
 
 - [Gameplay](gameplay.md) — tasks, extraction, items, controls, tips.
 - [Architecture](architecture.md) — server/client split, layers, data flow.
