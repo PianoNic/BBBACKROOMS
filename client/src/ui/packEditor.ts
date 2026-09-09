@@ -1,11 +1,10 @@
 import JSZip from "jszip";
-import { PACK_ID_RE, importPackFromFile } from "../core/texturePacks";
+import { MAX_TEACHER_ENTRIES, PACK_ID_RE, importPackFromFile } from "../core/texturePacks";
 import { el } from "./dom";
 import type { RosterEntry } from "../net/protocol";
 
 const MAX_IMAGE_BYTES = 512 * 1024;
 const MAX_IMAGE_DIM = 1024;
-const MAX_TEACHER_ENTRIES = 64;
 const QUALITIES = [0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
 
 type SlotState = { blob: Blob | null; sourceWidth: number; sourceHeight: number };
@@ -207,12 +206,10 @@ async function buildZip(
     teachers[String(index)] = teacherEntry;
   }
 
-  const usedAbilities = new Set<string>();
   for (const index of editedIndices) {
     if (Object.keys(teachers).length >= MAX_TEACHER_ENTRIES) break;
     const entry = roster[index];
-    if (usedAbilities.has(entry.ability)) continue;
-    usedAbilities.add(entry.ability);
+    if (Object.prototype.hasOwnProperty.call(teachers, entry.ability)) continue;
     teachers[entry.ability] = teachers[String(index)];
   }
 

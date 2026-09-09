@@ -43,10 +43,11 @@ before the editor opens.
 
 The zip it produces follows the same layout described above — each edited
 image is written to `teachers/<slug>.jpg` (the roster filename, lowercased
-and slugified) — and each edited teacher gets **two** entries in
-`pack.json.teachers`: one keyed by roster index, and one keyed by that
-teacher's ability id (as long as the 64-entry cap allows it), so the pack
-resolves whichever lookup a given call site uses.
+and slugified) — and each edited teacher always gets an entry in
+`pack.json.teachers` keyed by roster index, plus a second entry keyed by
+that teacher's ability id when no earlier slot already claimed that ability
+and the 256-entry cap still allows it, so the pack resolves whichever
+lookup a given call site uses.
 
 ## `pack.json` schema
 
@@ -65,14 +66,16 @@ resolves whichever lookup a given call site uses.
 - `id` — lowercase slug, `^[a-z0-9][a-z0-9-]{0,63}$`. This is the identifier
   announced to other players (see below), so keep it short and stable.
 - `version`, `name` — free-text strings, capped at 64 characters each.
-- `teachers` — a map of at most 64 entries. Each key is either a teacher
-  **ability id** (e.g. `"silent_steps"`, `"lights_off"`, …) or a **roster
-  index** (`"0"`, `"1"`, `"2"`, …) as a fallback for teachers looked up
-  without a known ability. Each value has:
+- `teachers` — a map of at most 256 entries. Each key is either a **roster
+  index** (`"0"`, `"1"`, `"2"`, …) or a teacher **ability id** (e.g.
+  `"silent_steps"`, `"lights_off"`, …). Each value has:
   - `image` (required) — a path inside the zip to the replacement image.
   - `name` (optional) — a replacement display name for that teacher.
 
-Ability id lookup always wins over roster-index lookup.
+Roster-index lookup wins over ability id lookup: it is the most specific
+key, since it identifies one exact teacher slot. Ability id is the
+fallback, used when no roster-index entry exists for that teacher, and the
+default artwork is used only when neither lookup matches.
 
 ## Image constraints
 
