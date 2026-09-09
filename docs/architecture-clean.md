@@ -147,7 +147,7 @@ server/app/
 - **One public class per module.** The single exception, inherited from
   SchulwareAPI: a message and its handler live together, because they are one
   unit and are always imported together —
-  `get_lobbies_query.py` holds `GetLobbiesQuery` **and** `GetLobbiesHandler`.
+  `list_lobbies_query.py` holds `ListLobbiesQuery` **and** `ListLobbiesHandler`.
 - Module names are the `snake_case` of the class they hold:
   `PeeweeAccountRepository` → `peewee_account_repository.py`.
 - Interface modules drop the `I`: `IAccountRepository` lives in
