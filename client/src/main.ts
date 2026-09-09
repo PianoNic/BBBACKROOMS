@@ -19,6 +19,7 @@ import { installVoiceNoise } from "./gameplay/voiceNoise";
 import { buildScene } from "./core/sceneSetup";
 import { getSettings, onSettingsChange, updateSetting } from "./core/settings";
 import { ensureCatalog } from "./gameplay/cosmetics";
+import { installDevTools } from "./core/devTools";
 
 
 async function main(): Promise<void> {
@@ -73,6 +74,7 @@ async function main(): Promise<void> {
   const audioListener = new THREE.AudioListener();
   await ensureCatalog();  // so equipped cosmetics resolve when seeding players
   const s = buildScene(init, ctx, net, audioListener, webcam);
+  installDevTools({ init, player: s.player, inspector: () => undefined });
 
   const reviveState = { active: false };
   const gogglesState = { activeUntilMs: 0, cooldownUntilMs: 0 };
@@ -84,7 +86,7 @@ async function main(): Promise<void> {
     pickups: s.pickups, lockers: s.lockers, doors: s.doors, inventory: s.inventory,
     compass: s.compass, reviveBar: s.reviveBar, laptop: s.laptop,
     portal: s.portal, spectator: s.spectator, player: s.player,
-    camera: ctx.camera, state: s.state, reviveState, gogglesState,
+    state: s.state, reviveState, gogglesState,
   }));
   // Voice state: the settings `voiceMode` decides the default ("open" =
   // always live, "ptt" = only while V is held). The pause-menu MIC button
