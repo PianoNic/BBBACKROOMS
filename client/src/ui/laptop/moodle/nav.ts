@@ -1,5 +1,5 @@
 /** Top navbar for the Moodle theme.
- *  Mirrors moodle.bbbackrooms.ch — white bar, Moodle wordmark on the left, dark nav
+ *  Mirrors moodle.backrooms-baden.ch — white bar, Moodle wordmark on the left, dark nav
  *  items with a red underline on the active one, and bell / chat / avatar
  *  icons on the right. */
 import { el } from "../../dom";

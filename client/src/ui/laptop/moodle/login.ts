@@ -1,5 +1,5 @@
 /** Moodle login splash shown before every Moodle challenge — mirrors
- *  moodle.bbbackrooms.ch: campus backdrop, white card with the Moodle wordmark, the
+ *  moodle.backrooms-baden.ch: campus backdrop, white card with the Moodle wordmark, the
  *  expired-session notice and a prefilled login form. One click on
  *  "Anmelden" fakes a keystroke burst, then hands over to the app. */
 import { el } from "../../dom";
