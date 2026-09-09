@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import JSZip from "jszip";
+import { decodeBbpack } from "../src/core/bbpack";
 import { mockBackend } from "./backendMocks";
 
 const PNG = Buffer.from(
@@ -69,12 +69,10 @@ test("a pack with an entry per roster teacher imports", async ({ page }) => {
   const downloadPromise = page.waitForEvent("download");
   await page.click("#pack-editor-download");
   const download = await downloadPromise;
-  const zipPath = await download.path();
-  const zipBytes = await readFile(zipPath);
-  const zip = await JSZip.loadAsync(zipBytes);
-  const manifestFile = zip.file("pack.json");
-  if (!manifestFile) throw new Error("pack.json missing from downloaded zip");
-  const manifest = JSON.parse(await manifestFile.async("string")) as {
+  const packPath = await download.path();
+  const packBytes = await readFile(packPath);
+  const { manifest: manifestRaw } = decodeBbpack(new Uint8Array(packBytes));
+  const manifest = manifestRaw as {
     teachers: Record<string, { image: string; name?: string }>;
   };
 
