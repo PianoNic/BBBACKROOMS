@@ -12,7 +12,6 @@ from app.db.engine import db_available
 from app.domain.cosmetics import catalog_dto
 from app.domain.lobby_store import create_lobby, list_lobbies
 from app.services.turn import get_ice_servers
-from app.version import VERSION
 from app.world.teacher_roster import roster_dto
 
 router = APIRouter()
@@ -22,16 +21,6 @@ class CreateLobbyReq(BaseModel):
     name: str = ""
     maxPlayers: int = 8
     password: str | None = None
-
-
-@router.get("/healthz")
-async def healthz() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@router.get("/version")
-async def version() -> dict[str, str]:
-    return {"version": VERSION}
 
 
 @router.get("/lobbies")
