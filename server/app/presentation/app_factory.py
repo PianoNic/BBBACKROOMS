@@ -6,13 +6,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.http import router as http_router
 from app.api.ws import router as ws_router
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.persistence.engine import database_engine
 from app.presentation.controllers.auth_controller import router as auth_router
 from app.presentation.controllers.health_controller import router as health_router
+from app.presentation.controllers.lobbies_controller import router as lobbies_router
+from app.presentation.controllers.roster_controller import router as roster_router
 from app.presentation.controllers.shop_controller import router as shop_router
+from app.presentation.controllers.turn_controller import router as turn_router
 
 log = logging.getLogger("bbb")
 
@@ -42,7 +44,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(http_router)
+    app.include_router(lobbies_router)
+    app.include_router(roster_router)
+    app.include_router(turn_router)
     app.include_router(auth_router)
     app.include_router(shop_router)
     app.include_router(ws_router)
