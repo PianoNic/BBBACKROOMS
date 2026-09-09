@@ -123,12 +123,12 @@ def tick(
 from app.world.teacher_events import (  # noqa: E402
     AbilityEvent, ABILITY_EVENTS, PROJECTILE_ABILITIES, collect_events,
 )
-from app.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME  # noqa: E402
+from app.world.teacher_roster import TEACHER_ROSTER, TEACHERS_PER_GAME, roster_dto  # noqa: E402
 from app.world.teacher_spawn import spawn_teachers  # noqa: E402
 
 __all__ = [
     "TeacherState", "spawn_teachers", "to_dto", "tick",
     "line_of_sight", "get_grid_dims",
     "AbilityEvent", "ABILITY_EVENTS", "PROJECTILE_ABILITIES", "collect_events",
-    "TEACHER_ROSTER", "TEACHERS_PER_GAME",
+    "TEACHER_ROSTER", "TEACHERS_PER_GAME", "roster_dto",
 ]
