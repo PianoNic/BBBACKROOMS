@@ -203,6 +203,8 @@ class Lobby:
     # If a list: sample (with replacement) from these image filenames each game
     # — picking the same one repeatedly is allowed and intentional.
     selected_teacher_images: list[str] | None = None
+    pack_id: str | None = None
+    pack_hash: str | None = None
     # Cells per side of the square map grid. Admin-tunable in the lobby room.
     map_size: int = 60
     # Admin-supplied worldgen seed. None = pick a fresh random one each

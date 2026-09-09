@@ -1,6 +1,7 @@
 import type { LobbyStatePkt, LobbyPlayer, ChatMessage } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { WebcamMesh } from "../gameplay/webcam";
+import { activatePack, deactivatePack, getActivePackId, listPacks } from "../core/texturePacks";
 import { el } from "./dom";
 import { icon, Volume2 } from "./icons";
 import { buildAdminPanel } from "./lobbyAdminPanel";
@@ -29,6 +30,8 @@ export function showLobbyRoom(
     mapSize: initial.mapSize ?? 60,
     mapSeed: initial.mapSeed ?? null,
     objectiveCount: initial.objectiveCount ?? 6,
+    packId: initial.packId ?? null,
+    packHash: initial.packHash ?? null,
     selfCosmetics: {
       owned: new Set(initial.selfCosmetics?.owned ?? []),
       equipped: initial.selfCosmetics?.equipped ?? {},
@@ -43,6 +46,10 @@ export function showLobbyRoom(
   sysbar.appendChild(el("span", undefined, `SYS://LOBBY/${initial.id}`));
   const lockTxt = initial.hasPassword ? "🔒 " : "";
   sysbar.appendChild(el("span", undefined, `${lockTxt}${initial.name}`));
+  const packIndicator = el<HTMLSpanElement>("span");
+  packIndicator.id = "pack-indicator";
+  packIndicator.style.display = "none";
+  sysbar.appendChild(packIndicator);
   root.appendChild(sysbar);
 
   const panel = el<HTMLDivElement>("div", "panel panel-brackets");
@@ -151,6 +158,33 @@ export function showLobbyRoom(
     return tile;
   }
 
+  let wasAdmin = false;
+
+  async function announcePackIfAdmin(): Promise<void> {
+    if (state.selfId !== state.adminId) return;
+    const activeId = getActivePackId();
+    if (!activeId) return;
+    const packs = await listPacks();
+    const found = packs.find((p) => p.id === activeId);
+    if (!found) return;
+    client.send({ type: "pack_announce", pack_id: activeId, pack_hash: found.hash });
+  }
+
+  async function refreshPackIndicator(): Promise<void> {
+    const { packId, packHash } = state;
+    if (!packId) {
+      deactivatePack();
+      packIndicator.style.display = "none";
+      packIndicator.textContent = "";
+      return;
+    }
+    const ok = await activatePack(packId, packHash ?? "");
+    packIndicator.style.display = "";
+    packIndicator.textContent = ok
+      ? "Pack aktiv"
+      : `Host verwendet Pack ${packId} (nicht installiert)`;
+  }
+
   function renderPlayers(): void {
     playersList.replaceChildren();
     for (const p of state.players.values()) {
@@ -175,6 +209,8 @@ export function showLobbyRoom(
     adminNote.textContent = isAdmin
       ? "you're the admin — start when ready"
       : `waiting for ${state.players.get(state.adminId ?? "")?.name ?? "admin"} to start…`;
+    if (isAdmin && !wasAdmin) void announcePackIfAdmin();
+    wasAdmin = isAdmin;
   }
 
   function appendChatLine(m: ChatMessage): void {
@@ -190,6 +226,7 @@ export function showLobbyRoom(
 
   for (const m of state.chat) appendChatLine(m);
   renderPlayers();
+  void refreshPackIndicator();
 
   chatForm.onsubmit = (e) => {
     e.preventDefault();
@@ -209,6 +246,7 @@ export function showLobbyRoom(
     renderPlayers, refreshAdmin: adminPanel.refresh, appendChatLine,
     onShopResult: (p) => shop?.handleResult(p),
     onCosmeticChange: () => shop?.onCosmetic(),
+    onPackChange: () => void refreshPackIndicator(),
   }));
 
   return { dismount: () => { shop?.dismount(); media.dispose(); root.remove(); } };

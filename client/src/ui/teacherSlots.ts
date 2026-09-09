@@ -7,6 +7,7 @@
 import { playSfx } from "../core/audio";
 import { abilityCopy } from "../gameplay/abilityLabels";
 import type { RosterEntry, TeacherInfo } from "../net/protocol";
+import { resolveTeacherImage, resolveTeacherName } from "../core/texturePacks";
 import { el } from "./dom";
 import { ensureTeacherSlotStyle } from "./teacherSlotStyle";
 import { TICK_VOICES, playTick } from "./teacherSlotSound";
@@ -18,10 +19,10 @@ function buildCell(e: { image: string; name: string; ability: string }): HTMLDiv
   const ab = abilityCopy(e.ability);
   const cell = el<HTMLDivElement>("div", "cell");
   const img = document.createElement("img");
-  img.src = `/teachers/${e.image}`;
+  img.src = resolveTeacherImage(e.ability, -1, `/teachers/${e.image}`);
   img.alt = "";
   cell.appendChild(img);
-  cell.appendChild(el<HTMLDivElement>("div", "name", e.name));
+  cell.appendChild(el<HTMLDivElement>("div", "name", resolveTeacherName(e.ability, -1, e.name)));
   cell.appendChild(el<HTMLDivElement>("div", "ability", ab.label));
   return cell;
 }

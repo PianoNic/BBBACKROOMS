@@ -25,6 +25,14 @@ export type LobbyStatePkt = {
   mapSize?: number;
   mapSeed?: number | null;
   objectiveCount?: number;
+  packId?: string | null;
+  packHash?: string | null;
+};
+
+export type LobbyPackPkt = {
+  type: "lobby_pack";
+  packId: string | null;
+  packHash: string | null;
 };
 
 export type LobbySettingsPkt = {
