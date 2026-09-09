@@ -50,6 +50,10 @@ jobs:
         working-directory: client
         run: bun install --frozen-lockfile
 
+      - name: Unit tests
+        working-directory: client
+        run: bun run test:unit
+
       # `bun run build` is `tsc -b && vite build`, so this covers both.
       - name: Typecheck and build
         working-directory: client

@@ -78,7 +78,11 @@ export const AMBIENCE = {
   },
   autoDrop: {
     frameTimeMs: 33,
-    holdSeconds: 1.5,
+    windowFrames: 60,
+    sustainedWindows: 2,
+    hitchMs: 250,
+    sceneChangeGraceSeconds: 3,
+    cooldownSeconds: 30,
   },
   tube: {
     color: 0xfff2cf,
