@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.api.auth import SESSION_COOKIE
+from app.presentation.controllers.auth_controller import SESSION_COOKIE
 from app.auth import tokens
 from app.db import accounts_repo
 from app.db.engine import db_available

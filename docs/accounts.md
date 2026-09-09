@@ -6,14 +6,20 @@ persist. With no provider configured, the login buttons simply don't appear and
 everything else works unchanged.
 
 ## How it works
-- Authorization-Code + PKCE flow, hand-rolled with `httpx` (`app/auth/oauth.py`).
+- Authorization-Code + PKCE flow, hand-rolled with `httpx`
+  (`app/infrastructure/oauth/`, behind the `IOAuthProvider` abstraction).
 - Identity comes from the provider **userinfo** endpoint (we don't verify ID-token
   signatures — the token exchange already happened over TLS with our secret).
-- Session = a signed, HMAC-SHA256 cookie (`app/auth/tokens.py`, stdlib only).
+- Session = a signed, HMAC-SHA256 cookie
+  (`app/infrastructure/security/hmac_token_service.py`, stdlib only).
 - The WebSocket is linked to the account via a short-lived **ws-ticket** the
   client fetches from `/auth/ws-ticket` and passes as `?token=` on connect.
 
-### Endpoints (`app/api/auth.py`)
+### Endpoints (`app/presentation/controllers/auth_controller.py`)
+
+Each route is a thin mapping from HTTP to a mediatorx command or query in
+`app/application/`; the handlers know nothing about cookies or status codes.
+
 | Route | Purpose |
 | --- | --- |
 | `GET /auth/providers` | Which login buttons to show (`{google, microsoft}`). |
