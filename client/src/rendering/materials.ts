@@ -13,7 +13,10 @@ function loadTiled(url: string, repeat: [number, number]): Texture {
 }
 
 function loadPainting(url: string): Texture {
-  return new Texture(url, activeScene(), true, true, Texture.NEAREST_SAMPLINGMODE);
+  const tex = new Texture(url, activeScene(), true, true, Texture.NEAREST_SAMPLINGMODE);
+  tex.uScale = -1;
+  tex.uOffset = 1;
+  return tex;
 }
 
 function textured(url: string, repeat: [number, number], name: string): StandardMaterial {
@@ -26,7 +29,7 @@ function textured(url: string, repeat: [number, number], name: string): Standard
 }
 
 const PAINTING_FILES: ReadonlyArray<string> = Array.from(
-  { length: 42 }, (_, i) => `painting-${String(i + 1).padStart(2, "0")}.png`,
+  { length: 24 }, (_, i) => `painting-${String(i + 1).padStart(2, "0")}.webp`,
 );
 
 const FLAT = {
