@@ -4,7 +4,7 @@
  *
  *  Re-exported by `appliances.ts`; kept here so each file fits the size
  *  budget. */
-import { basicMaterial, box, cylinder, group, plane } from "../../rendering/babylon";
+import { basicMaterial, box, cylinder, group, lambertMaterial, plane } from "../../rendering/babylon";
 import { Basic, M, type Builder } from "./_common";
 
 export const buildVendingMachine: Builder = (prop) => {
@@ -158,7 +158,7 @@ export const buildCounter: Builder = () => {
     post.position.set(x, 1.125, 0.18);
     g.add(post);
   }
-  const guardMat = basicMaterial(0xa8c8d8);
+  const guardMat = lambertMaterial(0xa8c8d8, "counterGuardGlass");
   guardMat.alpha = 0.25;
   const guard = plane(1.70, 0.40, guardMat);
   guard.position.set(0, 1.13, 0.18);

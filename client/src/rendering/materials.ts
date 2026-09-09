@@ -308,10 +308,10 @@ const FLAT = {
   lockerDoor: 0x3a4250,
   lockerInside: 0x1c2028,
   lampPole: 0x1a1a1e,
+  mirror: 0x9fb8c8,
 } as const;
 
 const EMISSIVE = {
-  mirror: 0x9fb8c8,
   neon: 0xff4dc4,
   lightFixture: 0xffffcc,
   clockHand: 0x111111,

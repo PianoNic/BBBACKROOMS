@@ -1,7 +1,7 @@
 /** Geometry assembly for a classroom door. Builds the frame + hinged
  *  panel + wall fillers around the doorway. Owned by `doors.ts`; kept
  *  separate so the entry/collider bookkeeping is easier to read. */
-import { Group, basicMaterial, box, group, plane } from "../rendering/babylon";
+import { Group, box, group, lambertMaterial, plane } from "../rendering/babylon";
 import { materials } from "../rendering/materials";
 import { M } from "../world/propBuilders/_common";
 
@@ -44,7 +44,7 @@ export function buildFrameAndPanel(root: Group): Group {
     pivot.add(r);
   }
   // Frosted glass window upper third
-  const frostedMat = basicMaterial(0xa8c8d8);
+  const frostedMat = lambertMaterial(0xa8c8d8, "doorGlass");
   frostedMat.alpha = 0.35;
   const glass = plane(DOOR_W * 0.55, DOOR_H * 0.20, frostedMat);
   glass.position.set(DOOR_W / 2, DOOR_H * 0.78, DOOR_T * 0.55);
@@ -63,7 +63,7 @@ export function buildFrameAndPanel(root: Group): Group {
 export function buildFillers(root: Group): void {
   const fillerMat = materials.wall;
   const trimMat = M(0x8a7a5a);
-  const glassMat = basicMaterial(0xa8c8d8);
+  const glassMat = lambertMaterial(0xa8c8d8, "doorSidelightGlass");
   glassMat.alpha = 0.18;
   const leftCenter = -(DOORWAY_X + FILLER_HALF_W);
   const rightCenter = DOORWAY_X + FILLER_HALF_W;
