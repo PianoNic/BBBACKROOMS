@@ -6,13 +6,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.auth import router as auth_router
 from app.api.http import router as http_router
 from app.api.shop import router as shop_router
 from app.api.ws import router as ws_router
-from app.config import settings
-from app.db.engine import connect as db_connect
-from app.db.engine import disconnect as db_disconnect
+from app.infrastructure.configuration.settings import settings
+from app.infrastructure.persistence.engine import database_engine
+from app.presentation.controllers.auth_controller import router as auth_router
 from app.presentation.controllers.health_controller import router as health_router
 
 log = logging.getLogger("bbb")
@@ -24,9 +23,9 @@ async def lifespan(app: FastAPI):
     # database; only accounts/progress need it, so this is best-effort.
     # Migrations run as a SEPARATE step (run.ps1 / the Docker CMD) rather than
     # here, to keep peewee-migrate's synchronous code off the async event loop.
-    await db_connect()
+    await database_engine.connect()
     yield
-    await db_disconnect()
+    await database_engine.disconnect()
 
 
 def create_app() -> FastAPI:

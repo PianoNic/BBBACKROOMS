@@ -7,6 +7,8 @@ place.
 """
 from __future__ import annotations
 
+from app.domain.progression.level_calculator import LevelCalculator
+
 # --- XP earn rates (per round, per player) --------------------------------
 XP_TASK = 25            # per objective spot completed — the core driver
 XP_REVIVE = 40          # per teammate revived — highest per-action (teamwork)
@@ -30,25 +32,19 @@ COIN_RATE = 0.10        # coins = round(xp * COIN_RATE) + win bonus
 COIN_WIN_BONUS = 25
 
 
+_levels = LevelCalculator()
+
+
 def xp_total_for_level(level: int) -> int:
     """Cumulative XP required to *reach* the given level (level 1 == 0 XP).
 
     xp_total(L) = 50 * (L-1) * L, so the step L -> L+1 costs 100 * L."""
-    if level <= 1:
-        return 0
-    return 50 * (level - 1) * level
+    return _levels.xp_total_for_level(level)
 
 
 def level_from_total(total_xp: int) -> tuple[int, int, int]:
     """Map a cumulative XP total to (level, xp_into_level, xp_for_next_level)."""
-    total = max(0, total_xp)
-    level = 1
-    while xp_total_for_level(level + 1) <= total:
-        level += 1
-    base = xp_total_for_level(level)
-    xp_into = total - base
-    xp_for_next = xp_total_for_level(level + 1) - base  # == 100 * level
-    return level, xp_into, xp_for_next
+    return _levels.level_from_total(total_xp)
 
 
 def survival_xp(survival_ms: int) -> int:

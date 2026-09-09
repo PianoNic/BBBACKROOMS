@@ -1,23 +1,14 @@
-"""Shared builders for service-level tests.
-
-These tests exercise the services directly against hand-built `Lobby` objects
-rather than through a live WebSocket: the interesting behaviour (closet
-occupancy, projectile stepping, dispatch routing) is all pure state, and
-driving it directly keeps the tests fast and deterministic.
-"""
 from __future__ import annotations
 
 import peewee_async
 import pytest
 
-from app.db import accounts_repo
 from app.db.models import ALL_MODELS
 from app.domain.lobby import Chair, Hideout, Lobby, PlayerConn
+from app.infrastructure.persistence.engine import DatabaseEngine
 
 
 class FakeWS:
-    """Stands in for a Starlette WebSocket, recording what was sent."""
-
     def __init__(self) -> None:
         self.json_sent: list[dict] = []
         self.text_sent: list[str] = []
@@ -45,7 +36,6 @@ class FakeWorld:
 
 
 def make_lobby(width: int = 40, height: int = 40) -> Lobby:
-    """A lobby mid-round with an all-walkable grid."""
     lobby = Lobby(id="test", name="test")
     lobby.status = "running"
     lobby.world = FakeWorld(FakeGrid(width, height))
@@ -84,12 +74,18 @@ def lobby() -> Lobby:
     return make_lobby()
 
 
+class ReadyDatabaseEngine(DatabaseEngine):
+    @property
+    def is_available(self) -> bool:
+        return True
+
+
 @pytest.fixture
-async def account_db(tmp_path, monkeypatch):
+async def account_engine(tmp_path):
     db = peewee_async.SqliteDatabase(str(tmp_path / "accounts.sqlite"))
     with db.bind_ctx(ALL_MODELS):
         with db.allow_sync():
             db.create_tables(ALL_MODELS)
-        monkeypatch.setattr(accounts_repo, "database", db)
-        yield db
+        engine = ReadyDatabaseEngine(db)
+        yield engine
     await db.aio_close()
