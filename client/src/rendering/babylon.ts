@@ -52,6 +52,7 @@ TransformNode.prototype.traverse = function traverse(
 };
 
 Object.defineProperty(TransformNode.prototype, "visible", {
+  configurable: true,
   get(this: TransformNode): boolean { return this.isEnabled(false); },
   set(this: TransformNode, v: boolean) { this.setEnabled(v); },
 });
@@ -283,14 +284,13 @@ export function Basic(color: number): StandardMaterial {
   return mat;
 }
 
-/** Babylon's `TargetCamera` looks down local +Z and treats a positive
- *  `rotation.x` as looking down, while three.js looked down -Z with a
- *  positive pitch looking up. Feed the same yaw/pitch the game has always
- *  used and get the same view direction back. */
+/** In a right-handed scene a Babylon `TargetCamera` ends up with the same
+ *  basis three.js used — local -Z forward, +X right, positive pitch up —
+ *  so the game's yaw/pitch pair maps straight onto `rotation`. */
 export function setCameraOrientation(
   camera: TargetCamera, yaw: number, pitch: number,
 ): void {
-  camera.rotation.set(-pitch, yaw + Math.PI, 0);
+  camera.rotation.set(pitch, yaw, 0);
 }
 
 /** World-space view direction for a yaw/pitch pair, matching what

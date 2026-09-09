@@ -10,8 +10,8 @@ import { activeScene, basicMaterial, box, group, lambertMaterial } from "./babyl
 // (1 - d/range) instead of the inverse-square curve three.js used, so the
 // intensity/range pair below is fitted to the old 28-candela / decay-2
 // curve across the 3–12 m band that actually shows on screen.
-const BASE_INTENSITY = 2.6;
-const RANGE = 13;
+const BASE_INTENSITY = 1.8;
+const RANGE = 11;
 // Number of real `PointLight`s active at any moment. WebGL caps the
 // fragment-shader uniform vectors at ~1024, and every light eats a chunk
 // of that budget — keeping the pool small avoids shader-compile failures.

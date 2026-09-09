@@ -75,7 +75,7 @@ async function main(): Promise<void> {
   await ensureCatalog();  // so equipped cosmetics resolve when seeding players
   const s = buildScene(init, ctx, net, audioListener, webcam);
   installDevTools({
-    init, player: s.player,
+    init, player: s.player, camera: ctx.camera,
     teacherPositions: () => s.teachers.getMapPositions(),
     inspector: (on: boolean) => ctx.showInspector(on),
   });

@@ -8,7 +8,7 @@ import {
   buildChalkboard, buildCoatRack, buildMap,
 } from "./_wallDecorBoards";
 
-const BOOK_MATS = [
+const bookMats = () => [
   materials.bookA, materials.bookB, materials.bookC,
   materials.bookD, materials.bookE,
 ];
@@ -38,12 +38,13 @@ const buildBookshelf: Builder = (prop) => {
     g.add(plank);
   }
   const rand = mulberry32(seedFromPos(prop.x, prop.z, 31.7, 17.3));
+  const mats = bookMats();
   for (const y of shelfYs) {
     let x = -0.5;
     while (x < 0.5) {
       const h = 0.22 + rand() * 0.1;
       const w = 0.06 + rand() * 0.05;
-      const book = box(0.08, 0.28, 0.22, BOOK_MATS[Math.floor(rand() * BOOK_MATS.length)]);
+      const book = box(0.08, 0.28, 0.22, mats[Math.floor(rand() * mats.length)]);
       book.scaling.set(w / 0.08, h / 0.28, 1);
       book.position.set(x + w / 2, y + h / 2 + 0.015, -0.22);
       g.add(book);
@@ -56,8 +57,9 @@ const buildBookshelf: Builder = (prop) => {
 // Small stack of books on a desk/shelf.
 const buildBooksPile: Builder = () => {
   const g = group();
+  const mats = bookMats();
   for (let i = 0; i < 4; i++) {
-    const book = box(0.28, 0.05, 0.22, BOOK_MATS[i % BOOK_MATS.length]);
+    const book = box(0.28, 0.05, 0.22, mats[i % mats.length]);
     book.position.y = 0.78 + i * 0.055;
     book.rotation.y = (i % 2) * 0.08;
     g.add(book);

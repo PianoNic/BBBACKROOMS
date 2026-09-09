@@ -1,9 +1,11 @@
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import type { WorldInit } from "../net/protocol";
 import type { Player } from "../gameplay/player";
 
 export type DevHandle = {
   init: WorldInit;
   player: Player;
+  camera: FreeCamera;
   teacherPositions: () => { x: number; z: number }[];
   inspector: (on: boolean) => void;
 };
