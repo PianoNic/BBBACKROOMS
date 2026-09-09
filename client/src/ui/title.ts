@@ -13,12 +13,12 @@ export { getStoredName, getStoredAvatar, getStoredColor } from "./profilePanel";
 
 const API = import.meta.env.VITE_SERVER_URL ?? "";
 
-/** Read the ?login=ok|error the OAuth callback appended, then scrub it from the
- *  URL so a refresh doesn't re-show it. Returns the status once. */
-function consumeLoginStatus(): "ok" | "error" | null {
+/** Read the ?login=ok|error|blocked the OAuth callback appended, then scrub it
+ *  from the URL so a refresh doesn't re-show it. Returns the status once. */
+function consumeLoginStatus(): "ok" | "error" | "blocked" | null {
   const params = new URLSearchParams(location.search);
   const status = params.get("login");
-  if (status !== "ok" && status !== "error") return null;
+  if (status !== "ok" && status !== "error" && status !== "blocked") return null;
   params.delete("login");
   const qs = params.toString();
   history.replaceState(null, "", location.pathname + (qs ? `?${qs}` : "") + location.hash);
@@ -49,6 +49,9 @@ function fillAccountWidget(wrap: HTMLElement): void {
 
     if (loginStatus === "error") {
       wrap.appendChild(el("span", "acc-note error", "Sign-in failed"));
+    }
+    if (loginStatus === "blocked") {
+      wrap.appendChild(el("span", "acc-note error", "Dieses Konto wurde gesperrt. Kontakt: kontakt@backrooms-baden.ch"));
     }
     if (!providers.google && !providers.microsoft) return;
     const mk = (provider: "google" | "microsoft", label: string) => {

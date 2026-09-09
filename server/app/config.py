@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     # Set true in production (HTTPS). Must stay false for http://localhost dev.
     session_cookie_secure: bool = False
 
+    blocked_subjects: str = ""
+
     def google_enabled(self) -> bool:
         return bool(self.google_client_id and self.google_client_secret)
 
@@ -62,3 +64,25 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def _parse_blocked_subjects(raw: str) -> frozenset[str]:
+    entries: set[str] = set()
+    for chunk in raw.split(","):
+        chunk = chunk.strip()
+        if not chunk or ":" not in chunk:
+            continue
+        provider, subject = chunk.split(":", 1)
+        provider = provider.strip()
+        subject = subject.strip()
+        if not provider or not subject:
+            continue
+        entries.add(f"{provider.lower()}:{subject}")
+    return frozenset(entries)
+
+
+BLOCKED_SUBJECTS = _parse_blocked_subjects(settings.blocked_subjects)
+
+
+def is_subject_blocked(provider: str, subject: str) -> bool:
+    return f"{provider.lower().strip()}:{subject.strip()}" in BLOCKED_SUBJECTS
