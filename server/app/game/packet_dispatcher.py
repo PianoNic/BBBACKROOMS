@@ -4,10 +4,14 @@ from __future__ import annotations
 import asyncio
 import secrets
 
+from mediatorx import Mediator
+
 from app.domain.lobbies.chat_message import ChatMessage
 from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.player_channel import IPlayerChannel
 from app.domain.lobbies.player_conn import PlayerConn
+from app.application.commands.back_to_lobby_command import BackToLobbyCommand
+from app.application.commands.start_game_command import StartGameCommand
 from app.application.dtos.packets import (
     ChairDropPkt, ChairPickupPkt, ChairThrowPkt, ChatSendPkt, DoorTogglePkt,
     GamblePlayPkt, LobbySettingsPkt, LockerOpenPkt, MovePkt, SetAvatarPkt,
@@ -29,10 +33,10 @@ from app.game.handlers.ping_handler import PingHandler
 from app.game.handlers.quest_handler import QuestHandler
 from app.game.handlers.revive_handler import ReviveHandler
 from app.game.handlers.signaling_handler import SignalingHandler
+from app.game.lobby_state_builder import LobbyStateBuilder
 from app.game.snapshot_loop import SnapshotLoop
 from app.game.teacher_loop import TeacherLoop
-from app.services.back_to_lobby import handle_back_to_lobby
-from app.services.lobby_service import start_lobby, world_init_payload
+from app.game.world_init_builder import WorldInitBuilder
 
 
 class PacketDispatcher:
@@ -53,6 +57,9 @@ class PacketDispatcher:
         cosmetic_handler: CosmeticHandler,
         teacher_loop: TeacherLoop,
         snapshot_loop: SnapshotLoop,
+        lobby_state_builder: LobbyStateBuilder,
+        world_init_builder: WorldInitBuilder,
+        mediator: Mediator | None = None,
     ) -> None:
         self._broadcaster = broadcaster
         self._chair_handler = chair_handler
@@ -69,6 +76,12 @@ class PacketDispatcher:
         self._cosmetic_handler = cosmetic_handler
         self._teacher_loop = teacher_loop
         self._snapshot_loop = snapshot_loop
+        self._lobby_state_builder = lobby_state_builder
+        self._world_init_builder = world_init_builder
+        self._mediator = mediator
+
+    def set_mediator(self, mediator: Mediator) -> None:
+        self._mediator = mediator
 
     async def dispatch(self, channel: IPlayerChannel, lobby: Lobby, player: PlayerConn, packet) -> None:
         me = player
@@ -177,10 +190,10 @@ class PacketDispatcher:
             # world. Worldgen can take up to ~15s on big maps; running it on
             # a thread keeps other lobbies' event loops responsive.
             await self._broadcaster.broadcast(lobby, {"type": "world_gen_start"})
-            await asyncio.to_thread(start_lobby, lobby)
+            await self._mediator.send(StartGameCommand(lobby))
             for p in list(lobby.conns.values()):
                 try:
-                    await p.channel.send_json(world_init_payload(lobby, p))
+                    await p.channel.send_json(self._world_init_builder.build(lobby, p))
                 except Exception:
                     pass
             self._teacher_loop.ensure(lobby)
@@ -238,7 +251,17 @@ class PacketDispatcher:
             await self._pickup_handler.handle_use_goggles(lobby, me)
             return
         if isinstance(pkt, BackToLobbyPkt):
-            await handle_back_to_lobby(lobby, me)
+            did_reset = await self._mediator.send(BackToLobbyCommand(lobby, me))
+            if did_reset:
+                # Tell every connection the lobby is back in the waiting room so
+                # each client can drop the victory overlay + tear down its game
+                # scene.
+                for p in list(lobby.conns.values()):
+                    try:
+                        await p.channel.send_json(self._lobby_state_builder.build(lobby, p.id))
+                    except Exception:
+                        # Connection died — `ws` cleanup will handle removal.
+                        pass
             return
         if isinstance(pkt, ReviveStartPkt):
             await self._revive_handler.handle_revive_start(lobby, me, pkt.targetId)

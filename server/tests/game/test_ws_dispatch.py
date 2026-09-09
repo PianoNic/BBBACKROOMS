@@ -15,8 +15,8 @@ from pydantic import ValidationError
 
 from app.application.dtos.packets import ClientPacketAdapter, PackAnnouncePkt
 from app.game.game_core import game_core
+from app.game.lobby_state_builder import LobbyStateBuilder
 from app.presentation.websocket import game_web_socket_endpoint as ws
-from app.services.lobby_service import lobby_room_state
 
 from ..conftest import add_player, make_lobby
 
@@ -112,7 +112,7 @@ async def test_pack_announce_from_host_updates_lobby_and_room_state():
 
     assert lobby.pack_id == "foo-pack"
     assert lobby.pack_hash == "b" * 64
-    state = lobby_room_state(lobby, host.id)
+    state = LobbyStateBuilder().build(lobby, host.id)
     assert state["packId"] == "foo-pack"
     assert state["packHash"] == "b" * 64
 
