@@ -9,6 +9,7 @@ import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
 import { music } from "./music";
+import { AutoQuality } from "./autoQuality";
 import type { Hideouts } from "../gameplay/hideouts";
 import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
@@ -79,6 +80,7 @@ export function runGameLoop(d: GameDeps): void {
   let last = performance.now();
   let lastRender = 0;
   let elapsed = 0;
+  const autoQuality = new AutoQuality();
 
   const applyShowFps = (visible: boolean) => {
     d.stats.dom.style.display = visible ? "block" : "none";
@@ -102,6 +104,7 @@ export function runGameLoop(d: GameDeps): void {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     elapsed += dt;
+    autoQuality.sample(dt);
 
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted && !d.state.hidden) d.player.update(dt);

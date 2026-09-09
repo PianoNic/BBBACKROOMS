@@ -8,6 +8,7 @@ import { VolumetricLightScatteringPostProcess } from "@babylonjs/core/PostProces
 import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imageProcessingConfiguration";
 import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
@@ -41,6 +42,11 @@ export function registerVolumetricEmitter(mesh: AbstractMesh): void {
   if (mesh.isDisposed()) return;
   pendingVolumetricMesh = mesh;
   currentAmbience?.attachVolumetricEmitter(mesh);
+}
+
+export function clearVolumetricEmitter(): void {
+  pendingVolumetricMesh = null;
+  currentAmbience?.detachVolumetricEmitter();
 }
 
 function clamp01(v: number): number {
@@ -134,7 +140,10 @@ export class Ambience {
     if (!mesh || mesh.isDisposed()) return null;
     const v = AMBIENCE.volumetric;
     const vls = new VolumetricLightScatteringPostProcess(
-      "ambienceVolumetric", v.ratio, this.camera, mesh as Mesh, v.samples,
+      "ambienceVolumetric",
+      { postProcessRatio: 1, passRatio: v.ratio },
+      this.camera, mesh as Mesh, v.samples,
+      Texture.NEAREST_SAMPLINGMODE,
     );
     vls.exposure = v.exposure;
     vls.decay = v.decay;
@@ -148,6 +157,11 @@ export class Ambience {
     if (!tierFeatures(this.tier).volumetric) return;
     this.volumetric?.dispose(this.camera);
     this.volumetric = this.buildVolumetric(this.tier, mesh);
+  }
+
+  detachVolumetricEmitter(): void {
+    this.volumetric?.dispose(this.camera);
+    this.volumetric = null;
   }
 
   private buildPipeline(tier: GraphicsTier): DefaultRenderingPipeline {

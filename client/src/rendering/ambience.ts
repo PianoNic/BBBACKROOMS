@@ -26,7 +26,7 @@ export function tierFeatures(tier: GraphicsTier): TierFeatures {
 
 export const AMBIENCE = {
   tone: {
-    exposure: 0.85,
+    exposure: 0.95,
     contrast: 1.30,
     saturation: 62,
     shadowsHue: 150,
@@ -66,7 +66,7 @@ export const AMBIENCE = {
   },
   ambientLight: {
     color: 0x39424c,
-    intensity: 0.26,
+    intensity: 0.30,
   },
   clearColor: 0x090b08,
   chase: {
@@ -98,8 +98,8 @@ export const AMBIENCE = {
   },
   ssao: {
     radius: 1.3,
-    totalStrength: 1.1,
-    base: 0.06,
+    totalStrength: 0.9,
+    base: 0.25,
     samples: 8,
     maxZ: 28,
     minZAspect: 0.3,
