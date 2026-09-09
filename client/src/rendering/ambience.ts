@@ -11,12 +11,13 @@ export type TierFeatures = {
   fxaa: boolean;
   particleScale: number;
   glow: boolean;
+  pbrSurfaces: boolean;
 };
 
 export const TIERS: Record<GraphicsTier, TierFeatures> = {
-  niedrig: { shadowLights: 0, shadowMapSize: 256, ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false },
-  mittel:  { shadowLights: 2, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 1,   glow: true  },
-  hoch:    { shadowLights: 4, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true  },
+  niedrig: { shadowLights: 0, shadowMapSize: 256, ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, pbrSurfaces: false },
+  mittel:  { shadowLights: 2, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 1,   glow: true,  pbrSurfaces: true  },
+  hoch:    { shadowLights: 4, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  pbrSurfaces: true  },
 };
 
 export function tierFeatures(tier: GraphicsTier): TierFeatures {
