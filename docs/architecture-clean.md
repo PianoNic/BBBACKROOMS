@@ -308,6 +308,11 @@ push the scoreboard) become mediatorx **notifications** published by
 
 ## Migration table
 
+`Today` names the pre-migration module each row started from; every one of
+them is gone now that all five stages have landed — this column is kept as
+the map from the old layout to the new one, not as a statement that these
+paths still exist.
+
 | Today | Target |
 | --- | --- |
 | `app/main.py` | `app/presentation/app_factory.py` (`create_app`); `app/main.py` keeps `app = create_app()` |
