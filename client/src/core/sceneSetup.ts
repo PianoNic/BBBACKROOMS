@@ -3,8 +3,9 @@
  *  Pulled out of `main.ts` so the bootstrap stays a short, readable wiring
  *  sequence. This module owns no state — it constructs and returns the
  *  managers, then the caller wires them into the packet handler and loop. */
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { SpatialListener } from "./spatialAudio";
-import type { WorldInit } from "../net/protocol";
+import type { Prop, WorldInit } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { createRenderContext } from "../rendering/renderer";
 import type { WebcamMesh } from "../gameplay/webcam";
@@ -58,9 +59,22 @@ export function buildScene(
   const world = buildWorld(init.grid, init.props);
   const lights = new FlickerLights(init.lights);
   const particles = new AmbienceParticles(ctx.scene);
-  const propsGroup = buildProps(init.props);
+  const regionOf = (prop: Prop): number => world.inference.regionAtXY(
+    Math.floor(prop.x / init.grid.cellSize),
+    Math.floor(prop.z / init.grid.cellSize),
+    init.grid.width,
+  );
+  const { group: propsGroup, regionMeshes: propRegionMeshes } = buildProps(init.props, regionOf);
   lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.shadowCasters]);
   const propColliders = buildPropColliders(init.props);
+
+  const regionMeshes = new Map<number, Mesh[]>();
+  for (const [id, meshes] of world.regionMeshes) regionMeshes.set(id, [...meshes]);
+  for (const [id, meshes] of propRegionMeshes) {
+    const list = regionMeshes.get(id);
+    if (list) list.push(...meshes);
+    else regionMeshes.set(id, [...meshes]);
+  }
 
   const remotes = new RemotePlayers();
   remotes.attachAudio(audioListener);
@@ -156,5 +170,6 @@ export function buildScene(
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice, particles,
+    regionMeshes, inference: world.inference,
   };
 }

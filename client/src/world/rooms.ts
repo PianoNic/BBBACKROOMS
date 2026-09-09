@@ -19,6 +19,16 @@ export type Room = {
   seed: number;
 };
 
+export type Region = {
+  id: number;
+  archetype: RoomArchetype;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  seed: number;
+};
+
 const FLOOR = 1;
 const MIN_ROOM = 4;
 const ATRIUM_MIN_SIDE = 8;
@@ -175,6 +185,8 @@ function classify(comp: Component, props: Prop[], cellSize: number): RoomArchety
 export class RoomInference {
   readonly cellArchetype: Uint8Array;
   readonly rooms: Room[];
+  readonly cellRegion: Int32Array;
+  readonly regions: Region[];
 
   constructor(grid: Grid, props: Prop[]) {
     const { width, height, cells, cellSize } = grid;
@@ -195,6 +207,16 @@ export class RoomInference {
 
     const cellArchetype = new Uint8Array(width * height);
     const rooms: Room[] = [];
+    const cellRegion = new Int32Array(width * height);
+    const regions: Region[] = [{
+      id: 0,
+      archetype: "hallway",
+      minX: 0,
+      minY: 0,
+      maxX: width - 1,
+      maxY: height - 1,
+      seed: seedFromPos(0, 0, 131.71, 197.37),
+    }];
 
     components.forEach((comp, i) => {
       if (i === atriumIdx) return;
@@ -203,10 +225,17 @@ export class RoomInference {
       for (const cellIdx of comp.cells) cellArchetype[cellIdx] = id;
       const seed = seedFromPos(comp.minX, comp.minY, 131.71, 197.37);
       rooms.push({ archetype, minX: comp.minX, minY: comp.minY, maxX: comp.maxX, maxY: comp.maxY, seed });
+      const regionId = regions.length;
+      for (const cellIdx of comp.cells) cellRegion[cellIdx] = regionId;
+      regions.push({
+        id: regionId, archetype, minX: comp.minX, minY: comp.minY, maxX: comp.maxX, maxY: comp.maxY, seed,
+      });
     });
 
     this.cellArchetype = cellArchetype;
     this.rooms = rooms;
+    this.cellRegion = cellRegion;
+    this.regions = regions;
   }
 
   archetypeAt(cellIndex: number): RoomArchetype {
@@ -215,5 +244,17 @@ export class RoomInference {
 
   archetypeAtXY(x: number, y: number, width: number): RoomArchetype {
     return this.archetypeAt(y * width + x);
+  }
+
+  regionAt(cellIndex: number): number {
+    return this.cellRegion[cellIndex] ?? 0;
+  }
+
+  regionAtXY(x: number, y: number, width: number): number {
+    return this.regionAt(y * width + x);
+  }
+
+  regionArchetype(id: number): RoomArchetype {
+    return this.regions[id]?.archetype ?? "hallway";
   }
 }
