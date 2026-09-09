@@ -47,7 +47,7 @@ EXPOSE 8000
 # via app.asgi. On Linux uvicorn uses uvloop, so the Selector-loop guard is a
 # no-op here. `exec` hands PID 1 to uvicorn for clean signal handling.
 CMD ["sh", "-c", \
-     "python -m app.db.migrate run; \
+     "python -m app.infrastructure.persistence.migrate run; \
       exec uvicorn app.asgi:app --host 0.0.0.0 --port 8000 \
       --proxy-headers --forwarded-allow-ips=* \
       --ws-ping-interval 20 --ws-ping-timeout 20"]

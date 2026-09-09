@@ -101,17 +101,17 @@ Get TURN credentials at *Cloudflare dashboard → Realtime → TURN Server → c
 docker compose up -d
 ```
 - Pulls `ghcr.io/pianonic/backroomsbaden` — one image holding the API *and* the
-  built client. FastAPI serves the SPA itself (`app.frontend()` in `main.py`),
-  so there is no separate web server and no way to deploy a client and a
-  server that disagree about the wire protocol.
+  built client. FastAPI serves the SPA itself (`app.frontend()` in
+  `presentation/app_factory.py`), so there is no separate web server and no
+  way to deploy a client and a server that disagree about the wire protocol.
 - Starts a `postgres:18-alpine` service (data in the `bbb-pgdata` volume); the
   app waits for its healthcheck and runs migrations on start.
 - Listens on `$PORT` (default `5367`), with a `/healthz` healthcheck (30s interval).
 - Stop: `docker compose down` (add `-v` to also drop the database volume).
 
 ## Project conventions
-- Backend: onion architecture. `api/` may import `services/`, `services/` may import `domain/`, **never the other way around**.
-- Worldgen is deterministic via a seed (see `world/generator.py`) — log the seed when debugging.
+- Backend: onion architecture. Dependencies point inward — `presentation` → `game` → `infrastructure` → `application` → `domain`, **never the other way around**. See [architecture.md](architecture.md#onion-layout-server).
+- Worldgen is deterministic via a seed (see `domain/world/generator.py`) — log the seed when debugging.
 - Client state is passive: the server is the source of truth. No client-side inventory without a server echo.
 - Never inspect WebRTC payloads on the server — the server is a dumb pipe.
 

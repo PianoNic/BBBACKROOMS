@@ -1,10 +1,15 @@
 # Target architecture — clean/onion server with mediatorx
 
-This document is the plan for restructuring `server/` into a clean (onion)
+> **Implemented.** Every stage in [Staging](#staging) below has landed on
+> `main`. This file is now the detailed reference description of the server's
+> architecture, kept as the plan it started as but corrected wherever the
+> delivered code took a different shape — those spots are called out inline.
+> [architecture.md](architecture.md) carries the shorter, higher-level version
+> of the same layout.
+
+This document was the plan for restructuring `server/` into a clean (onion)
 architecture using [`mediatorx`](https://pypi.org/project/mediatorx/), in an
-OOP, C#-flavoured but PEP 8 compliant style. It describes the target, not the
-current state; [architecture.md](architecture.md) keeps describing what is
-actually shipped and is updated at the end of the migration.
+OOP, C#-flavoured but PEP 8 compliant style.
 
 The conventions below are taken from the same author's other Python services —
 `SchulwareAPI` (the only one already on mediatorx), `ParkHereAPI`,
@@ -61,21 +66,34 @@ already stands in for.
 ```
 server/app/
   domain/
-    accounts/          Account, Profile, IAccountRepository, IProfileRepository
+    accounts/          Account, Profile, OAuthIdentity, IAccountRepository,
+                       IProfileRepository
     achievements/      Achievement, AchievementCatalog, IAchievementRepository
     cosmetics/         CosmeticItem, CosmeticCatalog, ICosmeticRepository
-    lobbies/           Lobby, PlayerConn, Chair, Door, Hideout, Laptop, Locker,
-                       Pickup, Revive, ChatMessage, IPlayerChannel, ILobbyRegistry
-    progression/       LevelCalculator, RewardCalculator, AchievementEvaluator
-    security/          BlockedSubjectPolicy
-    world/             WorldGenerator, RoomPlacer, Pathfinder, Physics,
-                       TeacherAi, TeacherRoster, TeacherSpawner, layout/, …
-    exceptions.py      DomainError and its subclasses
+    lobbies/           Lobby, PlayerConn, Chair, ChairProjectile, Door, Hideout,
+                       Laptop, Locker, Pickup, Revive, ChatMessage,
+                       IPlayerChannel, ILobbyRegistry
+    progression/       LevelCalculator, RewardCalculator, AchievementEvaluator,
+                       ScoreboardBuilder
+    security/          BlockedSubjectPolicy, PkceGenerator, PkcePair
+    world/             worldgen, pathfinding, physics and teacher AI stayed the
+                       existing pure functions (`generate()`, `find_path_cells()`,
+                       `step_teacher()`, `spawn_teachers()`, …) rather than being
+                       wrapped in `WorldGenerator`/`Pathfinder`/`Physics`/`TeacherAi`
+                       classes as first sketched here; `layout/` holds the shared
+                       BSP/corridor primitives, `challenges/` the laptop mini-games
+                       (`LaptopChallengeFactory`, `RpgBattle`). No `exceptions.py` —
+                       no `DomainError` catalog was needed.
   application/
     abstractions/      IOAuthProvider, IOAuthProviderFactory, ITokenService,
-                       IIceServerProvider, IUnitOfWork
+                       IIceServerProvider, IDatabaseAvailability — no
+                       IUnitOfWork landed; handlers check DB availability
+                       directly instead of opening a unit of work
     behaviors/         LoggingBehavior, ExceptionLoggingBehavior
-    dtos/              *_dto.py — pydantic models on the way out
+    dtos/              mostly *_dto.py pydantic models; `packets.py`, `world.py`
+                       and `prop_types.py` are the exception, carried over as
+                       flat multi-class modules straight from the old
+                       `app/schemas/`
     commands/          *_command.py — command + its handler
     queries/           *_query.py — query + its handler
     notifications/     *_notification.py + notification handlers
@@ -98,11 +116,15 @@ server/app/
     broadcaster.py        Broadcaster — fan-out to a lobby's channels
     teacher_loop.py       TeacherLoop — the fixed-rate AI tick
     snapshot_loop.py      SnapshotLoop — batched players_state pushes
+    game_core.py          GameCore — composes the handlers/loops below; the
+                          one module-level singleton `game/` itself owns
+    lobby_state_builder.py, world_init_builder.py, ability_effects.py —
+                          small builders/state the handlers share
     handlers/             one class per interaction: ChairHandler, DoorHandler,
                           LockerHandler, PickupHandler, HidingHandler,
                           ReviveHandler, QuestHandler, LaptopHandler,
                           PingHandler, NoiseHandler, SignalingHandler,
-                          CosmeticHandler
+                          CosmeticHandler, AbilityHandler, StatusHandler
   presentation/
     controller.py      vendored class-based controller decorator (as SchulwareAPI)
     dependencies.py    composition root: build_mediator(), get_mediator(), …
@@ -298,9 +320,9 @@ push the scoreboard) become mediatorx **notifications** published by
 | `app/api/http.py` — `/roster` | `presentation/controllers/roster_controller.py` + `GetTeacherRosterQuery` |
 | `app/api/http.py` — `/turn-credentials` | `presentation/controllers/turn_controller.py` + `GetIceServersQuery` |
 | `app/api/http.py` — `/shop/catalog` | `presentation/controllers/shop_controller.py` + `GetCosmeticCatalogQuery` |
-| `app/api/auth.py` | `presentation/controllers/auth_controller.py` + `StartOAuthLoginCommand`, `CompleteOAuthLoginCommand`, `GetCurrentAccountQuery`, `LogoutCommand`, `DeleteAccountCommand`, `IssueWsTicketCommand`, `GetOAuthProvidersQuery` |
+| `app/api/auth.py` | `presentation/controllers/auth_controller.py` + `StartOAuthLoginCommand`, `CompleteOAuthLoginCommand`, `GetCurrentAccountQuery`, `DeleteAccountCommand`, `IssueWsTicketCommand`, `GetOAuthProvidersQuery` — `/auth/logout` stayed a plain cookie-clear in the controller, no mediator command; there is no domain logic to route through |
 | `app/api/shop.py` | `presentation/controllers/shop_controller.py` + `GetShopStateQuery`, `BuyCosmeticCommand`, `EquipCosmeticCommand` |
-| `app/api/ws.py` | `presentation/websocket/game_web_socket_endpoint.py` + `JoinLobbyCommand` |
+| `app/api/ws.py` | `presentation/websocket/game_web_socket_endpoint.py` — join stayed direct code here rather than a `JoinLobbyCommand`; connection lifecycle is transport, not a use case (see [What deliberately stays outside the mediator](#what-deliberately-stays-outside-the-mediator)) |
 | `app/api/ws_dispatch.py` | `game/packet_dispatcher.py` (`PacketDispatcher`) |
 | `app/auth/oauth.py` | `infrastructure/oauth/` (`GoogleOAuthProvider`, `MicrosoftOAuthProvider`, `OAuthProviderFactory`) behind `IOAuthProvider` |
 | `app/auth/tokens.py` | `infrastructure/security/hmac_token_service.py` behind `ITokenService` |
@@ -313,9 +335,9 @@ push the scoreboard) become mediatorx **notifications** published by
 | `app/domain/lobby_store.py` | `domain/lobbies/lobby_registry.py` (`ILobbyRegistry`) + `game/lobby_registry.py` (`InMemoryLobbyRegistry`) |
 | `app/domain/cosmetics.py` | `domain/cosmetics/` (`CosmeticItem`, `CosmeticCatalog`) |
 | `app/domain/achievements.py` | `domain/achievements/` (`Achievement`, `AchievementCatalog`) |
-| `app/schemas/packets.py`, `world.py`, `prop_types.py` | `application/dtos/packets/`, `application/dtos/world/` |
+| `app/schemas/packets.py`, `world.py`, `prop_types.py` | `application/dtos/packets.py`, `world.py`, `prop_types.py` — moved flat, same filenames, not split into `dtos/packets/` / `dtos/world/` packages as first sketched |
 | `app/services/lobby_service.py` — `start_lobby` | `application/commands/start_game_command.py` (`StartGameHandler`) |
-| `app/services/lobby_service.py` — `lobby_room_state`, `world_init_payload` | `application/dtos/lobby_state_dto.py`, `world_init_dto.py` + their builders in `game/` |
+| `app/services/lobby_service.py` — `lobby_room_state`, `world_init_payload` | `game/lobby_state_builder.py` (`LobbyStateBuilder`), `game/world_init_builder.py` (`WorldInitBuilder`) — both still return a plain `dict`, not a DTO; no `lobby_state_dto.py` / `world_init_dto.py` landed |
 | `app/services/endgame.py` | `application/commands/end_round_command.py` + `RoundEndedNotification` handlers (`PersistRewardsHandler`, `UnlockAchievementsHandler`) |
 | `app/services/scoreboard.py`, `leveling.py`, `achievements.py` | `domain/progression/` (`ScoreboardBuilder`, `LevelCalculator`, `RewardCalculator`, `AchievementEvaluator`) |
 | `app/services/back_to_lobby.py` | `application/commands/back_to_lobby_command.py` |
@@ -325,7 +347,7 @@ push the scoreboard) become mediatorx **notifications** published by
 | `app/services/teacher_loop.py`, `snapshot.py` | `game/teacher_loop.py`, `game/snapshot_loop.py` |
 | `app/services/chairs.py`, `doors.py`, `lockers.py`, `pickups.py`, `hiding.py`, `revive.py`, `quests.py`, `pings.py`, `noise.py`, `laptop.py`, `signaling.py`, `abilities.py`, `status.py`, `_abilities_effects.py` | `game/handlers/` — one class each |
 | `app/services/laptop_challenges.py`, `rpg_battle.py` | `domain/world/challenges/` (pure, seeded by an injected `random.Random`) |
-| `app/world/**` | `app/domain/world/**` — package move, classes wrapped around the existing pure functions (`WorldGenerator`, `Pathfinder`, `Physics`, `TeacherAi`, `TeacherSpawner`, `TeacherRoster`) |
+| `app/world/**` | `app/domain/world/**` — package move; generation, pathfinding, physics and teacher AI stayed the existing pure functions (`generate()`, `find_path_cells()`, `step_teacher()`, `spawn_teachers()`, …) rather than being wrapped in `WorldGenerator`/`Pathfinder`/`Physics`/`TeacherAi` classes |
 | `server/tests/*` | `server/tests/{domain,application,infrastructure,game,presentation}/` |
 
 ## Packaging and tooling
@@ -340,9 +362,11 @@ cd server
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-`Dockerfile` and `compose.yml` need no change: the entrypoint stays
-`app.asgi:app` and migrations keep running as `python -m app.db.migrate run`
-(the migrations package path is preserved for peewee-migrate).
+`compose.yml` needs no change. `Dockerfile` keeps the `app.asgi:app` entrypoint
+unchanged, but its migration step became
+`python -m app.infrastructure.persistence.migrate run` once `app/db/` was
+deleted in the cleanup stage — the migrations package itself still moves as a
+unit, so authored migration files and their recorded names are untouched.
 
 ## Staging
 

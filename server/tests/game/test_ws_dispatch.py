@@ -14,8 +14,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.application.dtos.packets import ClientPacketAdapter, PackAnnouncePkt
-from app.game.game_core import game_core
 from app.game.lobby_state_builder import LobbyStateBuilder
+from app.presentation.dependencies import game_core
 from app.presentation.websocket import game_web_socket_endpoint as ws
 
 from ..conftest import add_player, make_lobby

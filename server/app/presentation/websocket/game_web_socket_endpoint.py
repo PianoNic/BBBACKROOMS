@@ -15,7 +15,7 @@ from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog
 from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
 from app.domain.lobbies.player_conn import PlayerConn
 from app.game.game_core import GameCore
-from app.game.lobby_store import delete_lobby, get_lobby
+from app.game.lobby_registry import lobby_registry
 from app.infrastructure.realtime.web_socket_player_channel import WebSocketPlayerChannel
 from app.presentation.dependencies import (
     get_account_repository,
@@ -36,9 +36,9 @@ MAX_WS_MESSAGE_BYTES = 64 * 1024
 
 async def _delete_if_still_empty(lobby_id: str) -> None:
     await asyncio.sleep(EMPTY_LOBBY_GRACE_S)
-    lobby = get_lobby(lobby_id)
+    lobby = lobby_registry.get(lobby_id)
     if lobby is not None and not lobby.conns:
-        delete_lobby(lobby_id)
+        lobby_registry.delete(lobby_id)
 
 
 router = APIRouter()
@@ -55,7 +55,7 @@ async def ws_endpoint(
     cosmetic_catalog: CosmeticCatalog = Depends(get_cosmetic_catalog),
     db_availability: IDatabaseAvailability = Depends(get_database_availability),
 ) -> None:
-    lobby = get_lobby(lobby_id)
+    lobby = lobby_registry.get(lobby_id)
     if lobby is None:
         await ws.close(code=4404)
         return
@@ -144,6 +144,6 @@ async def ws_endpoint(
         # reload back in after Back-to-Lobby, then they're cleaned up too.
         if not lobby.conns:
             if lobby.status == "waiting" and not lobby.had_game:
-                delete_lobby(lobby.id)
+                lobby_registry.delete(lobby.id)
             else:
                 asyncio.create_task(_delete_if_still_empty(lobby.id))

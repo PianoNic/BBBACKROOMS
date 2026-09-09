@@ -3,9 +3,7 @@ from __future__ import annotations
 from mediatorx import Mediator
 
 from app.application.abstractions.database_availability import IDatabaseAvailability
-from app.db.cosmetics_repo import cosmetics_repository
-from app.db.engine import database_engine
-from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog, cosmetic_catalog
+from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog
 from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
 from app.domain.lobbies.lobby_registry import ILobbyRegistry
 from app.domain.progression.level_calculator import LevelCalculator
@@ -14,7 +12,7 @@ from app.domain.progression.scoreboard_builder import ScoreboardBuilder
 from app.domain.world.challenges.laptop_challenge_factory import LaptopChallengeFactory
 from app.domain.world.challenges.rpg_battle import RpgBattle
 from app.game.ability_effects import AbilityEffects
-from app.game.broadcaster import Broadcaster, broadcaster
+from app.game.broadcaster import Broadcaster
 from app.game.handlers.ability_handler import AbilityHandler
 from app.game.handlers.chair_handler import ChairHandler
 from app.game.handlers.cosmetic_handler import CosmeticHandler
@@ -29,7 +27,6 @@ from app.game.handlers.quest_handler import QuestHandler
 from app.game.handlers.revive_handler import ReviveHandler
 from app.game.handlers.signaling_handler import SignalingHandler
 from app.game.handlers.status_handler import StatusHandler
-from app.game.lobby_registry import lobby_registry
 from app.game.lobby_state_builder import LobbyStateBuilder
 from app.game.packet_dispatcher import PacketDispatcher
 from app.game.snapshot_loop import SnapshotLoop
@@ -91,8 +88,3 @@ class GameCore:
         self.dispatcher.set_mediator(mediator)
         self.teacher_loop.set_mediator(mediator)
         self.quest_handler.set_mediator(mediator)
-
-
-game_core = GameCore(
-    broadcaster, lobby_registry, cosmetics_repository, cosmetic_catalog, database_engine,
-)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from app.db.models import Profile as ProfileModel
 from app.domain.accounts.profile import Profile
 from app.domain.accounts.profile_repository import IProfileRepository
 from app.infrastructure.persistence.engine import DatabaseEngine
+from app.infrastructure.persistence.models import Profile as ProfileModel
 
 
 def _to_domain(row: ProfileModel) -> Profile:

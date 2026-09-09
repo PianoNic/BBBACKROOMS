@@ -51,7 +51,8 @@ from app.domain.world.challenges.laptop_challenge_factory import LaptopChallenge
 from app.domain.world.generator import generate
 from app.domain.world.pickups import fill_lockers
 from app.domain.world.teachers import spawn_teachers
-from app.game.game_core import GameCore, game_core
+from app.game.broadcaster import broadcaster
+from app.game.game_core import GameCore
 from app.game.lobby_registry import lobby_registry
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.oauth.oauth_provider_factory import OAuthProviderFactory
@@ -71,6 +72,7 @@ _log = logging.getLogger("bbb.mediator")
 
 accounts = PeeweeAccountRepository(database_engine)
 cosmetics = PeeweeCosmeticRepository(database_engine, cosmetic_catalog)
+game_core = GameCore(broadcaster, lobby_registry, cosmetics, cosmetic_catalog, database_engine)
 
 
 def build_mediator() -> Mediator:

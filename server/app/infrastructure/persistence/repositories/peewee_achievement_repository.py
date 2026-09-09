@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from app.db.models import AchievementUnlock
 from app.domain.achievements.achievement_repository import IAchievementRepository
 from app.infrastructure.persistence.engine import DatabaseEngine
+from app.infrastructure.persistence.models import AchievementUnlock
 
 
 class PeeweeAchievementRepository(IAchievementRepository):

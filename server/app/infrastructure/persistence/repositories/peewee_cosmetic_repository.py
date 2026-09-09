@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from app.db.models import CosmeticEquipped, CosmeticOwnership, Profile
 from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog
 from app.domain.cosmetics.cosmetic_item import CosmeticItem
 from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
 from app.infrastructure.persistence.engine import DatabaseEngine
+from app.infrastructure.persistence.models import CosmeticEquipped, CosmeticOwnership, Profile
 
 
 class PeeweeCosmeticRepository(ICosmeticRepository):
