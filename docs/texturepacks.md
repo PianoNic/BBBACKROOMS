@@ -7,32 +7,42 @@ local to one browser, and entirely optional.
 
 ## Installing one
 
-Options → **TEXTURE PACKS** → **IMPORT PACK**, then pick a `.zip` file. The
+Options → **TEXTURE PACKS** → **IMPORT PACK**, then pick a `.bbpack` file. The
 pack is parsed, validated, hashed, and stored in this browser's IndexedDB
 (`bbb_texture_packs` database, `packs` store). Nothing is uploaded anywhere.
 From the same panel you can switch the active pack (**USE** / **ACTIVE**) or
 remove one (**DELETE**).
 
-## Zip layout
+## `.bbpack` layout
 
-A pack is a zip file containing a manifest, `pack.json`, plus the image files
-it references, at whatever paths the manifest points to:
+A pack is a single custom binary file: a small header, a JSON manifest, and
+a sequence of named image assets, all in one container. There is no
+general-purpose archive format involved — the layout is fixed and read with
+explicit bounds checks. All multi-byte integers are little-endian.
 
-```
-mypack.zip
-├── pack.json
-├── mr-smith.png
-└── mrs-jones.webp
-```
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 4 | magic `BBPK` (ASCII 0x42 0x42 0x50 0x4B) |
+| 4 | 2 | u16 format version, `1` |
+| 6 | 2 | u16 reserved, `0` |
+| 8 | 4 | u32 manifest length `N` |
+| 12 | N | manifest JSON, UTF-8 (the `pack.json` schema below: `id`, `version`, `name`, `teachers`; `image` values are asset names) |
+| 12+N | 4 | u32 asset count `K` |
+| … | per asset | u16 name length, name (UTF-8), u8 mime length, mime (UTF-8), u32 data length, data |
+
+Limits: a `.bbpack` file is at most 64 MB, holds at most 256 assets, and
+every asset's mime type must be one of `image/jpeg`, `image/png`, or
+`image/webp`.
 
 ## Building one in the browser
 
 Options → **TEXTURE PACKS** → **PACK EDITOR** opens a zero-network, fully
 client-side editor: pick a photo per teacher, fill in an id/version/name, and
-either download the resulting zip or install it directly into this browser.
-On first open you have to accept a consent notice — only your own images, or
-images you have the subject's permission for, may go into a pack — kept in
-memory for the session and never written to storage.
+either download the resulting `.bbpack` (named `<id>-<version>.bbpack`) or
+install it directly into this browser. On first open you have to accept a
+consent notice — only your own images, or images you have the subject's
+permission for, may go into a pack — kept in memory for the session and
+never written to storage.
 
 Every picked image is processed entirely with `<canvas>`: center-cropped to a
 square, resized to at most 1024 px on a side, and re-encoded as JPEG,
@@ -41,13 +51,13 @@ a network request itself; the only call in the whole flow is the one that
 fetches the teacher roster when you click **PACK EDITOR**, and it completes
 before the editor opens.
 
-The zip it produces follows the same layout described above — each edited
-image is written to `teachers/<slug>.jpg` (the roster filename, lowercased
-and slugified) — and each edited teacher always gets an entry in
-`pack.json.teachers` keyed by roster index, plus a second entry keyed by
-that teacher's ability id when no earlier slot already claimed that ability
-and the 256-entry cap still allows it, so the pack resolves whichever
-lookup a given call site uses.
+The `.bbpack` it produces follows the same layout described above — each
+edited image is written as an asset named `teachers/<slug>.jpg` (the roster
+filename, lowercased and slugified) — and each edited teacher always gets an
+entry in the manifest's `teachers` map keyed by roster index, plus a second
+entry keyed by that teacher's ability id when no earlier slot already claimed
+that ability and the 256-entry cap still allows it, so the pack resolves
+whichever lookup a given call site uses.
 
 ## `pack.json` schema
 
@@ -69,7 +79,8 @@ lookup a given call site uses.
 - `teachers` — a map of at most 256 entries. Each key is either a **roster
   index** (`"0"`, `"1"`, `"2"`, …) or a teacher **ability id** (e.g.
   `"silent_steps"`, `"lights_off"`, …). Each value has:
-  - `image` (required) — a path inside the zip to the replacement image.
+  - `image` (required) — the **asset name** inside the `.bbpack` container
+    that holds the replacement image.
   - `name` (optional) — a replacement display name for that teacher.
 
 Roster-index lookup wins over ability id lookup: it is the most specific
@@ -91,22 +102,16 @@ partial gets stored.
 
 ## The hash
 
-Every stored pack has a **sha256 hash**, computed at import time — it is
-never read from `pack.json` and never trusted from anywhere else. It's
-computed by:
-
-1. listing every file actually present in the zip (not just the ones
-   `pack.json` references),
-2. sorting those files by their in-zip path, ascending,
-3. for each file in that order, hashing its UTF-8-encoded path bytes
-   followed by its raw file bytes,
-4. concatenating all of that and running it through `SHA-256`
-   (`crypto.subtle.digest`).
+Every stored pack has a **sha256 hash**, computed at import time over the
+entire raw bytes of the `.bbpack` file — header, manifest, and every asset,
+in the exact order they appear on disk (`crypto.subtle.digest("SHA-256",
+bytes)`). It is never read from the manifest and never trusted from
+anywhere else.
 
 The result is a lowercase 64-character hex string. Because the hash covers
-every file's bytes and path, it changes if a single pixel or filename
-changes — there's no way to keep the same `id` and `version` while silently
-swapping content.
+every byte of the file, it changes if a single pixel, a filename, or any
+other byte changes — there's no way to keep the same `id` and `version`
+while silently swapping content.
 
 ## The wire guarantee
 
@@ -114,7 +119,7 @@ When you're the lobby admin and have a pack selected locally, the client
 announces only `pack_id` and `pack_hash` to the server (`pack_announce`),
 which the server relays to everyone in the lobby (`lobby_pack` /
 `lobby_state.packId` / `lobby_state.packHash`). No image bytes, no display
-names, and no zip content ever cross the network.
+names, and no pack file content ever cross the network.
 
 That means: to actually *see* the host's pack, another player must have the
 exact same pack (matching `id` **and** `hash`) already imported in their own
@@ -122,7 +127,8 @@ browser — the client checks for a local match and only then swaps in the
 pack's images and names. Anyone who doesn't have it installed keeps seeing
 the default roster, plus a small indicator reading
 `Host verwendet Pack <name> (nicht installiert)` — where `<name>` is the
-announced pack id, since the pack's display name only exists inside the zip.
+announced pack id, since the pack's display name only exists inside the
+pack file.
 
 ## Local-only, your responsibility
 

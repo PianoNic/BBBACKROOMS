@@ -10,11 +10,11 @@ export function buildTexturePackSection(): HTMLElement {
   const section = el<HTMLDivElement>("div", "pack-section");
 
   const importRow = el<HTMLDivElement>("div", "set-row");
-  importRow.appendChild(el("label", undefined, "Install from zip"));
+  importRow.appendChild(el("label", undefined, "Install from .bbpack"));
   const ctrl = el<HTMLDivElement>("div", "set-ctrl");
   const input = el<HTMLInputElement>("input");
   input.type = "file";
-  input.accept = ".zip,application/zip";
+  input.accept = ".bbpack";
   input.id = "pack-import-input";
   input.style.display = "none";
   const importBtn = el<HTMLButtonElement>("button", "menu-btn small", "IMPORT PACK");

@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import { encodeBbpack, type BbpackAsset } from "../core/bbpack";
 import { MAX_TEACHER_ENTRIES, PACK_ID_RE, importPackFromFile } from "../core/texturePacks";
 import { el } from "./dom";
 import type { RosterEntry } from "../net/protocol";
@@ -28,9 +28,9 @@ function slugifyImage(image: string): string {
   return base.toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
-function sanitizeZipName(base: string): string {
+function sanitizePackName(base: string): string {
   const cleaned = base.replace(/[^a-zA-Z0-9._-]/g, "-") || "pack";
-  return cleaned.toLowerCase().endsWith(".zip") ? cleaned : `${cleaned}.zip`;
+  return cleaned.toLowerCase().endsWith(".bbpack") ? cleaned : `${cleaned}.bbpack`;
 }
 
 function encodeCanvas(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null> {
@@ -180,10 +180,10 @@ function buildSlotCard(
   };
 }
 
-async function buildZip(
+async function buildPack(
   roster: RosterEntry[], slotState: Map<number, SlotState>, slotRefs: Map<number, SlotRefs>,
   meta: { id: string; version: string; name: string },
-): Promise<Blob> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const editedIndices = [...slotState.keys()]
     .filter((i) => slotState.get(i)?.blob)
     .sort((a, b) => a - b);
@@ -191,15 +191,15 @@ async function buildZip(
     throw new Error(`höchstens ${MAX_TEACHER_ENTRIES} Bilder pro Pack`);
   }
 
-  const zip = new JSZip();
   const teachers: Record<string, { image: string; name?: string }> = {};
+  const assets: BbpackAsset[] = [];
 
   for (const index of editedIndices) {
     const state = slotState.get(index);
     if (!state?.blob) continue;
     const entry = roster[index];
     const path = `teachers/${slugifyImage(entry.image)}.jpg`;
-    zip.file(path, state.blob);
+    assets.push({ name: path, mime: "image/jpeg", bytes: new Uint8Array(await state.blob.arrayBuffer()) });
     const overrideName = slotRefs.get(index)?.nameInput.value.trim() ?? "";
     const teacherEntry: { image: string; name?: string } = { image: path };
     if (overrideName) teacherEntry.name = overrideName;
@@ -213,8 +213,7 @@ async function buildZip(
     teachers[entry.ability] = teachers[String(index)];
   }
 
-  zip.file("pack.json", JSON.stringify({ id: meta.id, version: meta.version, name: meta.name, teachers }));
-  return zip.generateAsync({ type: "blob" });
+  return encodeBbpack({ id: meta.id, version: meta.version, name: meta.name, teachers }, assets);
 }
 
 export function openPackEditor(roster: RosterEntry[], onInstalled?: () => void): void {
@@ -338,13 +337,14 @@ export function openPackEditor(roster: RosterEntry[], onInstalled?: () => void):
 
   downloadBtn.onclick = async () => {
     statusLine.classList.remove("error");
-    statusLine.textContent = "erstelle zip…";
+    statusLine.textContent = "erstelle pack…";
     try {
       const meta = readMeta();
-      const blob = await buildZip(roster, slotState, slotRefs, meta);
+      const bytes = await buildPack(roster, slotState, slotRefs, meta);
+      const blob = new Blob([bytes], { type: "application/octet-stream" });
       const url = URL.createObjectURL(blob);
       objectUrls.push(url);
-      const filename = sanitizeZipName(`${meta.id}-${meta.version}`);
+      const filename = sanitizePackName(`${meta.id}-${meta.version}`);
       const a = el<HTMLAnchorElement>("a");
       a.href = url;
       a.download = filename;
@@ -364,8 +364,10 @@ export function openPackEditor(roster: RosterEntry[], onInstalled?: () => void):
     statusLine.textContent = "installiere…";
     try {
       const meta = readMeta();
-      const blob = await buildZip(roster, slotState, slotRefs, meta);
-      const stored = await importPackFromFile(new File([blob], `${meta.id}.zip`, { type: "application/zip" }));
+      const bytes = await buildPack(roster, slotState, slotRefs, meta);
+      const stored = await importPackFromFile(
+        new File([bytes], `${meta.id}.bbpack`, { type: "application/octet-stream" }),
+      );
       statusLine.textContent = `installiert: "${stored.name}"`;
       onInstalled?.();
     } catch (err) {

@@ -1,6 +1,6 @@
-import JSZip from "jszip";
 import type { RosterEntry } from "../net/protocol";
 import { fetchRoster } from "../net/roster";
+import { decodeBbpack } from "./bbpack";
 
 export type PackTeacherEntry = { image: string; name?: string };
 
@@ -32,14 +32,6 @@ const MAX_IMAGE_BYTES = 512 * 1024;
 const MAX_IMAGE_DIM = 1024;
 export const MAX_TEACHER_ENTRIES = 256;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
-
-function extToMime(path: string): string | null {
-  const lower = path.toLowerCase();
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".webp")) return "image/webp";
-  return null;
-}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -89,19 +81,6 @@ async function deletePackRecord(id: string): Promise<void> {
   await withStore<undefined>("readwrite", (store) => store.delete(id));
 }
 
-function utf8Bytes(s: string): Uint8Array {
-  return new TextEncoder().encode(s);
-}
-
-function concatBytes(chunks: Uint8Array[]): Uint8Array<ArrayBuffer> {
-  let total = 0;
-  for (const c of chunks) total += c.length;
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const c of chunks) { out.set(c, offset); offset += c.length; }
-  return out;
-}
-
 function toHex(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let out = "";
@@ -109,14 +88,8 @@ function toHex(buf: ArrayBuffer): string {
   return out;
 }
 
-async function hashZipEntries(entries: { path: string; bytes: Uint8Array }[]): Promise<string> {
-  const sorted = [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
-  const chunks: Uint8Array[] = [];
-  for (const entry of sorted) {
-    chunks.push(utf8Bytes(entry.path));
-    chunks.push(entry.bytes);
-  }
-  const digest = await crypto.subtle.digest("SHA-256", concatBytes(chunks));
+async function hashBytes(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
   return toHex(digest);
 }
 
@@ -146,10 +119,10 @@ function validateString(value: unknown, field: string, maxLen = MAX_STRING_LEN):
 }
 
 export async function importPackFromFile(file: File): Promise<StoredPack> {
-  const zip = await JSZip.loadAsync(file);
-  const manifestFile = zip.file("pack.json");
-  if (!manifestFile) throw new Error("pack is missing pack.json");
-  const manifestRaw = JSON.parse(await manifestFile.async("string"));
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const hash = await hashBytes(bytes);
+  const { manifest: manifestRaw, assets } = decodeBbpack(bytes);
+  const assetsByName = new Map(assets.map((a) => [a.name, a]));
   validateManifestShape(manifestRaw);
 
   const id = validateString(manifestRaw.id, "id");
@@ -171,42 +144,33 @@ export async function importPackFromFile(file: File): Promise<StoredPack> {
 
   const teachers: Record<string, PackTeacherEntry> = {};
   const images: Record<string, Blob> = {};
-  const hashEntries: { path: string; bytes: Uint8Array }[] = [];
-
-  const allFiles = Object.values(zip.files).filter((f) => !f.dir);
-  for (const f of allFiles) {
-    const bytes = await f.async("uint8array");
-    hashEntries.push({ path: f.name, bytes });
-  }
 
   for (const key of teacherKeys) {
     const entryRaw = teachersRaw[key];
     if (!entryRaw || typeof entryRaw !== "object") {
       throw new Error(`pack.json teacher entry "${key}" must be an object`);
     }
-    const imagePath = validateString(entryRaw.image, `teachers.${key}.image`, 256);
-    const imageFile = zip.file(imagePath);
-    if (!imageFile) throw new Error(`pack.json teacher entry "${key}" references missing file "${imagePath}"`);
-    const mime = extToMime(imagePath);
-    if (!mime || !ALLOWED_MIME.has(mime)) {
-      throw new Error(`image "${imagePath}" must be JPEG, PNG or WebP`);
+    const imageName = validateString(entryRaw.image, `teachers.${key}.image`, 256);
+    const asset = assetsByName.get(imageName);
+    if (!asset) {
+      throw new Error(`pack.json teacher entry "${key}" references missing asset "${imageName}"`);
     }
-    const bytes = await imageFile.async("uint8array");
-    if (bytes.byteLength > MAX_IMAGE_BYTES) {
-      throw new Error(`image "${imagePath}" exceeds ${MAX_IMAGE_BYTES} bytes`);
+    if (!ALLOWED_MIME.has(asset.mime)) {
+      throw new Error(`image "${imageName}" must be JPEG, PNG or WebP`);
     }
-    const blob = new Blob([new Uint8Array(bytes)], { type: mime });
+    if (asset.bytes.byteLength > MAX_IMAGE_BYTES) {
+      throw new Error(`image "${imageName}" exceeds ${MAX_IMAGE_BYTES} bytes`);
+    }
+    const blob = new Blob([asset.bytes], { type: asset.mime });
     await checkImageDimensions(blob);
 
-    const entry: PackTeacherEntry = { image: imagePath };
+    const entry: PackTeacherEntry = { image: imageName };
     if (entryRaw.name !== undefined) {
       entry.name = validateString(entryRaw.name, `teachers.${key}.name`);
     }
     teachers[key] = entry;
-    images[imagePath] = blob;
+    images[imageName] = blob;
   }
-
-  const hash = await hashZipEntries(hashEntries);
 
   const stored: StoredPack = { id, name, version, hash, teachers, images };
   await putPack(stored);

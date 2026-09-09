@@ -10,7 +10,6 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "jszip": "^3.10.2",
     "lucide": "^1.14.0",
     "stats.js": "^0.17.0",
     "three": "^0.171.0"
