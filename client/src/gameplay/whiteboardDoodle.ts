@@ -3,7 +3,7 @@ import * as THREE from "three";
 const W = 256;
 const H = 128;
 const COLORS = ["#1d3fa8", "#9a1d1d", "#1d6a2a", "#5a2d8a", "#a0691d"];
-const DOODLES = ["3x+2=?", "y=mx+b", "H₂O", "Σ∞", "404", "BBB", "Σx/n", "f(x)", "π·r²", "<3"];
+const DOODLES = ["3x+2=?", "y=mx+b", "H₂O", "Σ∞", "404", "42", "Σx/n", "f(x)", "π·r²", "<3"];
 
 function drawDoodles(): HTMLCanvasElement {
   const c = document.createElement("canvas");
