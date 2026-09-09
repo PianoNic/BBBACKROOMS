@@ -37,6 +37,12 @@ describe("MODEL_PROPS drift guard", () => {
     expect(typeof locker?.hinge?.node).toBe("string");
     expect(locker?.hinge?.node.length).toBeGreaterThan(0);
   });
+
+  it("no longer carries a lod field on any spec", () => {
+    for (const [type, entry] of Object.entries(MODEL_PROPS)) {
+      expect(entry, type).not.toHaveProperty("lod");
+    }
+  });
 });
 
 describe("PICKUP_MODELS drift guard", () => {

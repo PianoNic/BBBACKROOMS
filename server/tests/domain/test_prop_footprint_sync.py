@@ -107,23 +107,19 @@ def test_pickup_model_is_sized_for_handheld_use(pickup_kind):
     )
 
 
-@pytest.mark.parametrize(
-    "prop_type", sorted(prop_type for prop_type in FOOTPRINTS if "lod" in FOOTPRINTS[prop_type])
-)
-def test_lod_model_exists_and_is_lighter_than_the_full_model(prop_type):
-    entry = FOOTPRINTS[prop_type]
-    main_path = _MODELS_ROOT / f"{entry['model']}.glb"
-    lod_path = _MODELS_ROOT / f"{entry['lod']}.glb"
-    assert lod_path.exists(), (
-        f"{prop_type}: declared lod {entry['lod']} but {lod_path} does not exist"
-    )
+_ALL_MODEL_PATHS = sorted(_MODELS_ROOT.rglob("*.glb"))
 
-    main_triangles = _triangle_count(main_path)
-    lod_triangles = _triangle_count(lod_path)
-    assert lod_triangles < main_triangles, (
-        f"{prop_type}: lod triangle count {lod_triangles} is not lower than the "
-        f"full model's {main_triangles}"
-    )
+
+@pytest.mark.parametrize("model_path", _ALL_MODEL_PATHS, ids=lambda p: p.name)
+def test_no_material_uses_khr_texture_transform(model_path):
+    document = _read_glb_json(model_path)
+    for material in document.get("materials", []):
+        base_color = material.get("pbrMetallicRoughness", {}).get("baseColorTexture", {})
+        assert "KHR_texture_transform" not in base_color.get("extensions", {}), (
+            f"{model_path.name}: material {material.get('name', '?')} has a "
+            "KHR_texture_transform on baseColorTexture — this renders as a black "
+            "silhouette through the StandardMaterial path used below Realistisch"
+        )
 
 
 def test_models_directory_is_within_budget():

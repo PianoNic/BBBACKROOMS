@@ -13,8 +13,6 @@ const PICKUP_KINDS = Object.keys(PICKUP_MODELS) as PickupKind[];
 export class ModelLibrary {
   private readonly pending = new Map<PropType, Promise<AssetContainer | null>>();
   private readonly resolved = new Map<PropType, AssetContainer | null>();
-  private readonly lodPending = new Map<PropType, Promise<AssetContainer | null>>();
-  private readonly lodResolved = new Map<PropType, AssetContainer | null>();
   private readonly pickupPending = new Map<PickupKind, Promise<AssetContainer | null>>();
   private readonly pickupResolved = new Map<PickupKind, AssetContainer | null>();
 
@@ -35,7 +33,6 @@ export class ModelLibrary {
 
     const tracked = promise.then((container) => {
       this.resolved.set(type, container);
-      if (container && spec?.lod) void this.loadLod(type);
       return container;
     });
     this.pending.set(type, tracked);
@@ -44,31 +41,6 @@ export class ModelLibrary {
 
   get(type: PropType): AssetContainer | null {
     return this.resolved.get(type) ?? null;
-  }
-
-  loadLod(type: PropType): Promise<AssetContainer | null> {
-    const cached = this.lodPending.get(type);
-    if (cached) return cached;
-
-    const spec = MODEL_PROPS[type];
-    const promise = !spec?.lod
-      ? Promise.resolve(null)
-      : LoadAssetContainerAsync(`/models/${spec.lod}.glb`, this.scene)
-        .catch((err: unknown) => {
-          console.warn(`ModelLibrary: failed to load LOD for "${type}" (${spec.lod})`, err);
-          return null;
-        });
-
-    const tracked = promise.then((container) => {
-      this.lodResolved.set(type, container);
-      return container;
-    });
-    this.lodPending.set(type, tracked);
-    return tracked;
-  }
-
-  getLod(type: PropType): AssetContainer | null {
-    return this.lodResolved.get(type) ?? null;
   }
 
   loadPickup(kind: PickupKind): Promise<AssetContainer | null> {

@@ -16,7 +16,6 @@ export type ModelPropSpec = {
   yawOffset: number;
   anchor: ModelAnchor;
   y: number;
-  lod?: string;
   hinge?: ModelHingeSpec;
 };
 
@@ -25,7 +24,6 @@ type Footprint = {
   scale: number;
   scaleY?: number;
   scaleZ?: number;
-  lod?: string;
   hinge?: ModelHingeSpec;
 };
 type PickupFootprint = { model: string; scale: number; scaleY?: number; scaleZ?: number };
@@ -46,7 +44,6 @@ function spec(type: PropType, anchor: ModelAnchor, y: number): ModelPropSpec {
     yawOffset: 0,
     anchor,
     y,
-    lod: fp.lod,
     hinge: fp.hinge,
   };
 }

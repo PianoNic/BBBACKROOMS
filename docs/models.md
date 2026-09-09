@@ -13,31 +13,45 @@ Every model is CC0 1.0 — no attribution is legally required — but
 [`client/public/models/LICENSES.md`](../client/public/models/LICENSES.md)
 credits every author anyway.
 
-| Prop type | Poly Haven asset | Author | Triangles | LOD triangles |
-|---|---|---|---|---|
-| `bench` | painted_wooden_bench | Kirill Sannikov | 630 | — |
-| `books_pile` | binder_notebook | DaDrood | 1,987 | 1,967 |
-| `bookshelf` | Shelf_01 | Gabriel Radić | 182 | — |
-| `bunsen_burner` | bunsen_burner | BKS | 2,108 | 1,417 |
-| `cafeteria_table` | dining_table | Aron Łyczek | 1,048 | — |
-| `chair` | SchoolChair_01 | Ethan Place | 2,282 | 1,520 |
-| `clock` | wall_clock | PierreB3D | 1,829 | 1,096 |
-| `cupboard` | drawer_cabinet | Ulan Cabanilla | 3,418 | 1,856 |
-| `desk` | metal_office_desk | Ulan Cabanilla | 4,137 | 2,068 |
-| `fire_extinguisher` | korean_fire_extinguisher_01 | UM JOORIN | 1,981 | 1,516 |
-| `laptop` | classic_laptop | Arrangemonk | 4,532 | 4,047 |
-| `locker` | painted_wooden_cabinet_02 | Kirill Sannikov | 966 | — |
-| `microscope` | industrial_microscope | Lukas Walzer | 4,795 | 4,779 |
-| `microwave` | vintage_microwave | Adam Nekola | 2,435 | 1,362 |
-| `mop_bucket` | wooden_bucket_01 | James Ray Cock | 2,046 | 1,771 |
-| `papers` | office_notepads | Ulan Cabanilla | 666 | — |
-| `plant` | potted_plant_04 | James Ray Cock | 3,998 | 3,496 |
-| `pylon` | WetFloorSign_01 | Fran Calvente | 228 | — |
-| `recycle_bin` | plastic_crate_02 | Fabi_G | 2,308 | 2,290 |
-| `side_table` | side_table_01 | James Ray Cock | 1,929 | 1,365 |
-| `sofa` | Sofa_01 | Kirill Sannikov | 4,101 | 1,341 |
-| `student_desk` | SchoolDesk_01 | Ethan Place | 2,080 | 1,248 |
-| `trash_can` | industrial_pastic_container | Galo Benivegna | 4,328 | 4,268 |
+| Prop type | Poly Haven asset | Author | Triangles |
+|---|---|---|---|
+| `bench` | painted_wooden_bench | Kirill Sannikov | 630 |
+| `books_pile` | binder_notebook | DaDrood | 1,987 |
+| `bookshelf` | Shelf_01 | Gabriel Radić | 182 |
+| `bunsen_burner` | bunsen_burner | BKS | 2,108 |
+| `cafeteria_table` | dining_table | Aron Łyczek | 1,048 |
+| `chair` | SchoolChair_01 | Ethan Place | 2,282 |
+| `clock` | wall_clock | PierreB3D | 1,829 |
+| `cupboard` | drawer_cabinet | Ulan Cabanilla | 3,418 |
+| `desk` | metal_office_desk | Ulan Cabanilla | 4,137 |
+| `fire_extinguisher` | korean_fire_extinguisher_01 | UM JOORIN | 1,981 |
+| `laptop` | classic_laptop | Arrangemonk | 4,532 |
+| `locker` | painted_wooden_cabinet_02 | Kirill Sannikov | 966 |
+| `microscope` | industrial_microscope | Lukas Walzer | 4,795 |
+| `microwave` | vintage_microwave | Adam Nekola | 2,435 |
+| `mop_bucket` | wooden_bucket_01 | James Ray Cock | 1,891 |
+| `papers` | office_notepads | Ulan Cabanilla | 666 |
+| `plant` | potted_plant_04 | James Ray Cock | 1,277 |
+| `pylon` | WetFloorSign_01 | Fran Calvente | 228 |
+| `recycle_bin` | plastic_crate_02 | Fabi_G | 1,336 |
+| `side_table` | side_table_01 | James Ray Cock | 1,929 |
+| `sofa` | Sofa_01 | Kirill Sannikov | 4,101 |
+| `student_desk` | SchoolDesk_01 | Ethan Place | 2,080 |
+| `trash_can` | industrial_pastic_container | Galo Benivegna | 713 |
+
+`trash_can`, `recycle_bin`, `mop_bucket`, `plant`, and `books_pile` are all
+small 0.5x0.5m floor clutter and are held to a tighter ≤2,000-triangle
+budget than the large furniture pieces (≤5,000). The first pass at
+`trash_can`/`recycle_bin`/`plant` left them well over budget (4,328 /
+2,308 / 3,998 triangles) even after raising their `simplify` ratio, because
+`industrial_pastic_container`, `plastic_crate_02`, and `potted_plant_04`
+are built from many small disconnected shells that plain `gltfpack -si`
+refuses to decimate past a certain point. Setting `aggressive_simplify` on
+those three specs (adds gltfpack's `-sa`, which allows simplification
+across disconnected shells) to the main pack dropped them to 713 / 1,336 /
+1,277 triangles, comfortably under budget. `mop_bucket` and `books_pile`
+hit their budget from a `simplify` ratio bump alone (1,891 and stayed at
+1,987 respectively) and didn't need `-sa`.
 
 `locker` is new in this pass: Poly Haven has no school-locker asset, so
 `painted_wooden_cabinet_02` ships as a CC0 stand-in, scaled non-uniformly
@@ -61,8 +75,7 @@ largest dimension) and under ~2,500 triangles:
 | `goggles` | old_gas_mask | Michał Wiśniewski | 2,731 |
 | `gps` | digital_wrist_watch | Adrian C | 2,632 |
 
-Pickups never get an LOD mesh (see [LOD meshes](#lod-meshes)) — they are
-small, few, and already cheap.
+Pickups are small, few, and already cheap.
 
 ## Non-uniform scale and the hinge contract
 
@@ -90,30 +103,23 @@ node survived intact. When a model declares a hinge, `footprints.json`
 carries a `hinge: { node, side, openRad }` block for it; the key is
 omitted entirely for every other prop and for all pickups.
 
-## LOD meshes
+## Why there's no LOD mesh
 
-Any prop model whose packed triangle count exceeds 1,500 also gets a
-`<category>/<name>_lod1.glb`, built from the same source glTF with
-`gltfpack -si <ratio>`. The ratio isn't a flat 0.3: it's derived from the
-model's own main-pack simplify ratio (`min(0.3, mainRatio * 0.5)`, floored
-at 0.02) so that heavily-simplified main models — some already run through
-`-si 0.1` or `-si 0.2` — don't end up with an "LOD" that has *more*
-triangles than the model it's supposed to replace at distance. The script
-verifies this after packing and falls back to re-simplifying the already-
-packed main `.glb` (rather than the raw source) if the first attempt isn't
-strictly lighter. Textures for the LOD pass are copied into a scratch
-directory under `tools/.model-cache/_lod_scratch/` and downscaled to 256px
-before packing, so the LOD never doubles the texture budget of the main
-model, and the main model's own cached textures are never touched.
-
-`footprints.json` records the LOD as a `lod` key (e.g.
-`"lod": "furniture/cupboard_lod1"`) on props that have one; the key is
-omitted entirely when a model is under the threshold. Pickups never carry
-an `lod` key.
-
-The client is expected to switch a prop to its LOD mesh once the camera is
-roughly 18 metres away, and back to the full mesh once it's closer again —
-the exact swap is implemented on the rendering side, not in this pipeline.
+An earlier version of this pipeline generated a `<category>/<name>_lod1.glb`
+for any prop over 1,500 triangles, switched in by the client once the
+camera was roughly 18m away. Running it in the actual game showed two
+problems: Babylon picks a mesh's LOD level from the bounding sphere of its
+*origin* mesh, and these props render as per-region thin-instance meshes
+whose bounding sphere covers the whole room they're in — so a room-scale
+sphere made the LOD trigger for props sitting right in front of the
+player, and every model prop in a room past ~18m from its origin simply
+vanished. Separately, measuring the actual frame cost showed the props
+were material-bound, not triangle-bound (only ~167k active triangles
+across the whole visible scene at any time) — so an LOD mesh wasn't buying
+anything even where it worked correctly. The client dropped the LOD
+switching code, and this pipeline no longer generates `_lod1.glb` files or
+writes an `lod` key into `footprints.json`; every prop always renders its
+one full-detail mesh.
 
 ## Why Sketchfab's picks weren't fetched
 
@@ -166,21 +172,19 @@ on this pass.
    plus its textures.
 2. Downscale every texture to 512px JPEG at quality 85 with Pillow — the
    same budget as the material textures in [Materials](materials.md).
-3. Run `gltfpack -c` (meshopt compression) over the result, with a
-   per-model `-si` simplification ratio where the raw mesh is denser than
-   the game needs, and `-kn` for any model that declares a `hinge_node` so
-   the door/drawer node name survives compression.
+3. Run `gltfpack -c -vtf` (meshopt compression, float texture coordinates —
+   see [Float UVs](#float-uvs-why-the-models-were-rendering-black) below)
+   over the result, with a per-model `-si` simplification ratio where the
+   raw mesh is denser than the game needs, `-kn` for any model that
+   declares a `hinge_node` so the door/drawer node name survives
+   compression, and `-sa` for any model that sets `aggressive_simplify`
+   (needed when the source mesh is built from many small disconnected
+   shells that plain `-si` can't decimate).
 4. Write one `.glb` per prop or pickup under `client/public/models/<category>/`
    (`furniture`, `clutter`, `wall`, `lab`, `appliances`, and now `pickups`).
-5. For any prop over the 1,500-triangle LOD threshold, additionally build
-   `<category>/<name>_lod1.glb` (see [LOD meshes](#lod-meshes)).
 
 The script is idempotent per output file — it skips anything already built
-unless `--force` is passed — and it self-heals: if an existing LOD file
-isn't actually lighter than its main model (an artifact of an earlier
-version of this script that used a flat `-si 0.3` regardless of the main
-model's own ratio), it's silently rebuilt on the next run even without
-`--force`.
+unless `--force` is passed.
 
 ## The footprint contract
 
@@ -191,10 +195,10 @@ to Z) and writes it to `client/public/models/footprints.json`, alongside
 
 - `props`: one entry per `PropType`, each with `model`, `asset`, `scale`,
   `scaleY`, `scaleZ`, `yawOffset`, `along`, `out`, `height`, `triangles`,
-  an optional `lod` path, and an optional `hinge` block.
+  and an optional `hinge` block.
 - `pickups`: one entry per `PickupKind` (`medkit`, `potion`, `compass`,
-  `tracker`, `goggles`, `gps`), with the same shape minus `lod`/`hinge`
-  (pickups never carry either).
+  `tracker`, `goggles`, `gps`), with the same shape minus `hinge` (pickups
+  never carry one).
 
 `server/app/domain/world/prop_specs.py` declares, independently, how many
 0.5m sub-cells each prop type reserves on the placement grid. Nothing keeps
@@ -210,10 +214,11 @@ clipping neighbouring props or wasting floor space.
   10%);
 - for every pickup, it asserts the model file exists, its largest
   dimension is between 0.05m and 0.6m, and it's under 3,000 triangles;
-- for every prop that declares an `lod`, it asserts the LOD file exists
-  and has fewer triangles than the full model, by reading both `.glb`s'
-  JSON chunks directly (a small self-contained helper, not a dependency on
-  `tools/fetch_models.py`);
+- for every shipped `.glb`, it asserts no material's `baseColorTexture` has
+  a `KHR_texture_transform` extension (see
+  [Float UVs](#float-uvs-why-the-models-were-rendering-black) below) — a
+  regression guard, reading the `.glb`'s JSON chunk directly (a small
+  self-contained helper, not a dependency on `tools/fetch_models.py`);
 - it asserts the whole `client/public/models` tree stays under the 25MB
   budget.
 
@@ -254,7 +259,7 @@ anything for them.
 
 ## The meshopt decoder
 
-Every packed `.glb` is meshopt-compressed (`gltfpack -c`). The decoder used
+Every packed `.glb` is meshopt-compressed (`gltfpack -c -vtf`). The decoder used
 to unpack these at runtime is self-hosted at
 `client/public/decoders/meshopt_decoder.js` — copied by the fetch script
 from the installed `meshoptimizer` npm package on every run, not pulled
@@ -264,16 +269,62 @@ configuration at it before any model load starts.
 ## The 25MB budget
 
 `client/public/models` has a hard ceiling of 25MB. After this pass (22
-original props + `locker` + 6 pickups + 16 LOD meshes) the tree sits at
-**6.73MB** — `tools/fetch_models.py` prints the exact on-disk total after
+original props + `locker` + 6 pickups, no LOD meshes — see
+[Why there's no LOD mesh](#why-theres-no-lod-mesh)) the tree sits at
+**4.85MB** — `tools/fetch_models.py` prints the exact on-disk total after
 every run, and the server test suite asserts it stays under budget.
 
 ## Tier behaviour
 
 Niedrig keeps every procedural builder exactly as before — no models load,
 same reasoning as the material set in #128: that tier has to stay free.
-Mittel and above load the real models instead, switching to a prop's `lod1`
-mesh past ~18m and back to the full mesh once the camera closes in again.
+Mittel and above load the real models instead — every tier that loads a
+model always renders its one full-detail mesh (see
+[Why there's no LOD mesh](#why-theres-no-lod-mesh)).
+
+## Cheap materials below Realistisch
+
+The glTF models ship with full PBR materials (baked normal/AO/roughness
+maps), and measuring them on real hardware showed that's what actually
+costs frame time, not the extra triangles: Mittel went from ~7.6 ms/frame
+on `main` to roughly 28–40 ms/frame once the PBR-textured models loaded —
+enough on its own to trip the auto-drop watchdog from #130 and silently
+knock a player down a graphics tier mid-session. In response, the client
+renders the models with cheap `StandardMaterial`s (flat/no PBR texture
+sampling) at `niedrig`, `mittel`, and `hoch`, and only swaps in the full
+glTF PBR materials at `realistisch` — the one tier explicitly meant to
+spend extra GPU budget on visual fidelity (see
+[Realistisch tier](#realistisch-tier-and-the-pixelation-default) below).
+This is why the models look flatter than their baked textures suggest at
+every tier except Realistisch: the geometry from this pipeline is shared
+across all tiers, but the material cost only shows up at the top.
+
+## Float UVs: why the models were rendering black
+
+The Poly Haven source meshes typically use a small sub-rectangle of the
+0..1 UV space (as little as ~0.062 across), and `gltfpack`'s default
+texture-coordinate quantization snaps those into a 12-bit fixed-point grid
+and compensates for the resulting precision loss by writing a
+`KHR_texture_transform` (a per-texture UV scale/offset, here scale ≈ 15.8)
+onto the material's `baseColorTexture`. Babylon's glTF loader applies that
+extension correctly under a PBR material, but the cheap `StandardMaterial`
+path used at `niedrig`/`mittel`/`hoch` (see
+[Cheap materials below Realistisch](#cheap-materials-below-realistisch)
+above) doesn't apply `KHR_texture_transform` at all, so every prop sampled
+its texture through the wrong, untransformed UVs and rendered as a flat
+black silhouette below Realistisch. Confirmed on `locker`: clearing its
+diffuse texture made it render as a normal lit cabinet, isolating the bug
+to texture sampling rather than lighting or geometry.
+
+The fix is `gltfpack -vtf` (float texture-coordinate attributes instead of
+quantized ones) on every pack invocation, which removes the need for
+`KHR_texture_transform` entirely — UV accessors now span roughly 0..1
+directly. `server/tests/domain/test_prop_footprint_sync.py` asserts no
+shipped material carries the extension, so this can't silently regress.
+Float UVs are slightly less compact than quantized ones, but the total
+`client/public/models` size actually went down in this pass (removing the
+LOD meshes more than offset it) — see
+[The 25MB budget](#the-25mb-budget) above.
 
 ## Realistisch tier, and the pixelation default
 
@@ -305,9 +356,6 @@ The script needs Pillow (from the server's Python environment) for texture
 downscaling, and `gltfpack` for mesh compression — `gltfpack` isn't a
 Python dependency, it's resolved from `client/node_modules/.bin`, so run
 `bun install` in `client/` first. It's idempotent — re-running it skips
-anything already downloaded and converted, and self-heals any LOD mesh
-that isn't actually lighter than its main model — pass `--force` to redo
+anything already downloaded and converted — pass `--force` to redo
 everything regardless. Downloaded sources are cached under the gitignored
-`tools/.model-cache/`, including a `_lod_scratch/` subdirectory holding the
-256px texture copies used only for LOD packing, so repeated runs don't
-re-hit the Poly Haven API.
+`tools/.model-cache/`, so repeated runs don't re-hit the Poly Haven API.

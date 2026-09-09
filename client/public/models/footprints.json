@@ -24,8 +24,7 @@
       "along": 0.4085,
       "out": 0.1397,
       "height": 0.0164,
-      "triangles": 1987,
-      "lod": "clutter/books_pile_lod1"
+      "triangles": 1987
     },
     "bookshelf": {
       "model": "furniture/bookshelf",
@@ -49,8 +48,7 @@
       "along": 0.1388,
       "out": 0.1388,
       "height": 0.1731,
-      "triangles": 2108,
-      "lod": "lab/bunsen_burner_lod1"
+      "triangles": 2108
     },
     "cafeteria_table": {
       "model": "furniture/cafeteria_table",
@@ -74,8 +72,7 @@
       "along": 0.5659,
       "out": 0.6752,
       "height": 1.006,
-      "triangles": 2282,
-      "lod": "furniture/chair_lod1"
+      "triangles": 2282
     },
     "clock": {
       "model": "wall/clock",
@@ -87,8 +84,7 @@
       "along": 0.3201,
       "out": 0.0471,
       "height": 0.3205,
-      "triangles": 1829,
-      "lod": "wall/clock_lod1"
+      "triangles": 1829
     },
     "cupboard": {
       "model": "furniture/cupboard",
@@ -100,8 +96,7 @@
       "along": 1.1389,
       "out": 0.488,
       "height": 1.8773,
-      "triangles": 3418,
-      "lod": "furniture/cupboard_lod1"
+      "triangles": 3418
     },
     "desk": {
       "model": "furniture/desk",
@@ -113,8 +108,7 @@
       "along": 2.0,
       "out": 0.9471,
       "height": 0.7875,
-      "triangles": 4137,
-      "lod": "furniture/desk_lod1"
+      "triangles": 4137
     },
     "fire_extinguisher": {
       "model": "wall/fire_extinguisher",
@@ -126,8 +120,7 @@
       "along": 0.279,
       "out": 0.3674,
       "height": 0.6591,
-      "triangles": 1981,
-      "lod": "wall/fire_extinguisher_lod1"
+      "triangles": 1981
     },
     "laptop": {
       "model": "appliances/laptop",
@@ -139,8 +132,7 @@
       "along": 0.3585,
       "out": 0.2673,
       "height": 0.2985,
-      "triangles": 4532,
-      "lod": "appliances/laptop_lod1"
+      "triangles": 4532
     },
     "locker": {
       "model": "furniture/locker",
@@ -169,8 +161,7 @@
       "along": 0.2038,
       "out": 0.4719,
       "height": 0.4387,
-      "triangles": 4795,
-      "lod": "lab/microscope_lod1"
+      "triangles": 4795
     },
     "microwave": {
       "model": "appliances/microwave",
@@ -182,8 +173,7 @@
       "along": 0.6979,
       "out": 0.4843,
       "height": 0.3418,
-      "triangles": 2435,
-      "lod": "appliances/microwave_lod1"
+      "triangles": 2435
     },
     "mop_bucket": {
       "model": "clutter/mop_bucket",
@@ -193,10 +183,9 @@
       "scaleZ": 1.0,
       "yawOffset": 0.0,
       "along": 0.3663,
-      "out": 0.3422,
+      "out": 0.3418,
       "height": 0.5493,
-      "triangles": 2046,
-      "lod": "clutter/mop_bucket_lod1"
+      "triangles": 1891
     },
     "papers": {
       "model": "clutter/papers",
@@ -217,11 +206,10 @@
       "scaleY": 3.2,
       "scaleZ": 3.2,
       "yawOffset": 0.0,
-      "along": 0.5366,
-      "out": 0.5893,
-      "height": 0.8546,
-      "triangles": 3998,
-      "lod": "clutter/plant_lod1"
+      "along": 0.5263,
+      "out": 0.5775,
+      "height": 0.8541,
+      "triangles": 1277
     },
     "pylon": {
       "model": "clutter/pylon",
@@ -245,8 +233,7 @@
       "along": 0.4802,
       "out": 0.3852,
       "height": 0.2414,
-      "triangles": 2308,
-      "lod": "clutter/recycle_bin_lod1"
+      "triangles": 1336
     },
     "side_table": {
       "model": "furniture/side_table",
@@ -258,8 +245,7 @@
       "along": 0.55,
       "out": 0.45,
       "height": 0.5507,
-      "triangles": 1929,
-      "lod": "furniture/side_table_lod1"
+      "triangles": 1929
     },
     "sofa": {
       "model": "furniture/sofa",
@@ -271,8 +257,7 @@
       "along": 1.5715,
       "out": 0.658,
       "height": 0.7965,
-      "triangles": 4101,
-      "lod": "furniture/sofa_lod1"
+      "triangles": 4101
     },
     "student_desk": {
       "model": "furniture/student_desk",
@@ -284,8 +269,7 @@
       "along": 0.7118,
       "out": 0.546,
       "height": 0.8818,
-      "triangles": 2080,
-      "lod": "furniture/student_desk_lod1"
+      "triangles": 2080
     },
     "trash_can": {
       "model": "clutter/trash_can",
@@ -297,8 +281,7 @@
       "along": 0.3429,
       "out": 0.4735,
       "height": 0.3141,
-      "triangles": 4328,
-      "lod": "clutter/trash_can_lod1"
+      "triangles": 713
     }
   },
   "pickups": {

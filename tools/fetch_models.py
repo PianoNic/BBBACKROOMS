@@ -33,6 +33,7 @@ class ModelSpec:
     hinge_node: str | None = None
     hinge_side: str | None = None
     hinge_open_rad: float | None = None
+    aggressive_simplify: bool = False
 
     def __post_init__(self) -> None:
         if self.scale_y is None:
@@ -51,11 +52,11 @@ MANIFEST: tuple[ModelSpec, ...] = (
     ModelSpec("bench", "painted_wooden_bench", "furniture", 1.0),
     ModelSpec("cafeteria_table", "dining_table", "furniture", 1.0),
     ModelSpec("cupboard", "drawer_cabinet", "furniture", 1.0, 0.1),
-    ModelSpec("trash_can", "industrial_pastic_container", "clutter", 0.75, 0.3),
-    ModelSpec("recycle_bin", "plastic_crate_02", "clutter", 0.95, 0.3),
+    ModelSpec("trash_can", "industrial_pastic_container", "clutter", 0.75, 0.13, aggressive_simplify=True),
+    ModelSpec("recycle_bin", "plastic_crate_02", "clutter", 0.95, 0.25, aggressive_simplify=True),
     ModelSpec("pylon", "WetFloorSign_01", "clutter", 1.0),
-    ModelSpec("mop_bucket", "wooden_bucket_01", "clutter", 1.0, 0.4),
-    ModelSpec("plant", "potted_plant_04", "clutter", 3.2, 0.35),
+    ModelSpec("mop_bucket", "wooden_bucket_01", "clutter", 1.0, 0.37),
+    ModelSpec("plant", "potted_plant_04", "clutter", 3.2, 0.17, aggressive_simplify=True),
     ModelSpec("papers", "office_notepads", "clutter", 0.4),
     ModelSpec("books_pile", "binder_notebook", "clutter", 0.7, 0.1),
     ModelSpec("clock", "wall_clock", "wall", 1.0, 0.5),
@@ -377,7 +378,7 @@ class GltfPacker:
 
     def pack(self, source: Path, dest: Path, simplify: float, extra_args: list[str] | None = None) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
-        command = [str(self.binary), "-i", str(source), "-o", str(dest), "-c"]
+        command = [str(self.binary), "-i", str(source), "-o", str(dest), "-c", "-vtf"]
         if simplify > 0.0:
             command += ["-si", str(simplify)]
         if extra_args:
@@ -414,16 +415,9 @@ class ModelResult:
     height: float
     bytes_written: int
     skipped: bool
-    lod_path: Path | None = None
-    lod_triangles: int | None = None
-    lod_bytes_written: int = 0
 
 
 class ModelProcessor:
-    LOD_TRIANGLE_THRESHOLD = 1500
-    LOD_SIMPLIFY = 0.3
-    LOD_TEXTURE_MAX_PX = 256
-
     def __init__(
         self,
         spec: ModelSpec,
@@ -434,16 +428,12 @@ class ModelProcessor:
     ):
         self.spec = spec
         self.output_path = output_root / spec.category / f"{spec.prop_type}.glb"
-        self.lod_output_path = output_root / spec.category / f"{spec.prop_type}_lod1.glb"
         self.downloader = downloader
         self.packer = packer
         self.downscaler = downscaler
 
     def is_complete(self) -> bool:
         return self.output_path.exists() and self.output_path.stat().st_size > 0
-
-    def _lod_is_complete(self) -> bool:
-        return self.lod_output_path.exists() and self.lod_output_path.stat().st_size > 0
 
     def _measure(self) -> ModelResult:
         lo, hi = GlbAnalyzer.bounding_box(self.output_path)
@@ -478,38 +468,18 @@ class ModelProcessor:
                 file=sys.stderr,
             )
 
-    def _prepare_lod_source(self, main_gltf: Path) -> Path:
-        asset_dir = main_gltf.parent
-        scratch_dir = self.downloader.cache_dir / "_lod_scratch" / asset_dir.name
-        if not scratch_dir.exists():
-            shutil.copytree(asset_dir, scratch_dir)
-            TextureDownscaler(max_px=self.LOD_TEXTURE_MAX_PX).process(scratch_dir)
-        return scratch_dir / main_gltf.name
-
-    def _lod_simplify_ratio(self) -> float:
-        effective_main_ratio = self.spec.simplify if self.spec.simplify > 0.0 else 1.0
-        return max(0.02, min(self.LOD_SIMPLIFY, effective_main_ratio * 0.5))
-
-    def _build_lod(self, asset: PolyHavenAsset, main_gltf: Path | None, main_triangles: int) -> tuple[Path, int]:
-        if main_gltf is None:
-            main_gltf = asset.fetch_gltf()
-        lod_source = self._prepare_lod_source(main_gltf)
-        self.packer.pack(lod_source, self.lod_output_path, self._lod_simplify_ratio())
-        lod_triangles = GlbAnalyzer.triangle_count(self.lod_output_path)
-        if lod_triangles >= main_triangles:
-            self.packer.pack(self.output_path, self.lod_output_path, 0.5)
-            lod_triangles = GlbAnalyzer.triangle_count(self.lod_output_path)
-        return main_gltf, lod_triangles
-
     def process(self, force: bool) -> ModelResult:
         asset = PolyHavenAsset(self.spec, self.downloader)
-        main_gltf: Path | None = None
 
         if force or not self.is_complete():
             main_gltf = asset.fetch_gltf()
             self.downscaler.process(self.downloader.cache_dir / self.spec.asset)
-            extra_args = ["-kn"] if self.spec.hinge_node else None
-            self.packer.pack(main_gltf, self.output_path, self.spec.simplify, extra_args)
+            extra_args = []
+            if self.spec.hinge_node:
+                extra_args.append("-kn")
+            if self.spec.aggressive_simplify:
+                extra_args.append("-sa")
+            self.packer.pack(main_gltf, self.output_path, self.spec.simplify, extra_args or None)
             result = self._measure()
         else:
             result = self._measure()
@@ -517,18 +487,6 @@ class ModelProcessor:
 
         if self.spec.hinge_node:
             self._verify_hinge()
-
-        if self.spec.category != "pickups" and result.triangles > self.LOD_TRIANGLE_THRESHOLD:
-            lod_triangles = None
-            if not force and self._lod_is_complete():
-                lod_triangles = GlbAnalyzer.triangle_count(self.lod_output_path)
-                if lod_triangles >= result.triangles:
-                    lod_triangles = None
-            if lod_triangles is None:
-                main_gltf, lod_triangles = self._build_lod(asset, main_gltf, result.triangles)
-            result.lod_path = self.lod_output_path
-            result.lod_triangles = lod_triangles
-            result.lod_bytes_written = self.lod_output_path.stat().st_size
 
         return result
 
@@ -605,8 +563,6 @@ class FootprintsWriter:
             "height": result.height,
             "triangles": result.triangles,
         }
-        if result.lod_path is not None:
-            entry["lod"] = f"{spec.category}/{spec.prop_type}_lod1"
         if spec.hinge_node:
             entry["hinge"] = {
                 "node": spec.hinge_node,
@@ -667,18 +623,15 @@ class ModelFetcher:
         print()
         print(
             f"{'prop type':20} {'category':12} {'along':>7} {'out':>7} {'height':>7} "
-            f"{'tris':>7} {'MB':>7} {'lod tris':>9} {'lod MB':>7}"
+            f"{'tris':>7} {'MB':>7}"
         )
         total_bytes = 0
         for result in sorted(results, key=lambda r: r.spec.prop_type):
             spec = result.spec
-            total_bytes += result.bytes_written + result.lod_bytes_written
-            lod_tris = result.lod_triangles if result.lod_triangles is not None else ""
-            lod_mb = f"{result.lod_bytes_written / 1e6:.3f}" if result.lod_bytes_written else ""
+            total_bytes += result.bytes_written
             print(
                 f"{spec.prop_type:20} {spec.category:12} {result.along:7.3f} {result.out:7.3f} "
-                f"{result.height:7.3f} {result.triangles:7d} {result.bytes_written / 1e6:7.3f} "
-                f"{lod_tris!s:>9} {lod_mb:>7}"
+                f"{result.height:7.3f} {result.triangles:7d} {result.bytes_written / 1e6:7.3f}"
             )
         print(f"TOTAL (tracked results): {total_bytes / 1e6:.2f} MB across {len(results)} models")
         print(f"Sketchfab models skipped: {len(SKETCHFAB_MANIFEST)}")
@@ -696,8 +649,7 @@ class ModelFetcher:
                 result = processor.process(self.force)
                 results.append(result)
                 status = "skipped" if result.skipped else "built"
-                lod_note = f", lod {result.lod_triangles} tris" if result.lod_triangles is not None else ""
-                print(f"[{spec.prop_type}] {status} - {result.triangles} tris{lod_note}, {result.bytes_written} bytes")
+                print(f"[{spec.prop_type}] {status} - {result.triangles} tris, {result.bytes_written} bytes")
             except Exception as error:
                 print(f"[{spec.prop_type}] FAILED: {error}", file=sys.stderr)
                 errors.append((spec.prop_type, error))

@@ -7,9 +7,13 @@ import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Prop, PropType } from "../net/protocol";
 import type { ModelLibrary } from "../rendering/modelLoader";
 import type { FlickerLights } from "../rendering/lights";
-import { AMBIENCE } from "../rendering/ambience";
+import { AMBIENCE, tierFeatures } from "../rendering/ambience";
 import { maxLights, group, type Group } from "../rendering/babylon";
+import { getSettings } from "../core/settings";
+import { ModelMaterialFactory } from "../rendering/modelMaterials";
 import { MANAGER_OWNED_TYPES, MODEL_PROPS, type ModelPropSpec } from "./modelProps";
+
+const modelMaterials = new ModelMaterialFactory();
 
 export function normalizeModelTemplate(container: AssetContainer, spec: ModelPropSpec): Mesh[] {
   container.addAllToScene();
@@ -45,6 +49,8 @@ export function normalizeModelTemplate(container: AssetContainer, spec: ModelPro
   const offsetZ = isWallLike ? -maxZ * spec.scaleZ : -centerZ * spec.scaleZ;
   const offsetY = -minY * spec.scaleY + spec.y;
 
+  const usePbr = tierFeatures(getSettings().graphicsTier).pbrModels;
+
   for (const mesh of meshes) {
     mesh.scaling.set(spec.scale, spec.scaleY, spec.scaleZ);
     mesh.position.set(offsetX, offsetY, offsetZ);
@@ -52,23 +58,24 @@ export function normalizeModelTemplate(container: AssetContainer, spec: ModelPro
 
     const mat = mesh.material;
     if (mat instanceof PBRMaterial) {
-      mat.directIntensity = AMBIENCE.surfaces.directIntensity;
-      mat.environmentIntensity = 0;
-      mat.usePhysicalLightFalloff = false;
-      mat.maxSimultaneousLights = maxLights();
-      mat.freeze();
+      if (usePbr) {
+        mat.directIntensity = AMBIENCE.surfaces.directIntensity;
+        mat.environmentIntensity = 0;
+        mat.usePhysicalLightFalloff = false;
+        mat.maxSimultaneousLights = maxLights();
+        mat.freeze();
+      } else {
+        mesh.material = modelMaterials.standardFor(mat);
+      }
     }
   }
 
   return meshes;
 }
 
-export const MODEL_LOD_DISTANCE = 18;
-
 export class ModelPropStage {
   private readonly group: Group;
   private readonly templateCache = new Map<PropType, Mesh[]>();
-  private readonly instanceCache = new Map<PropType, Mesh[][]>();
 
   constructor(
     _scene: Scene,
@@ -117,9 +124,7 @@ export class ModelPropStage {
     if (!spec) return;
     const templates = this.buildTemplates(type, container, spec);
     if (templates.length === 0) return;
-    const perTemplate = this.instance(templates, props, spec);
-    this.instanceCache.set(type, perTemplate);
-    this.attachLod(type, spec);
+    this.instance(templates, props, spec);
   }
 
   private buildTemplates(type: PropType, container: AssetContainer, spec: ModelPropSpec): Mesh[] {
@@ -133,7 +138,7 @@ export class ModelPropStage {
     return meshes;
   }
 
-  private instance(templates: Mesh[], props: readonly Prop[], spec: ModelPropSpec): Mesh[][] {
+  private instance(templates: Mesh[], props: readonly Prop[], spec: ModelPropSpec): void {
     const regions = new Map<number, Prop[]>();
     for (const p of props) {
       const key = this.regionOf(p);
@@ -142,9 +147,7 @@ export class ModelPropStage {
       else regions.set(key, [p]);
     }
 
-    const perTemplate: Mesh[][] = [];
     for (const template of templates) {
-      const regionMeshes: Mesh[] = [];
       let first = true;
       for (const [key, regionProps] of regions) {
         const mesh = first ? template : template.clone(`${template.name}_r${key}`, null);
@@ -168,41 +171,7 @@ export class ModelPropStage {
         mesh.alwaysSelectAsActiveMesh = false;
         mesh.thinInstanceRefreshBoundingInfo(true);
         mesh.freezeWorldMatrix();
-        regionMeshes.push(mesh);
       }
-      perTemplate.push(regionMeshes);
     }
-    return perTemplate;
-  }
-
-  private attachLod(type: PropType, spec: ModelPropSpec): void {
-    if (!spec.lod) return;
-    const existing = this.library.getLod(type);
-    if (existing) {
-      this.applyLod(type, existing, spec);
-      return;
-    }
-    void this.library.loadLod(type).then((container) => {
-      if (container) this.applyLod(type, container, spec);
-    });
-  }
-
-  private applyLod(type: PropType, container: AssetContainer, spec: ModelPropSpec): void {
-    const templates = this.templateCache.get(type);
-    const perTemplate = this.instanceCache.get(type);
-    if (!templates || !perTemplate) return;
-
-    const lodMeshes = normalizeModelTemplate(container, spec);
-    if (lodMeshes.length === 0 || lodMeshes.length !== templates.length) return;
-    for (const mesh of lodMeshes) mesh.setEnabled(false);
-
-    templates.forEach((_template, templateIndex) => {
-      const lodSource = lodMeshes[templateIndex];
-      const regionMeshes = perTemplate[templateIndex] ?? [];
-      regionMeshes.forEach((mesh, regionIndex) => {
-        const lodClone = lodSource.clone(`${lodSource.name}_lod_${regionIndex}`, null);
-        mesh.addLODLevel(MODEL_LOD_DISTANCE, lodClone);
-      });
-    });
   }
 }
