@@ -1,5 +1,6 @@
-import { getSettings, resetSettings, updateSetting } from "../core/settings";
+import { getSettings, isGraphicsTierAutoSelected, resetSettings, updateSetting } from "../core/settings";
 import type { Settings } from "../core/settings";
+import { isIntegratedGpu } from "../core/gpuTier";
 import { el } from "./dom";
 import {
   cameraDeviceRow, camPreviewRow, micDeviceRow, micMeterRow,
@@ -96,6 +97,9 @@ export function buildSettingsList(): SettingsList {
     { label: "Hoch",    value: "hoch" },
   ]));
   root.appendChild(el("div", "set-note", "Surface materials update on the next round."));
+  if (isGraphicsTierAutoSelected() && isIntegratedGpu()) {
+    root.appendChild(el("div", "set-note", "Niedrig was auto-selected because this machine looks like it has an integrated GPU."));
+  }
   root.appendChild(selectRow("FPS cap", "fpsCap", [
     { label: "30",   value: 30 },
     { label: "60",   value: 60 },

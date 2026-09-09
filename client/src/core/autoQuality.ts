@@ -4,7 +4,7 @@ import { showBanner } from "../ui/banner";
 
 const WARMUP_SECONDS = 5;
 const IGNORE_DT_SECONDS = 0.5;
-const SMOOTHING_WINDOW = 30;
+const SMOOTHING_WINDOW = 12;
 
 export class AutoQuality {
   private elapsed = 0;

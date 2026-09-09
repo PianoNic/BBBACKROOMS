@@ -1,6 +1,7 @@
 /** Persistent player settings. Single store, subscribers apply on change. */
 
 import type { GraphicsTier } from "../rendering/ambience";
+import { defaultGraphicsTierForHardware } from "./gpuTier";
 
 export type Settings = {
   fov: number;          // 60..110
@@ -32,6 +33,13 @@ export type Settings = {
 
 const KEY = "bbb_settings";
 
+let detectedGraphicsTier: GraphicsTier = "mittel";
+try {
+  detectedGraphicsTier = defaultGraphicsTierForHardware();
+} catch {
+  detectedGraphicsTier = "mittel";
+}
+
 export const DEFAULTS: Settings = {
   fov: 75,
   pixelation: 4,
@@ -50,18 +58,25 @@ export const DEFAULTS: Settings = {
   noiseGateThresholdDb: -45,
   voiceMode: "ptt",
   cameraMode: "on",
-  graphicsTier: "mittel",
+  graphicsTier: detectedGraphicsTier,
 };
 
+let graphicsTierWasAutoSelected = false;
 let current: Settings = load();
 const listeners = new Set<(s: Settings) => void>();
 
 function load(): Settings {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { ...DEFAULTS };
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    if (!raw) {
+      graphicsTierWasAutoSelected = true;
+      return { ...DEFAULTS };
+    }
+    const parsed = JSON.parse(raw);
+    graphicsTierWasAutoSelected = !("graphicsTier" in parsed);
+    return { ...DEFAULTS, ...parsed };
   } catch {
+    graphicsTierWasAutoSelected = true;
     return { ...DEFAULTS };
   }
 }
@@ -77,6 +92,7 @@ export function getSettings(): Settings {
 }
 
 export function updateSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
+  if (key === "graphicsTier") graphicsTierWasAutoSelected = false;
   current = { ...current, [key]: value };
   persist();
   for (const l of listeners) l(current);
@@ -88,7 +104,12 @@ export function onSettingsChange(fn: (s: Settings) => void): () => void {
 }
 
 export function resetSettings(): void {
+  graphicsTierWasAutoSelected = true;
   current = { ...DEFAULTS };
   persist();
   for (const l of listeners) l(current);
+}
+
+export function isGraphicsTierAutoSelected(): boolean {
+  return graphicsTierWasAutoSelected;
 }

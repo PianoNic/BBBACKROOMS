@@ -16,6 +16,8 @@ import { AMBIENCE, tierFeatures, type GraphicsTier } from "./ambience";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { color3 } from "./babylon";
 
+const NIEDRIG_MAX_INTERNAL_HEIGHT = 720;
+
 let currentGlowLayer: GlowLayer | null = null;
 const pendingGlowMeshes: AbstractMesh[] = [];
 
@@ -174,7 +176,7 @@ export class Ambience {
     pipeline.bloomKernel = features.bloomKernel;
     pipeline.bloomScale = AMBIENCE.bloom.scale;
 
-    pipeline.chromaticAberrationEnabled = true;
+    pipeline.chromaticAberrationEnabled = tier !== "niedrig";
     pipeline.chromaticAberration.aberrationAmount = AMBIENCE.aberration.idle;
     pipeline.chromaticAberration.radialIntensity = 1.4;
 
@@ -217,8 +219,9 @@ export class Ambience {
   }
 
   private buildGlow(tier: GraphicsTier): void {
-    this.glowLayer = tierFeatures(tier).glow
-      ? new GlowLayer("ambienceGlow", this.scene)
+    const features = tierFeatures(tier);
+    this.glowLayer = features.glow
+      ? new GlowLayer("ambienceGlow", this.scene, { mainTextureRatio: features.glowRatio })
       : null;
     if (this.glowLayer) {
       this.glowLayer.intensity = AMBIENCE.glow.intensity;
@@ -229,7 +232,16 @@ export class Ambience {
   }
 
   private applySize = (): void => {
-    const scale = Math.max(1, getSettings().pixelation);
+    const pixelationScale = Math.max(1, getSettings().pixelation);
+    let scale = pixelationScale;
+    if (this.tier === "niedrig") {
+      const dpr = window.devicePixelRatio || 1;
+      const nativeHeight = window.innerHeight * dpr;
+      const capScale = nativeHeight > NIEDRIG_MAX_INTERNAL_HEIGHT
+        ? nativeHeight / NIEDRIG_MAX_INTERNAL_HEIGHT
+        : 1;
+      scale = Math.max(pixelationScale, capScale);
+    }
     this.canvas.style.width = `${window.innerWidth}px`;
     this.canvas.style.height = `${window.innerHeight}px`;
     this.canvas.style.imageRendering = "pixelated";
@@ -325,6 +337,7 @@ export class Ambience {
     this.buildGlow(tier);
     this.volumetric?.dispose(this.camera);
     this.volumetric = this.buildVolumetric(tier, pendingVolumetricMesh);
+    this.applySize();
   }
 
   get pipeline(): DefaultRenderingPipeline {

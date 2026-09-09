@@ -175,12 +175,23 @@ export class FlickerLights {
     this.shadowGenerators = [];
     const count = Math.min(tierFeatures(tier).shadowLights, SPOT_COUNT);
     const mapSize = tierFeatures(tier).shadowMapSize;
+    const supportsShadowSampler = activeScene().getEngine().getCaps().depthTextureExtension;
     for (let i = 0; i < count; i++) {
-      const gen = new ShadowGenerator(mapSize, this.spots[i]);
-      gen.usePercentageCloserFiltering = true;
-      gen.filteringQuality = ShadowGenerator.QUALITY_LOW;
+      const spot = this.spots[i];
+      spot.shadowMinZ = AMBIENCE.tube.shadowMinZ;
+      spot.shadowMaxZ = AMBIENCE.tube.shadowMaxZ;
+      const gen = new ShadowGenerator(mapSize, spot);
+      if (supportsShadowSampler) {
+        gen.usePercentageCloserFiltering = true;
+        gen.filteringQuality = ShadowGenerator.QUALITY_LOW;
+      } else {
+        gen.useExponentialShadowMap = true;
+      }
+      gen.useContactHardeningShadow = false;
       gen.darkness = AMBIENCE.tube.shadowDarkness;
       gen.blurKernel = AMBIENCE.tube.shadowBlurKernel;
+      gen.bias = AMBIENCE.tube.shadowBias;
+      gen.normalBias = AMBIENCE.tube.shadowNormalBias;
       for (const m of this.casters) gen.addShadowCaster(m, false);
       this.shadowGenerators.push(gen);
     }
