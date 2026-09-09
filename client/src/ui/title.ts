@@ -125,7 +125,56 @@ function buildSocialLinks(): void {
   };
   wrap.appendChild(mk(GITHUB_URL, "GitHub", "fa-github"));
   wrap.appendChild(mk(DISCORD_URL, "Discord", "fa-discord"));
+
+  const infoBtn = el<HTMLButtonElement>("button", "social-link info-link");
+  infoBtn.setAttribute("aria-label", "Info");
+  infoBtn.title = "Info";
+  const infoIcon = document.createElement("i");
+  infoIcon.className = "fa-solid fa-circle-info";
+  infoIcon.setAttribute("aria-hidden", "true");
+  infoBtn.appendChild(infoIcon);
+  infoBtn.appendChild(el("span", "social-link-label", "Info"));
+  infoBtn.onclick = () => { buildInfoOverlay(); };
+  wrap.appendChild(infoBtn);
+
   root.appendChild(wrap);
+}
+
+function buildInfoOverlay(): void {
+  if (document.getElementById("info-overlay")) return;
+
+  const overlay = el<HTMLDivElement>("div");
+  overlay.id = "info-overlay";
+
+  const panel = el<HTMLDivElement>("div", "panel panel-brackets info-panel");
+  panel.appendChild(el("h2", undefined, "INFO"));
+  panel.appendChild(el("p", "info-project", "Backrooms Baden"));
+  panel.appendChild(el(
+    "p",
+    "info-disclaimer",
+    "Privates Hobbyprojekt ohne Verbindung zu einer realen Schule. Alle Lehrpersonen und Namen sind frei erfunden.",
+  ));
+
+  const legalLink = document.createElement("a");
+  legalLink.href = "/datenschutz.html";
+  legalLink.className = "info-legal-link";
+  legalLink.textContent = "Datenschutz & Impressum";
+  panel.appendChild(legalLink);
+
+  const close = el<HTMLButtonElement>("button", "menu-btn", "SCHLIESSEN");
+  const onKey = (e: KeyboardEvent) => {
+    if (e.code === "Escape") { e.preventDefault(); close.click(); }
+  };
+  close.onclick = () => {
+    overlay.remove();
+    window.removeEventListener("keydown", onKey);
+  };
+  window.addEventListener("keydown", onKey);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close.click(); });
+
+  panel.appendChild(close);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
 }
 
 function buildMainMenu(
