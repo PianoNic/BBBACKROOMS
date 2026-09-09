@@ -135,3 +135,6 @@ client/playwright/.cache/
 
 # ───────── Texture pipeline cache ─────────
 tools/.texture-cache/
+
+# ───────── Model pipeline cache ─────────
+tools/.model-cache/

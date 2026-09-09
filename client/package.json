@@ -12,12 +12,15 @@
   },
   "dependencies": {
     "@babylonjs/core": "^9.25.0",
+    "@babylonjs/loaders": "9.25.0",
     "lucide": "^1.14.0",
     "stats.js": "^0.17.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/stats.js": "^0.17.4",
+    "gltfpack": "^1.2.0",
+    "meshoptimizer": "^1.2.0",
     "sass": "^1.99.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
