@@ -166,3 +166,10 @@ TEACHER_ROSTER: list[tuple[str, str, str, str]] = [
 
 # How many teachers spawn per game (sampled from the roster).
 TEACHERS_PER_GAME = 3
+
+
+def roster_dto() -> list[dict]:
+    return [
+        {"image": img, "name": name, "subject": subj, "ability": ab}
+        for (img, name, subj, ab) in TEACHER_ROSTER
+    ]

@@ -126,3 +126,9 @@ $RECYCLE.BIN/
 *.pid
 docker-compose.override.yml
 .playwright-mcp/
+
+# ───────── Playwright ─────────
+client/test-results/
+client/playwright-report/
+client/blob-report/
+client/playwright/.cache/

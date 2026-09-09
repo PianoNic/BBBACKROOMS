@@ -2,7 +2,9 @@ import {
   getActivePackId, importPackFromFile, listPacks, removePack, setActivePackId,
   type PackSummary,
 } from "../core/texturePacks";
+import { fetchRoster } from "../net/roster";
 import { el } from "./dom";
+import { openPackEditor } from "./packEditor";
 
 export function buildTexturePackSection(): HTMLElement {
   const section = el<HTMLDivElement>("div", "pack-section");
@@ -21,6 +23,30 @@ export function buildTexturePackSection(): HTMLElement {
   ctrl.append(importBtn, input);
   importRow.appendChild(ctrl);
   section.appendChild(importRow);
+
+  const editorRow = el<HTMLDivElement>("div", "set-row");
+  editorRow.appendChild(el("label", undefined, "Build a pack"));
+  const editorCtrl = el<HTMLDivElement>("div", "set-ctrl");
+  const editorBtn = el<HTMLButtonElement>("button", "menu-btn small", "PACK EDITOR");
+  editorBtn.id = "pack-editor-open";
+  editorBtn.onclick = async () => {
+    status.textContent = "lade roster…";
+    status.classList.remove("error");
+    editorBtn.disabled = true;
+    try {
+      const roster = await fetchRoster();
+      status.textContent = "";
+      openPackEditor(roster, refresh);
+    } catch (err) {
+      status.textContent = err instanceof Error ? err.message : "failed to load roster";
+      status.classList.add("error");
+    } finally {
+      editorBtn.disabled = false;
+    }
+  };
+  editorCtrl.appendChild(editorBtn);
+  editorRow.appendChild(editorCtrl);
+  section.appendChild(editorRow);
 
   const status = el<HTMLDivElement>("div", "pack-status");
   status.id = "pack-status";

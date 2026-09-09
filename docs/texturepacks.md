@@ -25,6 +25,29 @@ mypack.zip
 └── mrs-jones.webp
 ```
 
+## Building one in the browser
+
+Options → **TEXTURE PACKS** → **PACK EDITOR** opens a zero-network, fully
+client-side editor: pick a photo per teacher, fill in an id/version/name, and
+either download the resulting zip or install it directly into this browser.
+On first open you have to accept a consent notice — only your own images, or
+images you have the subject's permission for, may go into a pack — kept in
+memory for the session and never written to storage.
+
+Every picked image is processed entirely with `<canvas>`: center-cropped to a
+square, resized to at most 1024 px on a side, and re-encoded as JPEG,
+retrying at lower quality until it fits under 512 KB. The editor never makes
+a network request itself; the only call in the whole flow is the one that
+fetches the teacher roster when you click **PACK EDITOR**, and it completes
+before the editor opens.
+
+The zip it produces follows the same layout described above — each edited
+image is written to `teachers/<slug>.jpg` (the roster filename, lowercased
+and slugified) — and each edited teacher gets **two** entries in
+`pack.json.teachers`: one keyed by roster index, and one keyed by that
+teacher's ability id (as long as the 64-entry cap allows it), so the pack
+resolves whichever lookup a given call site uses.
+
 ## `pack.json` schema
 
 ```json

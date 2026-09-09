@@ -8,6 +8,7 @@ from app.domain.cosmetics import catalog_dto
 from app.domain.lobby_store import create_lobby, list_lobbies
 from app.services.turn import get_ice_servers
 from app.version import VERSION
+from app.world.teacher_roster import roster_dto
 
 router = APIRouter()
 
@@ -46,6 +47,11 @@ async def shop_catalog() -> list[dict]:
     """Static cosmetic catalog (prices/categories). Ownership + balance arrive
     over the WebSocket, tied to the authenticated session."""
     return catalog_dto()
+
+
+@router.get("/roster")
+async def get_roster() -> list[dict]:
+    return roster_dto()
 
 
 @router.get("/turn-credentials")
