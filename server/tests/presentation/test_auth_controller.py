@@ -229,7 +229,7 @@ async def test_callback_for_blocked_subject(account_engine):
     set_cookie_headers = resp.headers.get_list("set-cookie")
     assert not any(f"{SESSION_COOKIE}=" in h for h in set_cookie_headers)
 
-    from app.db.models import Account
+    from app.infrastructure.persistence.models import Account
     rows = list(
         await Account.select()
         .where((Account.provider == "google") & (Account.provider_subject == "sub-blocked"))

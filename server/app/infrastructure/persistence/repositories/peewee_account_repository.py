@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from app.db.models import AchievementUnlock, CosmeticEquipped, CosmeticOwnership, Profile
-from app.db.models import Account as AccountModel
 from app.domain.accounts.account import Account
 from app.domain.accounts.account_repository import IAccountRepository
 from app.infrastructure.persistence.engine import DatabaseEngine
+from app.infrastructure.persistence.models import AchievementUnlock, CosmeticEquipped, CosmeticOwnership, Profile
+from app.infrastructure.persistence.models import Account as AccountModel
 
 
 def _to_domain(row: AccountModel) -> Account:

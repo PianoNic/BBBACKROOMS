@@ -3,12 +3,12 @@ from __future__ import annotations
 import peewee_async
 import pytest
 
-from app.db.models import ALL_MODELS
 from app.domain.lobbies.chair import Chair
 from app.domain.lobbies.hideout import Hideout
 from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.player_conn import PlayerConn
 from app.infrastructure.persistence.engine import DatabaseEngine
+from app.infrastructure.persistence.models import ALL_MODELS
 
 
 class FakeChannel:

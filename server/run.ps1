@@ -16,7 +16,7 @@ if (Test-Path $envFile) {
 # synchronous and must not run inside the async event loop). Non-fatal: if the
 # database is down the game still runs, just without accounts/persistence.
 Write-Host "Applying database migrations..."
-python -m app.db.migrate run
+python -m app.infrastructure.persistence.migrate run
 if ($LASTEXITCODE -ne 0) {
   Write-Warning "Migrations failed (database down?) — starting without persistence."
 }

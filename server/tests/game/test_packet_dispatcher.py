@@ -8,7 +8,7 @@ individual handler, which the other tests in this package already cover.
 from __future__ import annotations
 
 from app.application.dtos.packets import LobbySettingsPkt, MovePkt, StartGamePkt
-from app.game.game_core import game_core
+from app.presentation.dependencies import game_core
 
 from ..conftest import add_player, make_lobby
 

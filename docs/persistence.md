@@ -9,16 +9,17 @@ is down the server logs a warning and simply runs without persistence.
 - **PostgreSQL** (16+).
 - **[peewee](http://docs.peewee-orm.com/)** models + **[peewee-async](https://github.com/05bit/peewee-async)** (psycopg3 backend) for async queries.
 - **[peewee-migrate](https://github.com/klen/peewee_migrate)** for schema migrations.
-- Settings via **pydantic-settings** (`app/config.py`).
+- Settings via **pydantic-settings** (`app/infrastructure/configuration/settings.py`).
 
-Code lives in [`server/app/db/`](../server/app/db/):
+Code lives in [`server/app/infrastructure/persistence/`](../server/app/infrastructure/persistence/):
 
 | File | Purpose |
 | --- | --- |
-| `engine.py` | The async-Peewee `database` object + best-effort `connect()`/`disconnect()`. |
+| `engine.py` | `DatabaseEngine` — the async-Peewee `database` object + best-effort `connect()`/`disconnect()`. |
 | `models.py` | ORM models: `Account`, `Profile`, `CosmeticOwnership`, `CosmeticEquipped`, `AchievementUnlock`. |
 | `migrate.py` | Migration runner + authoring CLI. |
 | `migrations/` | Generated migration files (committed to the repo). |
+| `repositories/` | `PeeweeAccountRepository`, `PeeweeProfileRepository`, `PeeweeCosmeticRepository`, `PeeweeAchievementRepository` — the concrete implementations behind the domain repository interfaces. |
 
 ## What the `account` row stores
 | Column | Notes |
@@ -73,15 +74,15 @@ loop. `run.ps1` and the Docker entrypoint both run them automatically before the
 server starts; you can also run them by hand (from `server/`):
 
 ```powershell
-python -m app.db.migrate run      # apply all pending migrations
-python -m app.db.migrate list     # show applied / pending
-python -m app.db.migrate create <name>   # generate a migration from models
+python -m app.infrastructure.persistence.migrate run      # apply all pending migrations
+python -m app.infrastructure.persistence.migrate list     # show applied / pending
+python -m app.infrastructure.persistence.migrate create <name>   # generate a migration from models
 ```
 
 **Workflow when you change `models.py`:**
-1. Edit/add a model in `app/db/models.py` (and add it to `ALL_MODELS`).
-2. `python -m app.db.migrate create <short_name>` — generates `migrations/NNN_<short_name>.py` by diffing the models against the DB.
-3. Review the generated file, then `python -m app.db.migrate run` to apply.
+1. Edit/add a model in `app/infrastructure/persistence/models.py` (and add it to `ALL_MODELS`).
+2. `python -m app.infrastructure.persistence.migrate create <short_name>` — generates `migrations/NNN_<short_name>.py` by diffing the models against the DB.
+3. Review the generated file, then `python -m app.infrastructure.persistence.migrate run` to apply.
 4. Commit the new migration file.
 
 ## Windows note (important)

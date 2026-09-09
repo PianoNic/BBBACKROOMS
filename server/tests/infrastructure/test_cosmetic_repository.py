@@ -1,5 +1,5 @@
-from app.db.models import CosmeticEquipped, CosmeticOwnership
 from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog
+from app.infrastructure.persistence.models import CosmeticEquipped, CosmeticOwnership
 from app.infrastructure.persistence.repositories.peewee_account_repository import PeeweeAccountRepository
 from app.infrastructure.persistence.repositories.peewee_cosmetic_repository import PeeweeCosmeticRepository
 from app.infrastructure.persistence.repositories.peewee_profile_repository import PeeweeProfileRepository

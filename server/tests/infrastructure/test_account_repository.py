@@ -1,4 +1,4 @@
-from app.db.models import AchievementUnlock, Account, CosmeticEquipped, CosmeticOwnership, Profile
+from app.infrastructure.persistence.models import AchievementUnlock, Account, CosmeticEquipped, CosmeticOwnership, Profile
 from app.infrastructure.persistence.repositories.peewee_account_repository import PeeweeAccountRepository
 from app.infrastructure.persistence.repositories.peewee_profile_repository import PeeweeProfileRepository
 

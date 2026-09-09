@@ -1,8 +1,9 @@
 """Persistence models (async-Peewee).
 
-Schema is owned by the migrations in `app/db/migrations/`; these models are the
-runtime query interface. Account is created on first OAuth login; Profile holds
-XP/coins; the cosmetic tables hold ownership + per-slot equipped state.
+Schema is owned by the migrations in `app/infrastructure/persistence/migrations/`;
+these models are the runtime query interface. Account is created on first OAuth
+login; Profile holds XP/coins; the cosmetic tables hold ownership + per-slot
+equipped state.
 """
 from __future__ import annotations
 
@@ -11,7 +12,9 @@ import datetime as _dt
 import peewee
 import peewee_async
 
-from app.db.engine import database
+from app.infrastructure.persistence.engine import database_engine
+
+database = database_engine.database
 
 
 def _utcnow() -> _dt.datetime:

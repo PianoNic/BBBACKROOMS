@@ -8,9 +8,9 @@ Runtime:
     `run_migrations()` applies all pending migrations on startup.
 
 Authoring (developer CLI), run from the `server/` directory:
-    python -m app.db.migrate create <name>   # generate a migration from models
-    python -m app.db.migrate run             # apply pending migrations
-    python -m app.db.migrate list            # show migration status
+    python -m app.infrastructure.persistence.migrate create <name>   # generate a migration from models
+    python -m app.infrastructure.persistence.migrate run             # apply pending migrations
+    python -m app.infrastructure.persistence.migrate list            # show migration status
 """
 from __future__ import annotations
 
@@ -20,8 +20,10 @@ import sys
 
 from peewee_migrate import Router
 
-from app.db import models  # noqa: F401 — ensure models are imported/registered
-from app.db.engine import database
+from app.infrastructure.persistence import models  # noqa: F401 — ensure models are imported/registered
+from app.infrastructure.persistence.engine import database_engine
+
+database = database_engine.database
 
 log = logging.getLogger("bbb.db")
 

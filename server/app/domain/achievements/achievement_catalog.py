@@ -1,9 +1,9 @@
 """Achievement catalog — server-authoritative, like the cosmetics catalog.
 
 Every achievement is evaluated from round counters at endgame
-(`services/achievements.py`). Coin bonuses are credited once per account on
-first unlock; guests see their earned achievements each round with
-`saved=false` and no coins.
+(`application/notifications/unlock_achievements_handler.py`). Coin bonuses are
+credited once per account on first unlock; guests see their earned
+achievements each round with `saved=false` and no coins.
 """
 from __future__ import annotations
 

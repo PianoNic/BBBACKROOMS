@@ -1,7 +1,7 @@
 # Protocol
 
 All gameplay packets are JSON over WebSocket. Source of truth:
-- Server: [`server/app/schemas/packets.py`](../server/app/schemas/packets.py) (Pydantic, discriminated union on `type`).
+- Server: [`server/app/application/dtos/packets.py`](../server/app/application/dtos/packets.py) (Pydantic, discriminated union on `type`).
 - Client: [`client/src/net/protocol.ts`](../client/src/net/protocol.ts).
 
 ## REST
@@ -56,7 +56,7 @@ All have `type: "<name>"`. Selection (full list in `packets.py`):
 | `webrtc_signal` | `to, kind, data` | Server relays offer/answer/ICE to a peer. |
 
 ## Server → Client packets
-Main ones (see `services/broadcast.py` and the lobby/world services):
+Main ones (see `game/broadcaster.py` and the handlers in `game/handlers/`):
 
 - `lobby_room_state` — full lobby snapshot on join.
 - `lobby_player_join` / `player_leave` — peer updates.
@@ -67,7 +67,7 @@ Main ones (see `services/broadcast.py` and the lobby/world services):
 - `players_state` — batched pose snapshot at `SNAPSHOT_HZ` (15): every player who
   moved since the last tick plus all teacher positions, in one packet. Moves are
   never relayed per-packet — that cost grew with the square of the lobby size.
-  See `services/snapshot.py`.
+  See `game/snapshot_loop.py`.
 - Other state snapshots from the game tick (doors, pickups, chairs).
 - `chat` — broadcast chat message.
 - `webrtc_signal` — relayed peer signal.

@@ -262,7 +262,7 @@ async def test_complete_oauth_login_blocked_creates_no_account(account_engine):
     result = await handler.handle(CompleteOAuthLoginCommand("google", "code", "st", oauth_token))
 
     assert result.status == "blocked"
-    from app.db.models import Account
+    from app.infrastructure.persistence.models import Account
     assert list(await Account.select().aio_execute()) == []
 
 
