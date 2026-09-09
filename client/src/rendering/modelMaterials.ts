@@ -1,27 +1,7 @@
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { AMBIENCE } from "./ambience";
 import { color3, maxLights } from "./babylon";
-
-function cloneAlbedoTexture(source: PBRMaterial): Texture | null {
-  const albedo = source.albedoTexture;
-  if (!albedo) return null;
-  const clone = albedo.clone();
-  if (!(clone instanceof Texture)) return null;
-
-  clone.coordinatesIndex = albedo.coordinatesIndex;
-  clone.wrapU = albedo.wrapU;
-  clone.wrapV = albedo.wrapV;
-  if (albedo instanceof Texture) {
-    clone.uScale = albedo.uScale;
-    clone.vScale = albedo.vScale;
-    clone.uOffset = albedo.uOffset;
-    clone.vOffset = albedo.vOffset;
-    clone.wAng = albedo.wAng;
-  }
-  return clone;
-}
 
 export class ModelMaterialFactory {
   private readonly cache = new WeakMap<PBRMaterial, StandardMaterial>();
@@ -31,9 +11,8 @@ export class ModelMaterialFactory {
     if (cached) return cached;
 
     const mat = new StandardMaterial(`${source.name}_std`, source.getScene());
-    const diffuseTexture = cloneAlbedoTexture(source);
-    if (diffuseTexture) {
-      mat.diffuseTexture = diffuseTexture;
+    if (source.albedoTexture) {
+      mat.diffuseTexture = source.albedoTexture;
     } else {
       mat.diffuseColor = source.albedoColor;
     }
