@@ -74,7 +74,11 @@ async function main(): Promise<void> {
   const audioListener = new THREE.AudioListener();
   await ensureCatalog();  // so equipped cosmetics resolve when seeding players
   const s = buildScene(init, ctx, net, audioListener, webcam);
-  installDevTools({ init, player: s.player, inspector: () => undefined });
+  installDevTools({
+    init, player: s.player,
+    teacherPositions: () => s.teachers.getMapPositions(),
+    inspector: () => undefined,
+  });
 
   const reviveState = { active: false };
   const gogglesState = { activeUntilMs: 0, cooldownUntilMs: 0 };

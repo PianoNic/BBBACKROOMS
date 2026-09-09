@@ -4,6 +4,7 @@ import type { Player } from "../gameplay/player";
 export type DevHandle = {
   init: WorldInit;
   player: Player;
+  teacherPositions: () => { x: number; z: number }[];
   inspector: (on: boolean) => void;
 };
 
