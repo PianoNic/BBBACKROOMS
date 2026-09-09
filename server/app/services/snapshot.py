@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import asyncio
 
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 from app.game.lobby_store import get_lobby
 from app.services.broadcast import broadcast
 

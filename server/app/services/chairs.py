@@ -11,7 +11,9 @@ import math
 import secrets
 import time as _time
 
-from app.domain.lobby import ChairProjectile, Lobby, PlayerConn
+from app.domain.lobbies.chair_projectile import ChairProjectile
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.services.noise import CHAIR_THROW_RADIUS, emit_noise

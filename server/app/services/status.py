@@ -1,7 +1,7 @@
 """Per-player debuff state: slow auras, slow puddles, status broadcast."""
 from __future__ import annotations
 
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 from app.domain.world.geom import within_radius, within_radius_xz
 
 EQUATION_AURA_RADIUS = 6.0
@@ -57,7 +57,7 @@ async def push_player_status(lobby: Lobby, now: float) -> None:
         if payload != p.last_status:
             p.last_status = payload
             try:
-                await p.ws.send_json({
+                await p.channel.send_json({
                     "type": "player_status",
                     "slowMs": slow_ms,
                     "slowFactor": slow_factor,

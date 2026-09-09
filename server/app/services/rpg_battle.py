@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import random
 
-from app.domain.lobby import Laptop
+from app.domain.lobbies.laptop import Laptop
 from app.services.laptop_challenges import RPG_BOSS_HP, RPG_PLAYER_HP
 
 ACTIONS = ("strike", "special", "heal")

@@ -16,7 +16,7 @@ import logging
 from app.db import accounts_repo
 from app.db.engine import db_available
 from app.domain.achievements.achievement_catalog import achievement_catalog
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 from app.services._helpers import send_safe
 from app.services.achievements import evaluate_round
 from app.services.leveling import level_from_total

@@ -5,7 +5,7 @@ import asyncio
 import random
 import time as _time
 
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 from app.game.lobby_store import get_lobby
 from app.services.abilities import apply_ability_events
 from app.services.broadcast import broadcast

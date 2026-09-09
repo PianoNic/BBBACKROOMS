@@ -13,8 +13,9 @@ from app.db import cosmetics_repo
 from app.db.accounts_repo import get_account
 from app.db.engine import db_available
 from app.domain.cosmetics.cosmetic_catalog import cosmetic_catalog
-from app.domain.lobby import PlayerConn
+from app.domain.lobbies.player_conn import PlayerConn
 from app.game.lobby_store import delete_lobby, get_lobby
+from app.infrastructure.realtime.web_socket_player_channel import WebSocketPlayerChannel
 from app.application.dtos.packets import ClientPacketAdapter
 from app.services.broadcast import broadcast
 from app.services.lobby_service import lobby_room_state
@@ -70,7 +71,10 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
             linked_account_id = acct.id
             if acct.display_name:
                 name = acct.display_name
-    me = PlayerConn(id=pid, name=name, color=color, ws=ws, account_id=linked_account_id)
+    me = PlayerConn(
+        id=pid, name=name, color=color, channel=WebSocketPlayerChannel(ws),
+        account_id=linked_account_id,
+    )
     # Seed cosmetics: the account's owned/equipped, or the free defaults.
     if linked_account_id is not None and db_available():
         try:

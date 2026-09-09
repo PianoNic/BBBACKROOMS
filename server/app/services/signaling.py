@@ -6,7 +6,8 @@ the browser; this module's only job is delivery.
 """
 from __future__ import annotations
 
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services.broadcast import broadcast
 
 
@@ -17,7 +18,7 @@ async def relay_signal(
     if target is None or target.id == sender.id:
         return
     try:
-        await target.ws.send_json({
+        await target.channel.send_json({
             "type": "webrtc_signal",
             "from": sender.id, "kind": kind, "data": data,
         })

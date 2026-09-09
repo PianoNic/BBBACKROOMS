@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 from app.game.lobby_registry import lobby_registry
 
 

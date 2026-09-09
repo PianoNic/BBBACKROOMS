@@ -7,7 +7,8 @@ soft-reload — they all land back in the same lobby's waiting room and
 the admin can press START again."""
 from __future__ import annotations
 
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services.broadcast import broadcast
 from app.services.lobby_service import lobby_room_state
 
@@ -67,7 +68,7 @@ async def handle_back_to_lobby(lobby: Lobby, me: PlayerConn) -> None:
     # client can drop the victory overlay + tear down its game scene.
     for p in list(lobby.conns.values()):
         try:
-            await p.ws.send_json(lobby_room_state(lobby, p.id))
+            await p.channel.send_json(lobby_room_state(lobby, p.id))
         except Exception:
             # Connection died — `ws` cleanup will handle removal.
             pass

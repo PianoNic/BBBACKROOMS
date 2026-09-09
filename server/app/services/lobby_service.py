@@ -10,7 +10,13 @@ import random
 import secrets
 import time as _time
 
-from app.domain.lobby import GAMES, Chair, Door, Hideout, Laptop, Lobby, Locker, PlayerConn
+from app.domain.lobbies.chair import Chair
+from app.domain.lobbies.door import Door
+from app.domain.lobbies.hideout import Hideout
+from app.domain.lobbies.laptop import Laptop
+from app.domain.lobbies.lobby import GAMES, Lobby
+from app.domain.lobbies.locker import Locker
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services.laptop_challenges import make_challenge
 from app.domain.world.generator import generate
 from app.domain.world.pickups import fill_lockers

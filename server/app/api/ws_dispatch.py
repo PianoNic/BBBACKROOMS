@@ -6,7 +6,9 @@ import secrets
 
 from fastapi import WebSocket
 
-from app.domain.lobby import ChatMessage, Lobby, PlayerConn
+from app.domain.lobbies.chat_message import ChatMessage
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.application.dtos.packets import (
     ChairDropPkt, ChairPickupPkt, ChairThrowPkt, ChatSendPkt, DoorTogglePkt,
     GamblePlayPkt, LobbySettingsPkt, LockerOpenPkt, MovePkt, SetAvatarPkt,
@@ -142,7 +144,7 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
         await asyncio.to_thread(start_lobby, lobby)
         for p in list(lobby.conns.values()):
             try:
-                await p.ws.send_json(world_init_payload(lobby, p))
+                await p.channel.send_json(world_init_payload(lobby, p))
             except Exception:
                 pass
         ensure_teacher_loop(lobby)
@@ -167,10 +169,10 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
         await try_complete_spots(lobby, me, require_interact=True)
         return
     if pkt.type == "gamble_open":
-        await handle_gamble_open(ws, lobby, me)
+        await handle_gamble_open(me.channel, lobby, me)
         return
     if isinstance(pkt, GamblePlayPkt):
-        await handle_gamble_play(ws, lobby, me, pkt.laptopId, pkt.choice)
+        await handle_gamble_play(me.channel, lobby, me, pkt.laptopId, pkt.choice)
         return
     if isinstance(pkt, ChairPickupPkt):
         await handle_pickup(lobby, me, pkt.chairId)
