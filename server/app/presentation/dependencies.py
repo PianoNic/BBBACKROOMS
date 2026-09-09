@@ -29,11 +29,16 @@ from app.application.queries.get_shop_state_query import GetShopStateHandler, Ge
 from app.application.queries.get_teacher_roster_query import GetTeacherRosterHandler, GetTeacherRosterQuery
 from app.application.queries.get_version_query import GetVersionHandler, GetVersionQuery
 from app.application.queries.list_lobbies_query import ListLobbiesHandler, ListLobbiesQuery
+from app.application.abstractions.database_availability import IDatabaseAvailability
+from app.application.abstractions.token_service import ITokenService
+from app.domain.accounts.account_repository import IAccountRepository
 from app.domain.achievements.achievement_catalog import achievement_catalog
-from app.domain.cosmetics.cosmetic_catalog import cosmetic_catalog
+from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog, cosmetic_catalog
+from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
 from app.domain.progression.level_calculator import LevelCalculator
 from app.domain.security.blocked_subject_policy import BlockedSubjectPolicy
 from app.domain.security.pkce_generator import PkceGenerator
+from app.game.game_core import GameCore, game_core
 from app.game.lobby_registry import lobby_registry
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.oauth.oauth_provider_factory import OAuthProviderFactory
@@ -51,11 +56,12 @@ from app.domain.world.teacher_roster import TEACHER_ROSTER
 
 _log = logging.getLogger("bbb.mediator")
 
+accounts = PeeweeAccountRepository(database_engine)
+cosmetics = PeeweeCosmeticRepository(database_engine, cosmetic_catalog)
+
 
 def build_mediator() -> Mediator:
-    accounts = PeeweeAccountRepository(database_engine)
     profiles = PeeweeProfileRepository(database_engine)
-    cosmetics = PeeweeCosmeticRepository(database_engine, cosmetic_catalog)
     achievements = PeeweeAchievementRepository(database_engine)
     provider_factory = OAuthProviderFactory(settings)
     blocked_subject_policy = BlockedSubjectPolicy.from_raw(settings.blocked_subjects)
@@ -139,3 +145,27 @@ _mediator = build_mediator()
 
 def get_mediator() -> Mediator:
     return _mediator
+
+
+def get_game_core() -> GameCore:
+    return game_core
+
+
+def get_token_service() -> ITokenService:
+    return token_service
+
+
+def get_account_repository() -> IAccountRepository:
+    return accounts
+
+
+def get_cosmetic_repository() -> ICosmeticRepository:
+    return cosmetics
+
+
+def get_cosmetic_catalog() -> CosmeticCatalog:
+    return cosmetic_catalog
+
+
+def get_database_availability() -> IDatabaseAvailability:
+    return database_engine

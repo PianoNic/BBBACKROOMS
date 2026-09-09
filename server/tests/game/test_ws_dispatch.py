@@ -13,15 +13,18 @@ import pathlib
 import pytest
 from pydantic import ValidationError
 
-from app.api import ws
-from app.api.ws_dispatch import dispatch
 from app.application.dtos.packets import ClientPacketAdapter, PackAnnouncePkt
+from app.game.game_core import game_core
+from app.presentation.websocket import game_web_socket_endpoint as ws
 from app.services.lobby_service import lobby_room_state
 
-from .conftest import add_player, make_lobby
+from ..conftest import add_player, make_lobby
 
-DISPATCH = pathlib.Path(__file__).resolve().parents[1] / "app" / "api" / "ws_dispatch.py"
-WS_MODULE = pathlib.Path(__file__).resolve().parents[1] / "app" / "api" / "ws.py"
+DISPATCH = pathlib.Path(__file__).resolve().parents[2] / "app" / "game" / "packet_dispatcher.py"
+WS_MODULE = (
+    pathlib.Path(__file__).resolve().parents[2]
+    / "app" / "presentation" / "websocket" / "game_web_socket_endpoint.py"
+)
 
 
 def _packet_branches() -> list[ast.If]:
@@ -93,7 +96,7 @@ async def test_pack_announce_ignored_from_non_host():
     lobby.admin_id = host.id
     pkt = PackAnnouncePkt(type="pack_announce", pack_id="foo-pack", pack_hash="a" * 64)
 
-    await dispatch(other.channel, lobby, other, pkt)
+    await game_core.dispatcher.dispatch(other.channel, lobby, other, pkt)
 
     assert lobby.pack_id is None
     assert lobby.pack_hash is None
@@ -105,7 +108,7 @@ async def test_pack_announce_from_host_updates_lobby_and_room_state():
     lobby.admin_id = host.id
     pkt = PackAnnouncePkt(type="pack_announce", pack_id="foo-pack", pack_hash="b" * 64)
 
-    await dispatch(host.channel, lobby, host, pkt)
+    await game_core.dispatcher.dispatch(host.channel, lobby, host, pkt)
 
     assert lobby.pack_id == "foo-pack"
     assert lobby.pack_hash == "b" * 64

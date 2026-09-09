@@ -1,5 +1,5 @@
 """Delayed-effect coroutines + per-throw tuning for teacher abilities.
-Kept separate from `abilities.py` so the main dispatch stays compact."""
+Kept separate from `ability_handler.py` so the main dispatch stays compact."""
 from __future__ import annotations
 
 import asyncio
@@ -51,35 +51,34 @@ PUDDLES: dict[str, tuple[float, float, float, int]] = {
 CIRCUIT_STUN_DURATION = 1.4
 
 
-async def delayed_stun(
-    lobby: Lobby, player_id: str, duration: float, delay: float,
-) -> None:
-    await asyncio.sleep(delay)
-    p = lobby.conns.get(player_id)
-    if p is None or p.id in lobby.dead or p.id in lobby.extracted:
-        return
-    p.stun_until = _time.monotonic() + duration
+class AbilityEffects:
+    async def delayed_stun(
+        self, lobby: Lobby, player_id: str, duration: float, delay: float,
+    ) -> None:
+        await asyncio.sleep(delay)
+        p = lobby.conns.get(player_id)
+        if p is None or p.id in lobby.dead or p.id in lobby.extracted:
+            return
+        p.stun_until = _time.monotonic() + duration
 
+    async def delayed_slow(
+        self, lobby: Lobby, player_id: str, factor: float, duration: float, delay: float,
+    ) -> None:
+        await asyncio.sleep(delay)
+        p = lobby.conns.get(player_id)
+        if p is None or p.id in lobby.dead or p.id in lobby.extracted:
+            return
+        now = _time.monotonic()
+        p.slow_until = max(p.slow_until, now + duration)
+        if p.slow_factor > factor:
+            p.slow_factor = factor
 
-async def delayed_slow(
-    lobby: Lobby, player_id: str, factor: float, duration: float, delay: float,
-) -> None:
-    await asyncio.sleep(delay)
-    p = lobby.conns.get(player_id)
-    if p is None or p.id in lobby.dead or p.id in lobby.extracted:
-        return
-    now = _time.monotonic()
-    p.slow_until = max(p.slow_until, now + duration)
-    if p.slow_factor > factor:
-        p.slow_factor = factor
-
-
-async def delayed_puddle(
-    lobby: Lobby, x: float, z: float, radius: float,
-    duration: float, factor: float, delay: float,
-) -> None:
-    await asyncio.sleep(delay)
-    if lobby.status != "running":
-        return
-    until = _time.monotonic() + duration
-    lobby.potion_puddles.append((x, z, radius, until, factor))
+    async def delayed_puddle(
+        self, lobby: Lobby, x: float, z: float, radius: float,
+        duration: float, factor: float, delay: float,
+    ) -> None:
+        await asyncio.sleep(delay)
+        if lobby.status != "running":
+            return
+        until = _time.monotonic() + duration
+        lobby.potion_puddles.append((x, z, radius, until, factor))
