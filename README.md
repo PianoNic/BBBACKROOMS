@@ -6,6 +6,9 @@
   Backrooms-Horror in einer Schule in Baden. Tasks lösen, den Lehrern ausweichen, in der Aula raus.
 </p>
 <p align="center">
+  <sub>Privates Hobbyprojekt ohne Verbindung zu einer realen Schule. Alle Lehrpersonen und Namen sind frei erfunden.</sub>
+</p>
+<p align="center">
   <a href="https://github.com/PianoNic/BackroomsBaden"><img src="https://badgetrack.pianonic.ch/badge?tag=backroomsbaden&label=visits&color=c9a227&style=flat" alt="visits" /></a>
   <a href="docs/development.md"><img src="https://img.shields.io/badge/Self--Host-Instructions-c9a227.svg" alt="Self-hosting" /></a>
   <a href="docs/README.md"><img src="https://img.shields.io/badge/Documentation-Docs-c9a227.svg" alt="Documentation" /></a>
