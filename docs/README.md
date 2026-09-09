@@ -6,6 +6,7 @@
 - [Protocol](protocol.md) — REST, WebSocket, WebRTC signaling.
 - [Worldgen](worldgen.md) — rooms, props, teacher AI.
 - [Materials](materials.md) — per-room-archetype PBR material set, client-side room inference, texture tiers.
+- [Models](models.md) — realistic CC0 PBR prop models, the fetch pipeline, footprint sync test, tier behaviour.
 - [Items](items.md) — pickups, desk items, chair, laptops.
 - [Persistence](persistence.md) — optional accounts, XP/coins, cosmetics: Postgres + migrations.
 - [Accounts & OAuth](accounts.md) — optional Google/Microsoft login, session, setup.

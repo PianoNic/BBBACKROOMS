@@ -51,8 +51,8 @@ PROP_SPECS: dict[str, PropSpec] = {
     "urinal":            PropSpec((1, 1), _WALL),
     # toilet_stall: shell 1.0 x 1.0 → 2 x 2
     "toilet_stall":      PropSpec((2, 2), _WALL),
-    # bookshelf: body 1.2 x 0.35 → 3 x 1
-    "bookshelf":         PropSpec((3, 1), _WALL),
+    # bookshelf: Shelf_01 (Poly Haven) 1.003 x 0.257 → 2 x 1
+    "bookshelf":         PropSpec((2, 1), _WALL),
     # cupboard: body 1.2 x 0.5 → 3 x 1
     "cupboard":          PropSpec((3, 1), _WALL),
     # closet: body 0.8 x 0.45 → 2 x 1
@@ -102,8 +102,8 @@ PROP_SPECS: dict[str, PropSpec] = {
     # plant: foliage r=0.32 (diam 0.64) → 2 x 2
     "plant":             PropSpec((2, 2), _CORNER),
 
-    # side_table: small 1m x 1m table, offers a layer for stacking props.
-    "side_table":        PropSpec((2, 2), _CENTER, offers_layer="table_top"),
+    # side_table: side_table_01 (Poly Haven) 0.550 x 0.450, offers a layer for stacking props.
+    "side_table":        PropSpec((2, 1), _CENTER, offers_layer="table_top"),
     # printer: 0.55 x 0.5 body, stacks on a side_table's table_top layer.
     "printer":           PropSpec((1, 1), _ONTOP, requires_layer="table_top"),
     # map: wall poster (world / Switzerland / periodic). 0.85m wide.
@@ -149,7 +149,8 @@ PROP_SPECS: dict[str, PropSpec] = {
     "emergency_shower":  PropSpec((2, 1), _WALL),
 
     # === Floor: no wall constraint, can land in walking lanes ===
-    "chair":             PropSpec((1, 1), _FLOOR),
+    # chair: SchoolChair_01 (Poly Haven) 0.566 x 0.675 → 2 x 2
+    "chair":             PropSpec((2, 2), _FLOOR),
     "trash_can":         PropSpec((1, 1), _FLOOR),
     "recycle_bin":       PropSpec((1, 1), _FLOOR),
     "mop_bucket":        PropSpec((1, 1), _FLOOR),

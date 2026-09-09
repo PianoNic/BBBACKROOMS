@@ -92,9 +92,10 @@ export function buildSettingsList(): SettingsList {
   root.appendChild(rangeRow("Field of view", "fov", 60, 110, 1, (v) => `${v}°`));
   root.appendChild(rangeRow("Pixelation", "pixelation", 1, 8, 1, (v) => `${v}x`));
   root.appendChild(selectRow("Graphics", "graphicsTier", [
-    { label: "Niedrig", value: "niedrig" },
-    { label: "Mittel",  value: "mittel" },
-    { label: "Hoch",    value: "hoch" },
+    { label: "Niedrig",     value: "niedrig" },
+    { label: "Mittel",      value: "mittel" },
+    { label: "Hoch",        value: "hoch" },
+    { label: "Realistisch", value: "realistisch" },
   ]));
   root.appendChild(el("div", "set-note", "Surface materials update on the next round."));
   if (isGraphicsTierAutoSelected() && isIntegratedGpu()) {

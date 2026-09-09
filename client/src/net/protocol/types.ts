@@ -61,6 +61,7 @@ export type PropType =
   | "chalkboard"
   | "coat_rack"
   | "microscope"
+  | "bunsen_burner"
   | "aquarium" | "skeleton" | "piano" | "water_dispenser"
   | "trophy_case" | "ball_rack" | "easel";
 

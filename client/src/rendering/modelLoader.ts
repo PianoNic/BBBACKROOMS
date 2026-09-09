@@ -1,0 +1,63 @@
+import "@babylonjs/loaders/glTF/2.0";
+import type { Scene } from "@babylonjs/core/scene";
+import type { AssetContainer } from "@babylonjs/core/assetContainer";
+import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { MeshoptCompression } from "@babylonjs/core/Meshes/Compression/meshoptCompression";
+import type { PropType } from "../net/protocol";
+import { MODEL_PROPS } from "../world/modelProps";
+
+MeshoptCompression.Configuration = { decoder: { url: "/decoders/meshopt_decoder.js" } };
+
+export class ModelLibrary {
+  private readonly pending = new Map<PropType, Promise<AssetContainer | null>>();
+  private readonly resolved = new Map<PropType, AssetContainer | null>();
+
+  constructor(private readonly scene: Scene) {}
+
+  load(type: PropType): Promise<AssetContainer | null> {
+    const cached = this.pending.get(type);
+    if (cached) return cached;
+
+    const spec = MODEL_PROPS[type];
+    const promise = !spec
+      ? Promise.resolve(null)
+      : LoadAssetContainerAsync(`/models/${spec.model}.glb`, this.scene)
+        .catch((err: unknown) => {
+          console.warn(`ModelLibrary: failed to load "${type}" (${spec.model})`, err);
+          return null;
+        });
+
+    const tracked = promise.then((container) => {
+      this.resolved.set(type, container);
+      return container;
+    });
+    this.pending.set(type, tracked);
+    return tracked;
+  }
+
+  get(type: PropType): AssetContainer | null {
+    return this.resolved.get(type) ?? null;
+  }
+
+  async loadBundle(
+    types: readonly PropType[], onProgress?: (done: number, total: number) => void,
+  ): Promise<void> {
+    const total = types.length;
+    let done = 0;
+    onProgress?.(done, total);
+    await Promise.all(types.map((type) => this.load(type).then(() => {
+      done++;
+      onProgress?.(done, total);
+    })));
+  }
+}
+
+let current: ModelLibrary | null = null;
+
+export function setActiveModelLibrary(lib: ModelLibrary | null): void {
+  current = lib;
+}
+
+export function activeModelLibrary(): ModelLibrary | null {
+  return current;
+}

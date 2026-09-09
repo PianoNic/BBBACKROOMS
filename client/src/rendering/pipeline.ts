@@ -241,10 +241,12 @@ export class Ambience {
         ? nativeHeight / NIEDRIG_MAX_INTERNAL_HEIGHT
         : 1;
       scale = Math.max(pixelationScale, capScale);
+    } else if (this.tier === "realistisch") {
+      scale = 1.0;
     }
     this.canvas.style.width = `${window.innerWidth}px`;
     this.canvas.style.height = `${window.innerHeight}px`;
-    this.canvas.style.imageRendering = "pixelated";
+    this.canvas.style.imageRendering = this.tier === "realistisch" ? "auto" : "pixelated";
     this.engine.setHardwareScalingLevel(scale);
     this.engine.resize(true);
   };
