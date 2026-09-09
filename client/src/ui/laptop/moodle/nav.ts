@@ -1,5 +1,5 @@
-/** Top navbar for the Moodle (BBB) theme.
- *  Mirrors moodle.bbbackrooms.ch — white bar, BBB logo on the left, dark nav
+/** Top navbar for the Moodle theme.
+ *  Mirrors moodle.bbbackrooms.ch — white bar, Moodle wordmark on the left, dark nav
  *  items with a red underline on the active one, and bell / chat / avatar
  *  icons on the right. */
 import { el } from "../../dom";
@@ -17,11 +17,7 @@ export function buildMoodleNav(active: NavKey): HTMLDivElement {
   const nav = el<HTMLDivElement>("div", "moodle-nav");
 
   const left = el<HTMLDivElement>("div", "moodle-nav-left");
-  const logo = document.createElement("img");
-  logo.className = "moodle-logo-img";
-  logo.src = "/bbb-logo.jpg";
-  logo.alt = "BBB";
-  left.appendChild(logo);
+  left.appendChild(el("span", "moodle-logo-img", "Moodle"));
   nav.appendChild(left);
 
   const center = el<HTMLDivElement>("div", "moodle-nav-center");
@@ -46,7 +42,7 @@ export function buildMoodleNav(active: NavKey): HTMLDivElement {
   right.appendChild(chat);
 
   const user = el<HTMLDivElement>("div", "moodle-user");
-  user.appendChild(el("span", "moodle-user-initials", "NE"));
+  user.appendChild(el("span", "moodle-user-initials", "HU"));
   right.appendChild(user);
   nav.appendChild(right);
 

@@ -1,4 +1,4 @@
-/** BBB Quest — turn-based RPG against a teacher boss. The server resolves
+/** Schul-Quest — turn-based RPG against a teacher boss. The server resolves
  *  every turn (gamble_play with strike/special/heal); this app only renders
  *  the returned battle snapshot: HP bars, hit shakes and a combat log. */
 import type { LaptopApp } from "../app";
@@ -66,7 +66,7 @@ export class RpgBattleApp implements LaptopApp {
     this.el = el<HTMLDivElement>("div", "rpg-app");
 
     const header = el<HTMLDivElement>("div", "rpg-header");
-    header.appendChild(el("div", "rpg-title", "⚔️ BBB QUEST"));
+    header.appendChild(el("div", "rpg-title", "⚔️ SCHUL-QUEST"));
     header.appendChild(el(
       "div", "rpg-subtitle", `Besiege ${this.bossName} und schalte den Laptop frei!`,
     ));

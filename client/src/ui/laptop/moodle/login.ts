@@ -1,5 +1,5 @@
 /** Moodle login splash shown before every Moodle challenge — mirrors
- *  moodle.bbbackrooms.ch: campus backdrop, white card with the BBB logo, the
+ *  moodle.bbbackrooms.ch: campus backdrop, white card with the Moodle wordmark, the
  *  expired-session notice and a prefilled login form. One click on
  *  "Anmelden" fakes a keystroke burst, then hands over to the app. */
 import { el } from "../../dom";
@@ -9,11 +9,7 @@ export function buildMoodleLogin(onLogin: () => void): HTMLDivElement {
   const wrap = el<HTMLDivElement>("div", "moodle-login");
   const card = el<HTMLDivElement>("div", "moodle-login-card");
 
-  const logo = document.createElement("img");
-  logo.className = "moodle-login-logo";
-  logo.src = "/bbb-logo.jpg";
-  logo.alt = "BBB";
-  card.appendChild(logo);
+  card.appendChild(el("div", "moodle-login-logo", "Moodle"));
 
   card.appendChild(el(
     "div", "moodle-login-alert",
