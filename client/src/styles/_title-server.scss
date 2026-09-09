@@ -120,6 +120,15 @@
       align-self: center;
       &:hover { background: rgba(200,162,90,0.15); }
     }
+    .delete-account {
+      background: transparent; color: $danger;
+      font-family: $font-mono; font-size: 14px;
+      letter-spacing: 0.18em; padding: 5px 12px; cursor: pointer;
+      text-transform: uppercase; border: none;
+      box-shadow: inset 0 0 0 1px $danger;
+      align-self: center;
+      &:hover { background: rgba(255,102,102,0.15); }
+    }
 
     // 3D voxel cube — proportions match in-game player (0.6 × 1.7 × 0.6).
     .p-avatar-stage {

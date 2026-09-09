@@ -6,24 +6,23 @@ All functions assume the database is connected (callers check
 from __future__ import annotations
 
 from app.db.engine import database
-from app.db.models import Account, Profile
+from app.db.models import Account, AchievementUnlock, CosmeticEquipped, CosmeticOwnership, Profile
 from app.services.leveling import level_from_total
 
 
-async def upsert_account(provider: str, subject: str, email: str | None, name: str | None) -> Account:
-    """Create the account for (provider, subject) or update its email/name."""
+async def upsert_account(provider: str, subject: str, name: str | None) -> Account:
+    """Create the account for (provider, subject) or update its display name."""
     async with database.aio_atomic():
         try:
             acct = await Account.aio_get(
                 (Account.provider == provider) & (Account.provider_subject == subject)
             )
-            acct.email = email
             acct.display_name = name
             await acct.aio_save()
         except Account.DoesNotExist:
             acct = await Account.aio_create(
                 provider=provider, provider_subject=subject,
-                email=email, display_name=name,
+                display_name=name,
             )
         return acct
 
@@ -90,10 +89,19 @@ async def account_view(account_id: int) -> dict | None:
         "accountId": acct.id,
         "provider": acct.provider,
         "displayName": acct.display_name,
-        "email": acct.email,
         "xp": prof.xp,
         "coins": prof.coins,
         "level": level,
         "xpIntoLevel": xp_into,
         "xpForNextLevel": xp_for_next,
     }
+
+
+async def delete_account(account_id: int) -> bool:
+    async with database.aio_atomic():
+        await Profile.delete().where(Profile.account == account_id).aio_execute()
+        await CosmeticOwnership.delete().where(CosmeticOwnership.account == account_id).aio_execute()
+        await CosmeticEquipped.delete().where(CosmeticEquipped.account == account_id).aio_execute()
+        await AchievementUnlock.delete().where(AchievementUnlock.account == account_id).aio_execute()
+        removed = await Account.delete().where(Account.id == account_id).aio_execute()
+    return removed > 0
