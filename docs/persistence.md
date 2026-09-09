@@ -16,9 +16,23 @@ Code lives in [`server/app/db/`](../server/app/db/):
 | File | Purpose |
 | --- | --- |
 | `engine.py` | The async-Peewee `database` object + best-effort `connect()`/`disconnect()`. |
-| `models.py` | ORM models: `Account`, `Profile`, `CosmeticOwnership`, `CosmeticEquipped`. |
+| `models.py` | ORM models: `Account`, `Profile`, `CosmeticOwnership`, `CosmeticEquipped`, `AchievementUnlock`. |
 | `migrate.py` | Migration runner + authoring CLI. |
 | `migrations/` | Generated migration files (committed to the repo). |
+
+## What the `account` row stores
+| Column | Notes |
+| --- | --- |
+| `id` | Surrogate key. |
+| `provider` | `google` \| `microsoft`. |
+| `provider_subject` | OIDC `sub`; `(provider, provider_subject)` is the unique natural key. |
+| `display_name` | Provider display name; the default in-game player name. |
+| `created_at` | First login. |
+
+No email address is requested or stored (the OIDC scope is `openid profile`).
+Progress lives in `profile`, `cosmetic_ownership`, `cosmetic_equipped` and
+`achievement_unlock`, all `ON DELETE CASCADE` on `account`. `DELETE /auth/account`
+removes the account and all of it — see [accounts.md](accounts.md).
 
 ## Configuration (env vars)
 | Variable | Default | Notes |

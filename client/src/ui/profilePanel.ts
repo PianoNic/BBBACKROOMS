@@ -1,6 +1,7 @@
 /** Right-side profile column on the server-browser screen.
     Owns the avatar cube, name input, and avatar-upload button. */
 import { el } from "./dom";
+import { deleteAccount, getMe } from "../net/auth";
 
 const AVATAR_KEY = "bbb_avatar";
 const NAME_KEY = "bbb_name";
@@ -122,5 +123,18 @@ export function buildProfilePanel(): HTMLElement {
     await repaint(dataUrl);
   };
   wrap.append(changeBtn, fileInput);
+
+  const deleteBtn = el<HTMLButtonElement>("button", "menu-btn delete-account", "KONTO LÖSCHEN");
+  deleteBtn.type = "button";
+  deleteBtn.hidden = true;
+  deleteBtn.onclick = async () => {
+    if (!confirm("Konto und aller Fortschritt (XP, Coins, Cosmetics, Achievements) werden endgültig gelöscht. Fortfahren?")) return;
+    deleteBtn.disabled = true;
+    await deleteAccount();
+    location.reload();
+  };
+  wrap.appendChild(deleteBtn);
+  void getMe().then((acc) => { deleteBtn.hidden = acc === null; });
+
   return wrap;
 }

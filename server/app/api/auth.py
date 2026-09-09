@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import secrets
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.auth import oauth, tokens
@@ -87,9 +87,7 @@ async def callback(provider: str, request: Request, code: str | None = None, sta
         info = await oauth.fetch_userinfo(p, token_resp["access_token"])
         if not info["sub"]:
             return resp_fail
-        acct = await accounts_repo.upsert_account(
-            provider, info["sub"], info["email"], info["name"],
-        )
+        acct = await accounts_repo.upsert_account(provider, info["sub"], info["name"])
         await accounts_repo.ensure_profile(acct.id)
     except Exception as exc:  # noqa: BLE001
         log.warning("OAuth callback failed (%s): %s", provider, exc)
@@ -111,6 +109,19 @@ async def me(request: Request):
 @router.post("/logout")
 async def logout():
     resp = JSONResponse({"ok": True})
+    resp.delete_cookie(SESSION_COOKIE, path="/")
+    return resp
+
+
+@router.delete("/account")
+async def delete_account(request: Request):
+    account_id = tokens.read_account_id(request.cookies.get(SESSION_COOKIE), "session")
+    if account_id is None:
+        return JSONResponse({"error": "not authenticated"}, status_code=401)
+    if not db_available():
+        return JSONResponse({"error": "database unavailable"}, status_code=503)
+    await accounts_repo.delete_account(account_id)
+    resp = Response(status_code=204)
     resp.delete_cookie(SESSION_COOKIE, path="/")
     return resp
 

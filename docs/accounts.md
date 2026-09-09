@@ -21,6 +21,7 @@ everything else works unchanged.
 | `GET /auth/{provider}/callback` | Provider returns here; sets the session cookie. |
 | `GET /auth/me` | Current account + progress, or `{account: null}`. |
 | `POST /auth/logout` | Clear the session cookie. |
+| `DELETE /auth/account` | Delete the account and all its progress; clears the session cookie. |
 | `GET /auth/ws-ticket` | Short-lived token to authenticate the WebSocket. |
 
 ## Configuration
@@ -48,7 +49,7 @@ provider.
 ### Google (Google Cloud Console)
 1. Sign in to <https://console.cloud.google.com> and pick/create a project.
 2. **Google Auth platform → Branding**: set app name + support email; **Audience**: External; add a contact email.
-3. **Data Access**: add scopes `openid`, `email`, `profile` (non-sensitive — no verification needed).
+3. **Data Access**: add scopes `openid`, `profile` (non-sensitive — no verification needed).
 4. **Audience → Test users**: add your own email while in "Testing".
 5. **Clients → Create client → Web application**: add the Google redirect URI above.
 6. Copy the **Client ID** and **Client secret** (secret shown once) → `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
@@ -59,7 +60,7 @@ provider.
 3. Add a **Web** redirect URI (the Microsoft one above) and **Register**.
 4. Copy **Application (client) ID** → `MICROSOFT_CLIENT_ID`.
 5. **Certificates & secrets → New client secret**: copy the secret **Value** (shown once) → `MICROSOFT_CLIENT_SECRET`.
-6. **API permissions**: Microsoft Graph delegated `openid`, `email`, `profile`, `User.Read` (default).
+6. **API permissions**: Microsoft Graph delegated `openid`, `profile`, `User.Read` (default).
 
 > The sign-in steps and the one-time secret reveal require you to be logged into
 > your own Google/Microsoft account — there's no way around that. The rest is
@@ -70,3 +71,18 @@ provider.
 - Session cookies are `HttpOnly`, `SameSite=Lax`; set `SESSION_COOKIE_SECURE=true` on HTTPS.
 - Accounts are keyed by `(provider, provider_subject)` — the same person on Google
   and Microsoft is two accounts (no auto-merge in v1).
+- The OIDC request asks only for `openid profile`; no email address is ever requested or stored.
+- The `account` row holds only `id`, `provider`, `provider_subject`, `display_name`, `created_at` — `display_name` is the default in-game name. Everything else lives in `profile` / `cosmetic_*` / `achievement_unlock`.
+
+## Deleting an account
+The profile panel on the server-browser screen shows a **KONTO LÖSCHEN** button
+while signed in. It calls `DELETE /auth/account`, which removes the `account`
+row together with its `profile`, `cosmetic_ownership`, `cosmetic_equipped` and
+`achievement_unlock` rows, then clears the session cookie. Signing in again
+creates a brand-new, empty account.
+
+By hand on the database:
+
+```sql
+DELETE FROM account WHERE provider = 'google' AND provider_subject = '<sub>';
+```

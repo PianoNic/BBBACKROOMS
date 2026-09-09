@@ -10,7 +10,6 @@ export type Account = {
   accountId: number;
   provider: string;
   displayName: string | null;
-  email: string | null;
   xp: number;
   coins: number;
   level: number;
@@ -51,6 +50,15 @@ export async function logout(): Promise<void> {
     await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
   } catch {
     /* ignore — UI re-renders as logged out regardless */
+  }
+}
+
+export async function deleteAccount(): Promise<boolean> {
+  try {
+    const r = await fetch(`${API}/auth/account`, { method: "DELETE", credentials: "include" });
+    return r.ok;
+  } catch {
+    return false;
   }
 }
 
