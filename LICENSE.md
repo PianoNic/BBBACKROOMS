@@ -1,4 +1,4 @@
-Required Notice: Copyright PianoNic (https://github.com/PianoNic/BBBACKROOMS)
+Required Notice: Copyright PianoNic (https://github.com/PianoNic/BackroomsBaden)
 
 # PolyForm Noncommercial License 1.0.0
 

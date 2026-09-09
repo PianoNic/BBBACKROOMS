@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "bbbackrooms-client",
+      "name": "backrooms-baden-client",
       "dependencies": {
         "lucide": "^1.14.0",
         "stats.js": "^0.17.0",

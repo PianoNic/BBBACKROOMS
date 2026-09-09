@@ -18,7 +18,7 @@ services:
       start_period: 10s
 
   app:
-    image: ghcr.io/pianonic/bbbackrooms:latest
+    image: ghcr.io/pianonic/backroomsbaden:latest
     restart: unless-stopped
     ports:
       - "${PORT:-5367}:8000"
