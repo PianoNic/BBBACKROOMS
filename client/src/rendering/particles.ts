@@ -55,15 +55,15 @@ export class AmbienceParticles {
   private dust: IParticleSystem | null = null;
   private dustOrigin = new Vector3();
   private lastPos = new Vector3();
-  private puff: IParticleSystem;
+  private puff: IParticleSystem | null = null;
   private tier: GraphicsTier;
   private unsubscribe: () => void;
 
   constructor(scene: Scene) {
     this.scene = scene;
     this.dotTexture = buildDotTexture(scene);
-    this.puff = this.buildPuffSystem();
     this.tier = getSettings().graphicsTier;
+    this.rebuildPuff(this.tier);
     this.rebuildDust(this.tier);
     this.unsubscribe = onSettingsChange((s) => {
       if (s.graphicsTier !== this.tier) this.setTier(s.graphicsTier);
@@ -125,6 +125,15 @@ export class AmbienceParticles {
     return sys;
   }
 
+  private rebuildPuff(tier: GraphicsTier): void {
+    if (this.puff) {
+      this.puff.dispose();
+      this.puff = null;
+    }
+    if (tierFeatures(tier).particleScale <= 0) return;
+    this.puff = this.buildPuffSystem();
+  }
+
   private rebuildDust(tier: GraphicsTier): void {
     if (this.dust) {
       this.dust.dispose();
@@ -144,6 +153,7 @@ export class AmbienceParticles {
   }
 
   puffAt(x: number, y: number, z: number): void {
+    if (!this.puff) return;
     (this.puff.emitter as Vector3).set(x, y, z);
     this.puff.manualEmitCount = AMBIENCE.particles.puffCount;
     this.puff.start();
@@ -152,12 +162,13 @@ export class AmbienceParticles {
   setTier(tier: GraphicsTier): void {
     this.tier = tier;
     this.rebuildDust(tier);
+    this.rebuildPuff(tier);
   }
 
   dispose(): void {
     this.unsubscribe();
     if (this.dust) this.dust.dispose();
-    this.puff.dispose();
+    if (this.puff) this.puff.dispose();
     this.dotTexture.dispose();
   }
 }

@@ -132,3 +132,6 @@ client/test-results/
 client/playwright-report/
 client/blob-report/
 client/playwright/.cache/
+
+# Texture pipeline cache
+tools/.texture-cache/

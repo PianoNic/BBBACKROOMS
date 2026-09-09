@@ -11,13 +11,14 @@ export type TierFeatures = {
   fxaa: boolean;
   particleScale: number;
   glow: boolean;
+  glowRatio: number;
   pbrSurfaces: boolean;
 };
 
 export const TIERS: Record<GraphicsTier, TierFeatures> = {
-  niedrig: { shadowLights: 0, shadowMapSize: 256, ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, pbrSurfaces: false },
-  mittel:  { shadowLights: 2, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 1,   glow: true,  pbrSurfaces: true  },
-  hoch:    { shadowLights: 4, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  pbrSurfaces: true  },
+  niedrig: { shadowLights: 0, shadowMapSize: 256, ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: false },
+  mittel:  { shadowLights: 1, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 0.5, glow: true,  glowRatio: 0.5, pbrSurfaces: true  },
+  hoch:    { shadowLights: 4, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true  },
 };
 
 export function tierFeatures(tier: GraphicsTier): TierFeatures {
@@ -75,17 +76,21 @@ export const AMBIENCE = {
   },
   autoDrop: {
     frameTimeMs: 33,
-    holdSeconds: 5,
+    holdSeconds: 1.5,
   },
   tube: {
     color: 0xfff2cf,
     baseIntensity: 3.4,
     range: 12,
     poolSize: 6,
-    spotAngle: 2.3,
+    spotAngle: 1.7,
     spotExponent: 1,
     shadowDarkness: 0.32,
     shadowBlurKernel: 16,
+    shadowMinZ: 0.15,
+    shadowMaxZ: 13,
+    shadowBias: 0.00005,
+    shadowNormalBias: 0.02,
     emissiveFloor: 0.05,
     blackoutChancePerSecond: 0.01,
     blackoutMinS: 1.0,
@@ -124,9 +129,11 @@ export const AMBIENCE = {
     ceilingMetallic: 0,
     grimeScale: 3.5,
     grimeStrength: 0.55,
-    directIntensity: 1,
+    directIntensity: Math.PI,
     environmentIntensity: 0.35,
     bathroomFloorRoughness: 0.18,
+    propSpecularColor: 0x0a0a0a,
+    propSpecularPower: 16,
   },
   cues: {
     heartPulseAmount: 0.09,

@@ -39,7 +39,7 @@ Vollständige Liste: [items.md](items.md).
 | **X** | Ping — markiert eine Stelle für das Team |
 
 ## Grafik
-Drei Stufen unter Optionen → Grafik: **Niedrig** (keine Schatten, kein SSAO/Glow, keine Volumetrics — läuft auf schwacher Hardware), **Mittel** (Standard, mit Schatten, SSAO, Glow und PBR-Oberflächen) und **Hoch** (zusätzlich Volumetric-Licht und mehr Staubpartikel). Ein PBR-Oberflächenwechsel wirkt erst in der nächsten Runde. Bricht die Framezeit dauerhaft ein, schaltet das Spiel automatisch einmalig auf Niedrig zurück und informiert per Banner — danach kann man die Stufe wieder frei wählen.
+Drei Stufen unter Optionen → Grafik: **Niedrig** (keine Schatten, kein SSAO/Glow, keine Volumetrics — läuft auf schwacher Hardware, interne Auflösung auf maximal 720p begrenzt), **Mittel** (Standard, mit einem Schatten-Licht, SSAO in Viertelauflösung, Glow in halber Auflösung und PBR-Oberflächen) und **Hoch** (zusätzlich Volumetric-Licht, volle Glow-Auflösung und mehr Staubpartikel). Neuinstallationen auf einer erkannten integrierten Grafikkarte starten automatisch auf Niedrig, alle anderen auf Mittel; wer die Stufe einmal selbst wählt, behält diese Wahl. Ein PBR-Oberflächenwechsel wirkt erst in der nächsten Runde. Bricht die Framezeit für rund 2 Sekunden dauerhaft ein, schaltet das Spiel automatisch einmalig auf Niedrig zurück und informiert per Banner — danach kann man die Stufe wieder frei wählen.
 
 ## Tips
 - Bleibt zusammen — Wiederbeleben ist zuverlässiger als Soloplay.
