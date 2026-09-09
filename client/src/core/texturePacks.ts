@@ -28,7 +28,7 @@ export const PACK_ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const MAX_STRING_LEN = 64;
 const MAX_IMAGE_BYTES = 512 * 1024;
 const MAX_IMAGE_DIM = 1024;
-const MAX_TEACHER_ENTRIES = 64;
+export const MAX_TEACHER_ENTRIES = 256;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function extToMime(path: string): string | null {
@@ -296,9 +296,9 @@ export function activePack(): { id: string; name: string; hash: string } | null 
 
 function resolveEntry(abilityId: string | undefined, rosterIndex: number): PackTeacherEntry | null {
   if (!active) return null;
-  if (abilityId && active.teachers[abilityId]) return active.teachers[abilityId];
   const byIndex = active.teachers[String(rosterIndex)];
   if (byIndex) return byIndex;
+  if (abilityId && active.teachers[abilityId]) return active.teachers[abilityId];
   return null;
 }
 

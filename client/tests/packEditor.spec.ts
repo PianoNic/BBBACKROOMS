@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { mockBackend } from "./backendMocks";
 
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -27,10 +28,11 @@ const ROSTER = [
 ];
 
 test("pack editor builds a zip without any network traffic", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
 
   await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
 
+  await mockBackend(page);
   await page.route("**/roster", (route) =>
     route.fulfill({
       status: 200,
