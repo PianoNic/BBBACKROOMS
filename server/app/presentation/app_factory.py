@@ -7,12 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.http import router as http_router
-from app.api.shop import router as shop_router
 from app.api.ws import router as ws_router
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.persistence.engine import database_engine
 from app.presentation.controllers.auth_controller import router as auth_router
 from app.presentation.controllers.health_controller import router as health_router
+from app.presentation.controllers.shop_controller import router as shop_router
 
 log = logging.getLogger("bbb")
 

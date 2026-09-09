@@ -9,7 +9,6 @@ from app.presentation.controllers.auth_controller import SESSION_COOKIE
 from app.auth import tokens
 from app.db import accounts_repo
 from app.db.engine import db_available
-from app.domain.cosmetics import catalog_dto
 from app.domain.lobby_store import create_lobby, list_lobbies
 from app.services.turn import get_ice_servers
 from app.world.teacher_roster import roster_dto
@@ -34,13 +33,6 @@ async def get_lobbies() -> list[dict]:
         }
         for l in list_lobbies()
     ]
-
-
-@router.get("/shop/catalog")
-async def shop_catalog() -> list[dict]:
-    """Static cosmetic catalog (prices/categories). Ownership + balance arrive
-    over the WebSocket, tied to the authenticated session."""
-    return catalog_dto()
 
 
 @router.get("/roster")
