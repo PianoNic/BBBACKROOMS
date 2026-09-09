@@ -111,6 +111,8 @@ def lobby_room_state(lobby: Lobby, self_id: str) -> dict:
         "mapSize": lobby.map_size,
         "mapSeed": lobby.map_seed,
         "objectiveCount": lobby.objective_count,
+        "packId": lobby.pack_id,
+        "packHash": lobby.pack_hash,
         "roster": [
             {"image": img, "name": name, "subject": subj, "ability": ab}
             for (img, name, subj, ab) in TEACHER_ROSTER

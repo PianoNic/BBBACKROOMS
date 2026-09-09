@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter
 
 
 class MovePkt(BaseModel):
@@ -167,6 +167,13 @@ class LobbySettingsPkt(BaseModel):
     objectiveCount: int | None = None
 
 
+class PackAnnouncePkt(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    type: Literal["pack_announce"]
+    pack_id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")] | None = None
+    pack_hash: Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{64}$")] | None = None
+
+
 ClientPacket = Annotated[
     Union[
         MovePkt, InteractPkt, GambleOpenPkt, GamblePlayPkt,
@@ -176,6 +183,7 @@ ClientPacket = Annotated[
         PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
         UseGogglesPkt, BackToLobbyPkt, LockerOpenPkt, DoorTogglePkt,
         SetCosmeticPkt, BuyCosmeticPkt, PingPkt, VoiceNoisePkt, HidePkt,
+        PackAnnouncePkt,
     ],
     Field(discriminator="type"),
 ]

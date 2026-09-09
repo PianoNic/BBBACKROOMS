@@ -22,6 +22,8 @@ export type AdminPanelState = {
   mapSeed: number | null;
   objectiveCount: number;
   roster: RosterEntry[];
+  packId: string | null;
+  packHash: string | null;
 };
 
 export type AdminPanel = {

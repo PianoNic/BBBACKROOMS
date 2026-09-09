@@ -13,7 +13,7 @@ from app.schemas.packets import (
     SetNamePkt, StartGamePkt, WebRTCSignalPkt, WebcamStatePkt,
     PickupCollectPkt, ReviveStartPkt, ReviveCancelPkt, UsePotionPkt,
     UseGogglesPkt, BackToLobbyPkt, SetCosmeticPkt, BuyCosmeticPkt, PingPkt,
-    VoiceNoisePkt, HidePkt,
+    VoiceNoisePkt, HidePkt, PackAnnouncePkt,
 )
 from app.services.broadcast import broadcast
 from app.services.laptop import handle_gamble_open, handle_gamble_play
@@ -115,6 +115,21 @@ async def dispatch(ws: WebSocket, lobby: Lobby, me: PlayerConn, pkt) -> None:
             "mapSize": lobby.map_size,
             "mapSeed": lobby.map_seed,
             "objectiveCount": lobby.objective_count,
+        })
+        return
+    if isinstance(pkt, PackAnnouncePkt):
+        if me.id != lobby.admin_id:
+            return
+        if pkt.pack_id is None or pkt.pack_hash is None:
+            lobby.pack_id = None
+            lobby.pack_hash = None
+        else:
+            lobby.pack_id = pkt.pack_id
+            lobby.pack_hash = pkt.pack_hash
+        await broadcast(lobby, {
+            "type": "lobby_pack",
+            "packId": lobby.pack_id,
+            "packHash": lobby.pack_hash,
         })
         return
     if isinstance(pkt, StartGamePkt):

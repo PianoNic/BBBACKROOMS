@@ -25,6 +25,7 @@ from app.services.revive import cancel_revives_for
 # everyone gets a chance to reload back in after Back-to-Lobby. After that
 # the lobby is deleted regardless of `had_game`.
 EMPTY_LOBBY_GRACE_S = 60.0
+MAX_WS_MESSAGE_BYTES = 64 * 1024
 
 
 async def _delete_if_still_empty(lobby_id: str) -> None:
@@ -97,6 +98,8 @@ async def ws_endpoint(ws: WebSocket, lobby_id: str) -> None:
     try:
         while True:
             data = await ws.receive_text()
+            if len(data) > MAX_WS_MESSAGE_BYTES:
+                continue
             try:
                 raw = json.loads(data)
                 pkt = ClientPacketAdapter.validate_python(raw)
