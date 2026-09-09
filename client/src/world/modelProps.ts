@@ -1,25 +1,67 @@
-import type { Grid, Prop, PropType, Spawn } from "../net/protocol";
+import type { Grid, PickupKind, Prop, PropType, Spawn } from "../net/protocol";
 import { RoomInference, type RoomArchetype } from "./rooms";
 import footprints from "../../public/models/footprints.json";
 
 export type ModelAnchor = "floor" | "wall" | "wallMounted" | "surface";
 
+export type HingeSide = "left" | "right";
+
+export type ModelHingeSpec = { node: string; side: HingeSide; openRad: number };
+
 export type ModelPropSpec = {
   model: string;
   scale: number;
+  scaleY: number;
+  scaleZ: number;
   yawOffset: number;
   anchor: ModelAnchor;
   y: number;
+  lod?: string;
+  hinge?: ModelHingeSpec;
 };
 
-type Footprint = { model: string; scale: number };
-type FootprintFile = { props: Record<string, Footprint> };
+type Footprint = {
+  model: string;
+  scale: number;
+  scaleY?: number;
+  scaleZ?: number;
+  lod?: string;
+  hinge?: ModelHingeSpec;
+};
+type PickupFootprint = { model: string; scale: number; scaleY?: number; scaleZ?: number };
+type FootprintFile = {
+  props: Record<string, Footprint>;
+  pickups: Record<PickupKind, PickupFootprint>;
+};
 
 const FOOTPRINTS = footprints as FootprintFile;
 
 function spec(type: PropType, anchor: ModelAnchor, y: number): ModelPropSpec {
   const fp = FOOTPRINTS.props[type];
-  return { model: fp.model, scale: fp.scale, yawOffset: 0, anchor, y };
+  return {
+    model: fp.model,
+    scale: fp.scale,
+    scaleY: fp.scaleY ?? fp.scale,
+    scaleZ: fp.scaleZ ?? fp.scale,
+    yawOffset: 0,
+    anchor,
+    y,
+    lod: fp.lod,
+    hinge: fp.hinge,
+  };
+}
+
+function pickupSpec(kind: PickupKind): ModelPropSpec {
+  const fp = FOOTPRINTS.pickups[kind];
+  return {
+    model: fp.model,
+    scale: fp.scale,
+    scaleY: fp.scaleY ?? fp.scale,
+    scaleZ: fp.scaleZ ?? fp.scale,
+    yawOffset: 0,
+    anchor: "floor",
+    y: 0,
+  };
 }
 
 export const MODEL_PROPS: Partial<Record<PropType, ModelPropSpec>> = {
@@ -45,16 +87,28 @@ export const MODEL_PROPS: Partial<Record<PropType, ModelPropSpec>> = {
   bunsen_burner: spec("bunsen_burner", "surface", 0.84),
   microwave: spec("microwave", "surface", 0.9),
   laptop: spec("laptop", "surface", 0.75),
+  locker: spec("locker", "wall", 0),
 };
 
-export const MANAGER_OWNED_TYPES: ReadonlySet<PropType> = new Set<PropType>(["chair", "laptop"]);
+export const PICKUP_MODELS: Record<PickupKind, ModelPropSpec> = {
+  medkit: pickupSpec("medkit"),
+  potion: pickupSpec("potion"),
+  compass: pickupSpec("compass"),
+  tracker: pickupSpec("tracker"),
+  goggles: pickupSpec("goggles"),
+  gps: pickupSpec("gps"),
+};
+
+export const MANAGER_OWNED_TYPES: ReadonlySet<PropType> = new Set<PropType>(
+  ["chair", "laptop", "locker"],
+);
 
 export const MODEL_PROP_TYPES: ReadonlySet<PropType> = new Set(
   Object.keys(MODEL_PROPS) as PropType[],
 );
 
 export const COMMON_BUNDLE: readonly PropType[] = [
-  "chair", "laptop", "trash_can", "recycle_bin", "pylon", "papers",
+  "chair", "laptop", "locker", "trash_can", "recycle_bin", "pylon", "papers",
   "plant", "clock", "fire_extinguisher", "bench",
 ];
 

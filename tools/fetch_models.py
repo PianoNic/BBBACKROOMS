@@ -28,6 +28,17 @@ class ModelSpec:
     scale: float
     simplify: float = 0.0
     yaw_offset: float = 0.0
+    scale_y: float | None = None
+    scale_z: float | None = None
+    hinge_node: str | None = None
+    hinge_side: str | None = None
+    hinge_open_rad: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.scale_y is None:
+            object.__setattr__(self, "scale_y", self.scale)
+        if self.scale_z is None:
+            object.__setattr__(self, "scale_z", self.scale)
 
 
 MANIFEST: tuple[ModelSpec, ...] = (
@@ -53,6 +64,22 @@ MANIFEST: tuple[ModelSpec, ...] = (
     ModelSpec("bunsen_burner", "bunsen_burner", "lab", 1.0, 0.25),
     ModelSpec("microwave", "vintage_microwave", "appliances", 0.65, 0.3),
     ModelSpec("laptop", "classic_laptop", "appliances", 0.55, 0.25),
+    ModelSpec(
+        "locker", "painted_wooden_cabinet_02", "furniture", 0.50,
+        scale_y=0.70, scale_z=0.55,
+        hinge_node="painted_wooden_cabinet_02_door", hinge_side="left",
+        hinge_open_rad=math.pi / 2,
+    ),
+)
+
+
+PICKUP_MANIFEST: tuple[ModelSpec, ...] = (
+    ModelSpec("medkit", "medical_box", "pickups", 0.8, 0.5),
+    ModelSpec("potion", "multi_cleaner_bottle", "pickups", 1.0, 0.35),
+    ModelSpec("compass", "seadogs_compass", "pickups", 1.6, 0.25),
+    ModelSpec("tracker", "retro_multimeter", "pickups", 1.0, 0.3),
+    ModelSpec("goggles", "old_gas_mask", "pickups", 0.3, 0.13),
+    ModelSpec("gps", "digital_wrist_watch", "pickups", 1.2, 0.22),
 )
 
 
@@ -109,7 +136,10 @@ SKETCHFAB_MANIFEST: tuple[SketchfabSpec, ...] = (
     SketchfabSpec(
         "school locker", "c32db0c65ddb46ce9e6f752b4a0b110b", "School locker",
         "Unknown", "CC-BY",
-        "would replace the procedural locker mesh built in gameplay/lockers.ts",
+        "would have replaced the procedural locker mesh built in gameplay/lockers.ts; "
+        "a CC0 Poly Haven stand-in (painted_wooden_cabinet_02, prop type `locker`) "
+        "shipped instead, so this Sketchfab candidate is no longer needed even once a "
+        "token becomes available",
     ),
     SketchfabSpec(
         "exit sign", "56000263a5aa466c96df8e1d36533668", "Exit sign",
@@ -345,11 +375,13 @@ class GltfPacker:
             f"gltfpack binary not found under {bin_dir} — run `bun install` in client/"
         )
 
-    def pack(self, source: Path, dest: Path, simplify: float) -> None:
+    def pack(self, source: Path, dest: Path, simplify: float, extra_args: list[str] | None = None) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         command = [str(self.binary), "-i", str(source), "-o", str(dest), "-c"]
         if simplify > 0.0:
             command += ["-si", str(simplify)]
+        if extra_args:
+            command += extra_args
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
             raise RuntimeError(
@@ -382,9 +414,16 @@ class ModelResult:
     height: float
     bytes_written: int
     skipped: bool
+    lod_path: Path | None = None
+    lod_triangles: int | None = None
+    lod_bytes_written: int = 0
 
 
 class ModelProcessor:
+    LOD_TRIANGLE_THRESHOLD = 1500
+    LOD_SIMPLIFY = 0.3
+    LOD_TEXTURE_MAX_PX = 256
+
     def __init__(
         self,
         spec: ModelSpec,
@@ -395,6 +434,7 @@ class ModelProcessor:
     ):
         self.spec = spec
         self.output_path = output_root / spec.category / f"{spec.prop_type}.glb"
+        self.lod_output_path = output_root / spec.category / f"{spec.prop_type}_lod1.glb"
         self.downloader = downloader
         self.packer = packer
         self.downscaler = downscaler
@@ -402,11 +442,14 @@ class ModelProcessor:
     def is_complete(self) -> bool:
         return self.output_path.exists() and self.output_path.stat().st_size > 0
 
+    def _lod_is_complete(self) -> bool:
+        return self.lod_output_path.exists() and self.lod_output_path.stat().st_size > 0
+
     def _measure(self) -> ModelResult:
         lo, hi = GlbAnalyzer.bounding_box(self.output_path)
         width = (hi[0] - lo[0]) * self.spec.scale
-        height = (hi[1] - lo[1]) * self.spec.scale
-        depth = (hi[2] - lo[2]) * self.spec.scale
+        height = (hi[1] - lo[1]) * self.spec.scale_y
+        depth = (hi[2] - lo[2]) * self.spec.scale_z
         along, out = width, depth
         quarter_turns = round(self.spec.yaw_offset / (math.pi / 2)) if self.spec.yaw_offset else 0
         if quarter_turns % 2 != 0:
@@ -423,17 +466,71 @@ class ModelProcessor:
             skipped=False,
         )
 
+    def _verify_hinge(self) -> None:
+        data = self.output_path.read_bytes()
+        document = _read_json_chunk(data)
+        names = [node.get("name", "") for node in document.get("nodes", [])]
+        found = any(self.spec.hinge_node in name for name in names)
+        if not found:
+            print(
+                f"WARNING: hinge node '{self.spec.hinge_node}' not found in packed "
+                f"{self.output_path} — node names present: {names}",
+                file=sys.stderr,
+            )
+
+    def _prepare_lod_source(self, main_gltf: Path) -> Path:
+        asset_dir = main_gltf.parent
+        scratch_dir = self.downloader.cache_dir / "_lod_scratch" / asset_dir.name
+        if not scratch_dir.exists():
+            shutil.copytree(asset_dir, scratch_dir)
+            TextureDownscaler(max_px=self.LOD_TEXTURE_MAX_PX).process(scratch_dir)
+        return scratch_dir / main_gltf.name
+
+    def _lod_simplify_ratio(self) -> float:
+        effective_main_ratio = self.spec.simplify if self.spec.simplify > 0.0 else 1.0
+        return max(0.02, min(self.LOD_SIMPLIFY, effective_main_ratio * 0.5))
+
+    def _build_lod(self, asset: PolyHavenAsset, main_gltf: Path | None, main_triangles: int) -> tuple[Path, int]:
+        if main_gltf is None:
+            main_gltf = asset.fetch_gltf()
+        lod_source = self._prepare_lod_source(main_gltf)
+        self.packer.pack(lod_source, self.lod_output_path, self._lod_simplify_ratio())
+        lod_triangles = GlbAnalyzer.triangle_count(self.lod_output_path)
+        if lod_triangles >= main_triangles:
+            self.packer.pack(self.output_path, self.lod_output_path, 0.5)
+            lod_triangles = GlbAnalyzer.triangle_count(self.lod_output_path)
+        return main_gltf, lod_triangles
+
     def process(self, force: bool) -> ModelResult:
-        if not force and self.is_complete():
+        asset = PolyHavenAsset(self.spec, self.downloader)
+        main_gltf: Path | None = None
+
+        if force or not self.is_complete():
+            main_gltf = asset.fetch_gltf()
+            self.downscaler.process(self.downloader.cache_dir / self.spec.asset)
+            extra_args = ["-kn"] if self.spec.hinge_node else None
+            self.packer.pack(main_gltf, self.output_path, self.spec.simplify, extra_args)
+            result = self._measure()
+        else:
             result = self._measure()
             result.skipped = True
-            return result
 
-        asset = PolyHavenAsset(self.spec, self.downloader)
-        main_gltf = asset.fetch_gltf()
-        self.downscaler.process(self.downloader.cache_dir / self.spec.asset)
-        self.packer.pack(main_gltf, self.output_path, self.spec.simplify)
-        return self._measure()
+        if self.spec.hinge_node:
+            self._verify_hinge()
+
+        if self.spec.category != "pickups" and result.triangles > self.LOD_TRIANGLE_THRESHOLD:
+            lod_triangles = None
+            if not force and self._lod_is_complete():
+                lod_triangles = GlbAnalyzer.triangle_count(self.lod_output_path)
+                if lod_triangles >= result.triangles:
+                    lod_triangles = None
+            if lod_triangles is None:
+                main_gltf, lod_triangles = self._build_lod(asset, main_gltf, result.triangles)
+            result.lod_path = self.lod_output_path
+            result.lod_triangles = lod_triangles
+            result.lod_bytes_written = self.lod_output_path.stat().st_size
+
+        return result
 
 
 class LicenseGenerator:
@@ -494,24 +591,44 @@ class FootprintsWriter:
     def __init__(self, output_path: Path):
         self.output_path = output_path
 
-    def write(self, results) -> None:
-        props = {}
-        for result in sorted(results, key=lambda r: r.spec.prop_type):
-            spec = result.spec
-            props[spec.prop_type] = {
-                "model": f"{spec.category}/{spec.prop_type}",
-                "asset": spec.asset,
-                "scale": spec.scale,
-                "yawOffset": spec.yaw_offset,
-                "along": result.along,
-                "out": result.out,
-                "height": result.height,
-                "triangles": result.triangles,
+    def _entry(self, result) -> dict:
+        spec = result.spec
+        entry = {
+            "model": f"{spec.category}/{spec.prop_type}",
+            "asset": spec.asset,
+            "scale": spec.scale,
+            "scaleY": spec.scale_y,
+            "scaleZ": spec.scale_z,
+            "yawOffset": spec.yaw_offset,
+            "along": result.along,
+            "out": result.out,
+            "height": result.height,
+            "triangles": result.triangles,
+        }
+        if result.lod_path is not None:
+            entry["lod"] = f"{spec.category}/{spec.prop_type}_lod1"
+        if spec.hinge_node:
+            entry["hinge"] = {
+                "node": spec.hinge_node,
+                "side": spec.hinge_side,
+                "openRad": spec.hinge_open_rad,
             }
+        return entry
+
+    def write(self, prop_results, pickup_results) -> None:
+        props = {
+            result.spec.prop_type: self._entry(result)
+            for result in sorted(prop_results, key=lambda r: r.spec.prop_type)
+        }
+        pickups = {
+            result.spec.prop_type: self._entry(result)
+            for result in sorted(pickup_results, key=lambda r: r.spec.prop_type)
+        }
         payload = {
             "generator": "tools/fetch_models.py",
             "subCellMetres": SUB_CELL_METRES,
             "props": props,
+            "pickups": pickups,
         }
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         self.output_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -543,32 +660,44 @@ class ModelFetcher:
         print(f"{len(SKETCHFAB_MANIFEST)} Sketchfab model(s) skipped this run.")
         print("=" * 78)
 
+    def _directory_size(self) -> int:
+        return sum(p.stat().st_size for p in self.output_root.rglob("*") if p.is_file())
+
     def _print_summary(self, results) -> None:
         print()
-        print(f"{'prop type':20} {'category':12} {'along':>7} {'out':>7} {'height':>7} {'tris':>7} {'MB':>7}")
+        print(
+            f"{'prop type':20} {'category':12} {'along':>7} {'out':>7} {'height':>7} "
+            f"{'tris':>7} {'MB':>7} {'lod tris':>9} {'lod MB':>7}"
+        )
         total_bytes = 0
         for result in sorted(results, key=lambda r: r.spec.prop_type):
             spec = result.spec
-            total_bytes += result.bytes_written
+            total_bytes += result.bytes_written + result.lod_bytes_written
+            lod_tris = result.lod_triangles if result.lod_triangles is not None else ""
+            lod_mb = f"{result.lod_bytes_written / 1e6:.3f}" if result.lod_bytes_written else ""
             print(
                 f"{spec.prop_type:20} {spec.category:12} {result.along:7.3f} {result.out:7.3f} "
-                f"{result.height:7.3f} {result.triangles:7d} {result.bytes_written / 1e6:7.3f}"
+                f"{result.height:7.3f} {result.triangles:7d} {result.bytes_written / 1e6:7.3f} "
+                f"{lod_tris!s:>9} {lod_mb:>7}"
             )
-        print(f"TOTAL: {total_bytes / 1e6:.2f} MB across {len(results)} models")
+        print(f"TOTAL (tracked results): {total_bytes / 1e6:.2f} MB across {len(results)} models")
         print(f"Sketchfab models skipped: {len(SKETCHFAB_MANIFEST)}")
+        dir_bytes = self._directory_size()
+        print(f"client/public/models on-disk size: {dir_bytes / 1e6:.2f} MB (budget: 25 MB)")
 
     def run(self) -> int:
         self._print_sketchfab_notice()
 
         results = []
         errors = []
-        for spec in MANIFEST:
+        for spec in MANIFEST + PICKUP_MANIFEST:
             processor = ModelProcessor(spec, self.output_root, self.downloader, self.packer, self.downscaler)
             try:
                 result = processor.process(self.force)
                 results.append(result)
                 status = "skipped" if result.skipped else "built"
-                print(f"[{spec.prop_type}] {status} - {result.triangles} tris, {result.bytes_written} bytes")
+                lod_note = f", lod {result.lod_triangles} tris" if result.lod_triangles is not None else ""
+                print(f"[{spec.prop_type}] {status} - {result.triangles} tris{lod_note}, {result.bytes_written} bytes")
             except Exception as error:
                 print(f"[{spec.prop_type}] FAILED: {error}", file=sys.stderr)
                 errors.append((spec.prop_type, error))
@@ -580,7 +709,9 @@ class ModelFetcher:
         self.output_root.mkdir(parents=True, exist_ok=True)
         (self.output_root / "LICENSES.md").write_text(license_text, encoding="utf-8")
 
-        FootprintsWriter(self.output_root / "footprints.json").write(results)
+        prop_results = [r for r in results if r.spec.category != "pickups"]
+        pickup_results = [r for r in results if r.spec.category == "pickups"]
+        FootprintsWriter(self.output_root / "footprints.json").write(prop_results, pickup_results)
 
         self._print_summary(results)
 

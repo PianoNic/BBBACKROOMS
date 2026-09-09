@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import struct
 from pathlib import Path
 
 import pytest
@@ -8,20 +9,45 @@ import pytest
 from app.domain.world.prop_specs import PROP_SPECS, SUB_CELL
 
 _TOLERANCE = 1.1
+_MODELS_ROOT = Path(__file__).resolve().parents[3] / "client" / "public" / "models"
+_MODELS_BUDGET_BYTES = 25_000_000
 
 
-def _load_footprints() -> dict:
-    repo_root = Path(__file__).resolve().parents[3]
-    footprints_path = repo_root / "client" / "public" / "models" / "footprints.json"
+def _load_footprints_file() -> dict:
+    footprints_path = _MODELS_ROOT / "footprints.json"
     if not footprints_path.exists():
         pytest.skip(
             f"{footprints_path} is missing — run tools/fetch_models.py to "
             "generate it before running this test."
         )
-    return json.loads(footprints_path.read_text(encoding="utf-8"))["props"]
+    return json.loads(footprints_path.read_text(encoding="utf-8"))
 
 
-FOOTPRINTS = _load_footprints()
+_FOOTPRINTS_FILE = _load_footprints_file()
+FOOTPRINTS = _FOOTPRINTS_FILE["props"]
+PICKUPS = _FOOTPRINTS_FILE.get("pickups", {})
+
+
+def _read_glb_json(path: Path) -> dict:
+    data = path.read_bytes()
+    offset = 12
+    while offset < len(data):
+        chunk_length, chunk_type = struct.unpack_from("<II", data, offset)
+        chunk = data[offset + 8: offset + 8 + chunk_length]
+        if chunk_type == 0x4E4F534A:
+            return json.loads(chunk.decode("utf-8"))
+        offset += 8 + chunk_length + ((4 - chunk_length % 4) % 4)
+    raise RuntimeError(f"no JSON chunk found in {path}")
+
+
+def _triangle_count(path: Path) -> int:
+    document = _read_glb_json(path)
+    total = 0
+    for mesh in document.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            if "indices" in primitive:
+                total += document["accessors"][primitive["indices"]]["count"] // 3
+    return total
 
 
 def test_every_model_prop_type_is_registered():
@@ -61,3 +87,48 @@ def test_footprint_is_not_oversized(prop_type):
             f"oversized for the model's {model_extent:.3f}m {axis} extent — "
             f"{spec_cells - 1} sub-cells ({one_smaller:.3f}m) would already fit it"
         )
+
+
+@pytest.mark.parametrize("pickup_kind", sorted(PICKUPS))
+def test_pickup_model_is_sized_for_handheld_use(pickup_kind):
+    entry = PICKUPS[pickup_kind]
+    model_path = _MODELS_ROOT / f"{entry['model']}.glb"
+    assert model_path.exists(), f"{pickup_kind}: missing model file {model_path}"
+
+    largest_dim = max(entry["along"], entry["out"], entry["height"])
+    assert 0.05 <= largest_dim <= 0.6, (
+        f"{pickup_kind}: largest dimension {largest_dim:.3f}m is outside the "
+        "0.05m-0.6m handheld pickup range"
+    )
+
+    triangles = _triangle_count(model_path)
+    assert triangles < 3000, (
+        f"{pickup_kind}: {triangles} triangles exceeds the 3000 pickup budget"
+    )
+
+
+@pytest.mark.parametrize(
+    "prop_type", sorted(prop_type for prop_type in FOOTPRINTS if "lod" in FOOTPRINTS[prop_type])
+)
+def test_lod_model_exists_and_is_lighter_than_the_full_model(prop_type):
+    entry = FOOTPRINTS[prop_type]
+    main_path = _MODELS_ROOT / f"{entry['model']}.glb"
+    lod_path = _MODELS_ROOT / f"{entry['lod']}.glb"
+    assert lod_path.exists(), (
+        f"{prop_type}: declared lod {entry['lod']} but {lod_path} does not exist"
+    )
+
+    main_triangles = _triangle_count(main_path)
+    lod_triangles = _triangle_count(lod_path)
+    assert lod_triangles < main_triangles, (
+        f"{prop_type}: lod triangle count {lod_triangles} is not lower than the "
+        f"full model's {main_triangles}"
+    )
+
+
+def test_models_directory_is_within_budget():
+    total_bytes = sum(p.stat().st_size for p in _MODELS_ROOT.rglob("*") if p.is_file())
+    assert total_bytes <= _MODELS_BUDGET_BYTES, (
+        f"client/public/models is {total_bytes / 1e6:.2f} MB, over the "
+        f"{_MODELS_BUDGET_BYTES / 1e6:.0f} MB budget"
+    )
