@@ -7,8 +7,11 @@ driving it directly keeps the tests fast and deterministic.
 """
 from __future__ import annotations
 
+import peewee_async
 import pytest
 
+from app.db import accounts_repo
+from app.db.models import ALL_MODELS
 from app.domain.lobby import Chair, Hideout, Lobby, PlayerConn
 
 
@@ -79,3 +82,14 @@ def add_chair(lobby: Lobby, cid: str, x: float, z: float, held_by: str | None = 
 @pytest.fixture
 def lobby() -> Lobby:
     return make_lobby()
+
+
+@pytest.fixture
+async def account_db(tmp_path, monkeypatch):
+    db = peewee_async.SqliteDatabase(str(tmp_path / "accounts.sqlite"))
+    with db.bind_ctx(ALL_MODELS):
+        with db.allow_sync():
+            db.create_tables(ALL_MODELS)
+        monkeypatch.setattr(accounts_repo, "database", db)
+        yield db
+    await db.aio_close()

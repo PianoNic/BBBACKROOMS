@@ -17,7 +17,7 @@ import httpx
 
 from app.config import settings
 
-SCOPES = "openid email profile"
+SCOPES = "openid profile"
 
 
 @dataclass(frozen=True)
@@ -105,7 +105,7 @@ async def exchange_code(provider: Provider, code: str, verifier: str) -> dict:
 
 
 async def fetch_userinfo(provider: Provider, access_token: str) -> dict:
-    """Return the normalized identity: {sub, email, name}."""
+    """Return the normalized identity: {sub, name}."""
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(
             provider.userinfo_url,
@@ -115,6 +115,5 @@ async def fetch_userinfo(provider: Provider, access_token: str) -> dict:
         info = resp.json()
     return {
         "sub": str(info.get("sub", "")),
-        "email": info.get("email"),
         "name": info.get("name") or info.get("given_name"),
     }

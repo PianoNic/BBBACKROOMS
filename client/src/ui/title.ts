@@ -13,12 +13,12 @@ export { getStoredName, getStoredAvatar, getStoredColor } from "./profilePanel";
 
 const API = import.meta.env.VITE_SERVER_URL ?? "";
 
-/** Read the ?login=ok|error the OAuth callback appended, then scrub it from the
- *  URL so a refresh doesn't re-show it. Returns the status once. */
-function consumeLoginStatus(): "ok" | "error" | null {
+/** Read the ?login=ok|error|blocked the OAuth callback appended, then scrub it
+ *  from the URL so a refresh doesn't re-show it. Returns the status once. */
+function consumeLoginStatus(): "ok" | "error" | "blocked" | null {
   const params = new URLSearchParams(location.search);
   const status = params.get("login");
-  if (status !== "ok" && status !== "error") return null;
+  if (status !== "ok" && status !== "error" && status !== "blocked") return null;
   params.delete("login");
   const qs = params.toString();
   history.replaceState(null, "", location.pathname + (qs ? `?${qs}` : "") + location.hash);
@@ -50,6 +50,9 @@ function fillAccountWidget(wrap: HTMLElement): void {
     if (loginStatus === "error") {
       wrap.appendChild(el("span", "acc-note error", "Sign-in failed"));
     }
+    if (loginStatus === "blocked") {
+      wrap.appendChild(el("span", "acc-note error", "Dieses Konto wurde gesperrt. Kontakt: kontakt@backrooms-baden.ch"));
+    }
     if (!providers.google && !providers.microsoft) return;
     const mk = (provider: "google" | "microsoft", label: string) => {
       const b = el<HTMLButtonElement>("button", `acc-login ${provider}`, label);
@@ -66,7 +69,7 @@ function buildHeader(root: HTMLElement): void {
   sysbar.appendChild(el("span", "sysbar-label", "SYS://ROOM_INDEX"));
   sysbar.appendChild(el("span", "rec", "REC"));
   root.appendChild(sysbar);
-  const logo = el<HTMLHeadingElement>("h1", undefined, "BBBACKROOMS");
+  const logo = el<HTMLHeadingElement>("h1", undefined, "BACKROOMS BADEN");
   logo.onclick = () => {
     unlockAudio();
     playSfx("/sounds/actions/logo-sting.ogg", 0.85);
@@ -87,7 +90,7 @@ async function fetchVersion(): Promise<string> {
   return cachedVersion;
 }
 
-const GITHUB_URL = "https://github.com/PianoNic/BBBACKROOMS";
+const GITHUB_URL = "https://github.com/PianoNic/BackroomsBaden";
 const DISCORD_URL = "https://discord.gg/EwJ4x2GvvG";
 
 function buildFootnote(): void {
@@ -96,10 +99,10 @@ function buildFootnote(): void {
   if (!root) return;
   const note = el<HTMLDivElement>("div", "footnote");
   const today = new Date().toISOString().slice(0, 10);
-  note.textContent = `BBBKRMS · v… · ${today}`;
+  note.textContent = `BACKROOMS BADEN · v… · ${today}`;
   root.appendChild(note);
   fetchVersion().then((v) => {
-    note.textContent = `BBBKRMS · v${v} · ${today}`;
+    note.textContent = `BACKROOMS BADEN · v${v} · ${today}`;
   });
 }
 
@@ -125,7 +128,56 @@ function buildSocialLinks(): void {
   };
   wrap.appendChild(mk(GITHUB_URL, "GitHub", "fa-github"));
   wrap.appendChild(mk(DISCORD_URL, "Discord", "fa-discord"));
+
+  const infoBtn = el<HTMLButtonElement>("button", "social-link info-link");
+  infoBtn.setAttribute("aria-label", "Info");
+  infoBtn.title = "Info";
+  const infoIcon = document.createElement("i");
+  infoIcon.className = "fa-solid fa-circle-info";
+  infoIcon.setAttribute("aria-hidden", "true");
+  infoBtn.appendChild(infoIcon);
+  infoBtn.appendChild(el("span", "social-link-label", "Info"));
+  infoBtn.onclick = () => { buildInfoOverlay(); };
+  wrap.appendChild(infoBtn);
+
   root.appendChild(wrap);
+}
+
+function buildInfoOverlay(): void {
+  if (document.getElementById("info-overlay")) return;
+
+  const overlay = el<HTMLDivElement>("div");
+  overlay.id = "info-overlay";
+
+  const panel = el<HTMLDivElement>("div", "panel panel-brackets info-panel");
+  panel.appendChild(el("h2", undefined, "INFO"));
+  panel.appendChild(el("p", "info-project", "Backrooms Baden"));
+  panel.appendChild(el(
+    "p",
+    "info-disclaimer",
+    "Privates Hobbyprojekt ohne Verbindung zu einer realen Schule. Alle Lehrpersonen und Namen sind frei erfunden.",
+  ));
+
+  const legalLink = document.createElement("a");
+  legalLink.href = "/datenschutz.html";
+  legalLink.className = "info-legal-link";
+  legalLink.textContent = "Datenschutz & Impressum";
+  panel.appendChild(legalLink);
+
+  const close = el<HTMLButtonElement>("button", "menu-btn", "SCHLIESSEN");
+  const onKey = (e: KeyboardEvent) => {
+    if (e.code === "Escape") { e.preventDefault(); close.click(); }
+  };
+  close.onclick = () => {
+    overlay.remove();
+    window.removeEventListener("keydown", onKey);
+  };
+  window.addEventListener("keydown", onKey);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close.click(); });
+
+  panel.appendChild(close);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
 }
 
 function buildMainMenu(
@@ -148,6 +200,11 @@ function buildMainMenu(
   const account = el<HTMLDivElement>("div", "account-widget");
   fillAccountWidget(account);
   menu.appendChild(account);
+  const legalLink = el<HTMLAnchorElement>("a", "menu-legal-link", "Datenschutz & Impressum");
+  legalLink.href = "/datenschutz.html";
+  legalLink.target = "_blank";
+  legalLink.rel = "noopener noreferrer";
+  menu.appendChild(legalLink);
   root.appendChild(menu);
 }
 

@@ -11,11 +11,11 @@ from __future__ import annotations
 import logging
 import secrets
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.auth import oauth, tokens
-from app.config import settings
+from app.config import is_subject_blocked, settings
 from app.db import accounts_repo
 from app.db.engine import db_available
 
@@ -35,9 +35,9 @@ def _set_cookie(resp, name: str, value: str, max_age: int) -> None:
     )
 
 
-def _frontend_redirect(ok: bool) -> RedirectResponse:
+def _frontend_redirect(status: str) -> RedirectResponse:
     sep = "&" if "?" in settings.frontend_url else "?"
-    target = f"{settings.frontend_url}{sep}login={'ok' if ok else 'error'}"
+    target = f"{settings.frontend_url}{sep}login={status}"
     return RedirectResponse(target, status_code=302)
 
 
@@ -67,7 +67,7 @@ async def login(provider: str):
 
 @router.get("/{provider}/callback")
 async def callback(provider: str, request: Request, code: str | None = None, state: str | None = None):
-    resp_fail = _frontend_redirect(False)
+    resp_fail = _frontend_redirect("error")
     resp_fail.delete_cookie(OAUTH_COOKIE, path="/")
     p = oauth.get_provider(provider)
     if p is None or not db_available():
@@ -87,14 +87,16 @@ async def callback(provider: str, request: Request, code: str | None = None, sta
         info = await oauth.fetch_userinfo(p, token_resp["access_token"])
         if not info["sub"]:
             return resp_fail
-        acct = await accounts_repo.upsert_account(
-            provider, info["sub"], info["email"], info["name"],
-        )
+        if is_subject_blocked(provider, info["sub"]):
+            resp_blocked = _frontend_redirect("blocked")
+            resp_blocked.delete_cookie(OAUTH_COOKIE, path="/")
+            return resp_blocked
+        acct = await accounts_repo.upsert_account(provider, info["sub"], info["name"])
         await accounts_repo.ensure_profile(acct.id)
     except Exception as exc:  # noqa: BLE001
         log.warning("OAuth callback failed (%s): %s", provider, exc)
         return resp_fail
-    resp = _frontend_redirect(True)
+    resp = _frontend_redirect("ok")
     resp.delete_cookie(OAUTH_COOKIE, path="/")
     _set_cookie(resp, SESSION_COOKIE, tokens.issue_session(acct.id), settings.session_ttl_seconds)
     return resp
@@ -115,9 +117,24 @@ async def logout():
     return resp
 
 
+@router.delete("/account")
+async def delete_account(request: Request):
+    account_id = tokens.read_account_id(request.cookies.get(SESSION_COOKIE), "session")
+    if account_id is None:
+        return JSONResponse({"error": "not authenticated"}, status_code=401)
+    if not db_available():
+        return JSONResponse({"error": "database unavailable"}, status_code=503)
+    await accounts_repo.delete_account(account_id)
+    resp = Response(status_code=204)
+    resp.delete_cookie(SESSION_COOKIE, path="/")
+    return resp
+
+
 @router.get("/ws-ticket")
 async def ws_ticket(request: Request):
     account_id = tokens.read_account_id(request.cookies.get(SESSION_COOKIE), "session")
     if account_id is None:
         return JSONResponse({"error": "not authenticated"}, status_code=401)
+    if db_available() and await accounts_repo.is_account_blocked(account_id):
+        return JSONResponse({"error": "account blocked"}, status_code=403)
     return {"ticket": tokens.issue_ws_ticket(account_id)}

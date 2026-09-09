@@ -1,5 +1,6 @@
 @use "variables" as *;
 @use "panels" as *;
+@use "overlays" as *;
 @forward "title-tutorial";
 @forward "title-server";
 
@@ -125,6 +126,13 @@
       &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
     }
   }
+  .menu-legal-link {
+    display: inline-block; margin-top: 1.6vh; margin-left: 36px;
+    color: $dim; font-family: $font-mono; font-size: 13px;
+    letter-spacing: 0.08em; text-decoration: underline;
+    transition: color 0.12s;
+    &:hover { color: $accent; }
+  }
 
   .panel {
     max-width: 720px; padding: 18px 24px;
@@ -187,6 +195,56 @@
     transition: color 0.12s, transform 0.12s;
     &:hover { color: $accent-bright; transform: translateY(-1px); }
     svg { width: 24px; height: 24px; display: block; }
+
+    &.info-link {
+      background: transparent; border: none; cursor: pointer; font: inherit;
+      padding: 0;
+    }
+  }
+}
+
+#info-overlay {
+  @include overlay(60);
+
+  .panel {
+    max-width: 460px; padding: 24px 30px;
+    --bracket-bg: #{$panel-bg-overlay};
+
+    h2 { @include section-heading; font-size: 24px; letter-spacing: 0.22em; }
+  }
+
+  .info-project {
+    margin: 0 0 14px;
+    color: $accent-bright;
+    font-size: 16px; letter-spacing: 0.1em;
+  }
+
+  .info-disclaimer {
+    margin: 0 0 18px;
+    color: $ink;
+    font-size: 14px; line-height: 1.6;
+  }
+
+  .info-legal-link {
+    display: inline-block;
+    margin-bottom: 22px;
+    color: $accent;
+    font-family: $font-mono; font-size: 13px;
+    letter-spacing: 0.08em; text-decoration: underline;
+    transition: color 0.12s;
+    &:hover { color: $accent-bright; }
+  }
+
+  .menu-btn {
+    display: block;
+    background: transparent; border: none;
+    color: $ink;
+    font-family: $font-mono; font-size: 16px;
+    letter-spacing: 0.18em; padding: 8px 18px; cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 1px rgba(106, 98, 88, 0.45);
+    transition: color 0.12s, box-shadow 0.12s;
+    &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
   }
 }
 

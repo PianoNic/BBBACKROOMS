@@ -1,12 +1,15 @@
 <p align="center">
-  <img src="assets/banner.jpg" width="800" alt="bbbackrooms" />
+  <img src="assets/banner.jpg" width="800" alt="Backrooms Baden" />
 </p>
 <p align="center">
-  <strong>bbbackrooms</strong><br/>
-  Backrooms-Horror in der BBB. Tasks lösen, den Lehrern ausweichen, in der Aula raus.
+  <strong>Backrooms Baden</strong><br/>
+  Backrooms-Horror in einer Schule in Baden. Tasks lösen, den Lehrern ausweichen, in der Aula raus.
 </p>
 <p align="center">
-  <a href="https://github.com/PianoNic/BBBACKROOMS"><img src="https://badgetrack.pianonic.ch/badge?tag=bbbackrooms&label=visits&color=c9a227&style=flat" alt="visits" /></a>
+  <sub>Privates Hobbyprojekt ohne Verbindung zu einer realen Schule. Alle Lehrpersonen und Namen sind frei erfunden.</sub>
+</p>
+<p align="center">
+  <a href="https://github.com/PianoNic/BackroomsBaden"><img src="https://badgetrack.pianonic.ch/badge?tag=backroomsbaden&label=visits&color=c9a227&style=flat" alt="visits" /></a>
   <a href="docs/development.md"><img src="https://img.shields.io/badge/Self--Host-Instructions-c9a227.svg" alt="Self-hosting" /></a>
   <a href="docs/README.md"><img src="https://img.shields.io/badge/Documentation-Docs-c9a227.svg" alt="Documentation" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-c9a227.svg" alt="License" /></a>
@@ -14,9 +17,9 @@
 
 ---
 
-## Was ist bbbackrooms?
+## Was ist Backrooms Baden?
 
-Ein Multiplayer-Horrorspiel, das in der BBB spielt. Bis zu 100 Schüler stecken in einer
+Ein Multiplayer-Horrorspiel, das in einer Schule in Baden spielt. Bis zu 100 Schüler stecken in einer
 Backrooms-Version der Schule fest, während patrouillierende Lehrer die Gänge ablaufen — jeder mit
 seiner eigenen Fähigkeit.
 
@@ -62,6 +65,13 @@ Lesen, ändern und selbst hosten ist für jeden nichtkommerziellen Zweck erlaubt
 die Klasse, eine Schule oder ein Verein. Kommerzielle Nutzung ist nicht lizenziert; verkaufen oder
 als bezahlten Dienst betreiben braucht eine separate Vereinbarung. Source-available, nicht Open
 Source.
+
+## Nutzungsbedingungen / Missbrauch melden
+
+Texture Packs bleiben lokal im Browser, verantwortlich ist, wer sie erstellt oder weitergibt. Packs
+mit Bildern oder Namen realer Personen ohne deren Einwilligung sind nicht erlaubt. Meldungen gehen an
+<kontakt@backrooms-baden.ch> — Hosts, die solche Packs verwenden, können vom öffentlichen Server
+gesperrt werden. Die vollständigen Bedingungen stehen in [TERMS.md](TERMS.md).
 
 ---
 <p align="center">Made with ❤️ by <a href="https://github.com/Pianonic">PianoNic</a></p>

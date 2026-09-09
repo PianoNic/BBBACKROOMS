@@ -33,7 +33,7 @@ _ITEMS: list[CosmeticItem] = [
     CosmeticItem("body_camo", "body", "Forest Camo", 150, "common", "#4a5d3a"),
     CosmeticItem("body_hotpink", "body", "Hot Pink", 250, "common", "#ff4fa0"),
     CosmeticItem("body_royal", "body", "Royal Blue", 250, "common", "#2456d6"),
-    CosmeticItem("body_bbb", "body", "BBB Red", 350, "rare", "#c61824"),
+    CosmeticItem("body_bbb", "body", "Schulrot", 350, "rare", "#c61824"),
     CosmeticItem("body_void", "body", "Void Black", 400, "rare", "#0c0c10"),
     CosmeticItem("body_toxic", "body", "Toxic Lime", 400, "rare", "#9eff2e"),
     CosmeticItem("body_lava", "body", "Lava Orange", 450, "rare", "#ff5a1f"),

@@ -15,6 +15,7 @@ export default defineConfig({
       "/auth": { target: DEV_BACKEND, changeOrigin: true },
       "/shop": { target: DEV_BACKEND, changeOrigin: true },
       "/turn-credentials": { target: DEV_BACKEND, changeOrigin: true },
+      "/roster": { target: DEV_BACKEND, changeOrigin: true },
     },
   },
 });

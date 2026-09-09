@@ -24,6 +24,7 @@ export type LobbyCallbacks = {
   /** Notify an open shop panel of a purchase result / equip change. */
   onShopResult?: (pkt: ShopResultPkt) => void;
   onCosmeticChange?: () => void;
+  onPackChange?: () => void;
 };
 
 export function handleLobbyPacket(
@@ -95,6 +96,11 @@ export function handleLobbyPacket(
     case "chat_message":
       state.chat.push({ id: pkt.id, author: pkt.author, text: pkt.text, ts: pkt.ts });
       cb.appendChatLine({ id: pkt.id, author: pkt.author, text: pkt.text, ts: pkt.ts });
+      return;
+    case "lobby_pack":
+      state.packId = pkt.packId;
+      state.packHash = pkt.packHash;
+      cb.onPackChange?.();
       return;
   }
 }

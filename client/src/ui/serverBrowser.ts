@@ -61,9 +61,11 @@ function openCreateModal(onPick: LobbyPickFn): void {
     try {
       const res = await fetch(`${API}/lobbies`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: nameInput.value, maxPlayers, password }),
       });
+      if (!res.ok) throw new Error("create failed");
       const l: LobbyInfo = await res.json();
       close();
       onPick(l.id, password ?? undefined);

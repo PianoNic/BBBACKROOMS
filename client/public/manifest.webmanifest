@@ -1,6 +1,8 @@
 {
-  "name": "BBBACKROOMS",
-  "short_name": "BBBKRMS",
+  "name": "Backrooms Baden",
+  "short_name": "Backrooms",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any" },
     { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },

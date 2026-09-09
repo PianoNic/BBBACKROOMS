@@ -1,13 +1,19 @@
 """REST endpoints: health check, version, lobby browse & create."""
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.api.auth import SESSION_COOKIE
+from app.auth import tokens
+from app.db import accounts_repo
+from app.db.engine import db_available
 from app.domain.cosmetics import catalog_dto
 from app.domain.lobby_store import create_lobby, list_lobbies
 from app.services.turn import get_ice_servers
 from app.version import VERSION
+from app.world.teacher_roster import roster_dto
 
 router = APIRouter()
 
@@ -48,6 +54,11 @@ async def shop_catalog() -> list[dict]:
     return catalog_dto()
 
 
+@router.get("/roster")
+async def get_roster() -> list[dict]:
+    return roster_dto()
+
+
 @router.get("/turn-credentials")
 async def turn_credentials() -> dict:
     """Short-lived ICE servers config for the WebRTC mesh (webcam)."""
@@ -55,7 +66,10 @@ async def turn_credentials() -> dict:
 
 
 @router.post("/lobbies")
-async def post_lobby(req: CreateLobbyReq) -> dict:
+async def post_lobby(req: CreateLobbyReq, request: Request):
+    account_id = tokens.read_account_id(request.cookies.get(SESSION_COOKIE), "session")
+    if account_id is not None and db_available() and await accounts_repo.is_account_blocked(account_id):
+        return JSONResponse({"error": "account blocked"}, status_code=403)
     l = create_lobby(req.name, max_players=req.maxPlayers, password=req.password)
     return {
         "id": l.id, "name": l.name,

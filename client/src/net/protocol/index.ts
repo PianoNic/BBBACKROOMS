@@ -30,6 +30,7 @@ import type {
   GambleResultPkt,
   GambleStatePkt,
   LobbyAdminChangedPkt,
+  LobbyPackPkt,
   LobbyPlayerJoinPkt,
   LobbyPlayerRenamePkt,
   LobbySettingsPkt,
@@ -84,6 +85,7 @@ export type ServerPacket =
   | LobbyPlayerJoinPkt
   | LobbyPlayerRenamePkt
   | LobbyAdminChangedPkt
+  | LobbyPackPkt
   | ChatMessagePkt
   | GambleStatePkt
   | GambleResultPkt
