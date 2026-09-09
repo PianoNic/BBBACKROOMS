@@ -55,11 +55,11 @@ export function buildScene(
   audioListener: SpatialListener,
   webcam: WebcamMesh,
 ) {
-  const world = buildWorld(init.grid);
+  const world = buildWorld(init.grid, init.props);
   const lights = new FlickerLights(init.lights);
   const particles = new AmbienceParticles(ctx.scene);
   const propsGroup = buildProps(init.props);
-  lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.group.getChildMeshes()]);
+  lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.shadowCasters]);
   const propColliders = buildPropColliders(init.props);
 
   const remotes = new RemotePlayers();
