@@ -125,6 +125,11 @@
 
   .footer { display: flex; gap: 14px; align-items: center; margin-top: 14px; }
   .admin-note { flex: 1; color: $dim; font-size: 14px; letter-spacing: 0.06em; }
+  .legal-link {
+    color: $dim; font-family: $font-mono; font-size: 14px; letter-spacing: 0.06em;
+    text-decoration: underline;
+    &:hover { color: $accent; }
+  }
 
   .menu-btn {
     background: transparent; border: none; color: $ink;
