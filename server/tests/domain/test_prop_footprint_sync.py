@@ -9,12 +9,14 @@ import pytest
 from app.domain.world.prop_specs import PROP_SPECS, SUB_CELL
 
 _TOLERANCE = 1.1
-_MODELS_ROOT = Path(__file__).resolve().parents[3] / "client" / "public" / "models"
+_CLIENT_ROOT = Path(__file__).resolve().parents[3] / "client"
+_MODELS_ROOT = _CLIENT_ROOT / "public" / "models"
+_FOOTPRINTS_ROOT = _CLIENT_ROOT / "src" / "world"
 _MODELS_BUDGET_BYTES = 25_000_000
 
 
 def _load_footprints_file() -> dict:
-    footprints_path = _MODELS_ROOT / "footprints.json"
+    footprints_path = _FOOTPRINTS_ROOT / "footprints.json"
     if not footprints_path.exists():
         pytest.skip(
             f"{footprints_path} is missing — run tools/fetch_models.py to "

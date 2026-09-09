@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_PROPS, PICKUP_MODELS } from "./modelProps";
-import footprints from "../../public/models/footprints.json";
+import footprints from "./footprints.json";
 
 const PICKUP_KINDS = ["medkit", "potion", "compass", "tracker", "goggles", "gps"] as const;
 

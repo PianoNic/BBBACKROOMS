@@ -1,6 +1,6 @@
 import type { Grid, PickupKind, Prop, PropType, Spawn } from "../net/protocol";
 import { RoomInference, type RoomArchetype } from "./rooms";
-import footprints from "../../public/models/footprints.json";
+import footprints from "./footprints.json";
 
 export type ModelAnchor = "floor" | "wall" | "wallMounted" | "surface";
 

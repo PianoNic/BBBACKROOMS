@@ -663,7 +663,8 @@ class ModelFetcher:
 
         prop_results = [r for r in results if r.spec.category != "pickups"]
         pickup_results = [r for r in results if r.spec.category == "pickups"]
-        FootprintsWriter(self.output_root / "footprints.json").write(prop_results, pickup_results)
+        footprints_path = self.client_dir / "src" / "world" / "footprints.json"
+        FootprintsWriter(footprints_path).write(prop_results, pickup_results)
 
         self._print_summary(results)
 

@@ -190,7 +190,7 @@ unless `--force` is passed.
 
 `tools/fetch_models.py` measures the scaled, world-space bounding box of
 every model it produces (applying `scale` to X, `scale_y` to Y, `scale_z`
-to Z) and writes it to `client/public/models/footprints.json`, alongside
+to Z) and writes it to `client/src/world/footprints.json`, alongside
 `subCellMetres: 0.5`. The file has two top-level sections:
 
 - `props`: one entry per `PropType`, each with `model`, `asset`, `scale`,

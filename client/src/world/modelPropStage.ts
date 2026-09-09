@@ -3,6 +3,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Prop, PropType } from "../net/protocol";
 import type { ModelLibrary } from "../rendering/modelLoader";
@@ -10,12 +11,18 @@ import type { FlickerLights } from "../rendering/lights";
 import { AMBIENCE, tierFeatures } from "../rendering/ambience";
 import { maxLights, group, type Group } from "../rendering/babylon";
 import { getSettings } from "../core/settings";
-import { ModelMaterialFactory } from "../rendering/modelMaterials";
+import { ModelMaterialFactory, freezeWhenCompiled } from "../rendering/modelMaterials";
 import { MANAGER_OWNED_TYPES, MODEL_PROPS, type ModelPropSpec } from "./modelProps";
 
 const modelMaterials = new ModelMaterialFactory();
+const pbrCompileScheduled = new WeakSet<PBRMaterial>();
+const pbrInstancedCompileScheduled = new WeakSet<PBRMaterial>();
 
-export function normalizeModelTemplate(container: AssetContainer, spec: ModelPropSpec): Mesh[] {
+export function normalizeModelTemplate(
+  container: AssetContainer,
+  spec: ModelPropSpec,
+  deferCompile = false,
+): Mesh[] {
   container.addAllToScene();
   const meshes = container.meshes.filter(
     (m): m is Mesh => m instanceof Mesh && m.getTotalVertices() > 0,
@@ -63,9 +70,14 @@ export function normalizeModelTemplate(container: AssetContainer, spec: ModelPro
         mat.environmentIntensity = 0;
         mat.usePhysicalLightFalloff = false;
         mat.maxSimultaneousLights = maxLights();
-        mat.freeze();
+        if (!deferCompile && !pbrCompileScheduled.has(mat)) {
+          pbrCompileScheduled.add(mat);
+          freezeWhenCompiled(mat, mesh);
+        }
       } else {
-        mesh.material = modelMaterials.standardFor(mat);
+        const standard = modelMaterials.standardFor(mat);
+        mesh.material = standard;
+        if (!deferCompile) modelMaterials.freezeWhenReady(standard, mesh);
       }
     }
   }
@@ -131,7 +143,7 @@ export class ModelPropStage {
     const cached = this.templateCache.get(type);
     if (cached) return cached;
 
-    const meshes = normalizeModelTemplate(container, spec);
+    const meshes = normalizeModelTemplate(container, spec, true);
     for (const mesh of meshes) mesh.receiveShadows = true;
 
     this.templateCache.set(type, meshes);
@@ -171,7 +183,20 @@ export class ModelPropStage {
         mesh.alwaysSelectAsActiveMesh = false;
         mesh.thinInstanceRefreshBoundingInfo(true);
         mesh.freezeWorldMatrix();
+
+        this.scheduleInstancedCompile(mesh);
       }
+    }
+  }
+
+  private scheduleInstancedCompile(mesh: Mesh): void {
+    const mat = mesh.material;
+    if (mat instanceof PBRMaterial) {
+      if (pbrInstancedCompileScheduled.has(mat)) return;
+      pbrInstancedCompileScheduled.add(mat);
+      freezeWhenCompiled(mat, mesh, { useInstances: true });
+    } else if (mat instanceof StandardMaterial) {
+      modelMaterials.freezeWhenReady(mat, mesh, { useInstances: true });
     }
   }
 }

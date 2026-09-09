@@ -1,10 +1,31 @@
+import type { IMaterialCompilationOptions, Material } from "@babylonjs/core/Materials/material";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { onSettingsChange } from "../core/settings";
 import { AMBIENCE } from "./ambience";
 import { color3, maxLights } from "./babylon";
 
+export function freezeWhenCompiled(
+  material: Material,
+  mesh: Mesh,
+  options?: Partial<IMaterialCompilationOptions>,
+): void {
+  void material
+    .forceCompilationAsync(mesh, options)
+    .then(() => material.freeze())
+    .catch(() => {});
+}
+
+type CompileTarget = { mesh: Mesh; options?: Partial<IMaterialCompilationOptions> };
+
 export class ModelMaterialFactory {
   private readonly cache = new WeakMap<PBRMaterial, StandardMaterial>();
+  private readonly compileTargets = new Map<StandardMaterial, CompileTarget>();
+
+  constructor() {
+    onSettingsChange(() => this.retune());
+  }
 
   standardFor(source: PBRMaterial): StandardMaterial {
     const cached = this.cache.get(source);
@@ -29,8 +50,24 @@ export class ModelMaterialFactory {
       mat.alphaCutOff = source.alphaCutOff;
     }
 
-    mat.freeze();
     this.cache.set(source, mat);
     return mat;
+  }
+
+  freezeWhenReady(
+    material: StandardMaterial,
+    mesh: Mesh,
+    options?: Partial<IMaterialCompilationOptions>,
+  ): void {
+    if (this.compileTargets.has(material)) return;
+    this.compileTargets.set(material, { mesh, options });
+    freezeWhenCompiled(material, mesh, options);
+  }
+
+  private retune(): void {
+    for (const [material, target] of this.compileTargets) {
+      material.unfreeze();
+      freezeWhenCompiled(material, target.mesh, target.options);
+    }
   }
 }
