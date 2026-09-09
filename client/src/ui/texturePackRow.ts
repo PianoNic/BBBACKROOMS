@@ -1,5 +1,5 @@
 import {
-  getActivePackId, importPackFromFile, listPacks, removePack, setActivePackId,
+  cacheRoster, getActivePackId, importPackFromFile, listPacks, removePack, setActivePackId,
   type PackSummary,
 } from "../core/texturePacks";
 import { fetchRoster } from "../net/roster";
@@ -35,6 +35,7 @@ export function buildTexturePackSection(): HTMLElement {
     editorBtn.disabled = true;
     try {
       const roster = await fetchRoster();
+      cacheRoster(roster);
       status.textContent = "";
       openPackEditor(roster, refresh);
     } catch (err) {

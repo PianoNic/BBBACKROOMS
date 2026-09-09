@@ -1,4 +1,6 @@
 import JSZip from "jszip";
+import type { RosterEntry } from "../net/protocol";
+import { fetchRoster } from "../net/roster";
 
 export type PackTeacherEntry = { image: string; name?: string };
 
@@ -296,16 +298,74 @@ export function activePack(): { id: string; name: string; hash: string } | null 
 
 function resolveEntry(abilityId: string | undefined, rosterIndex: number): PackTeacherEntry | null {
   if (!active) return null;
-  const byIndex = active.teachers[String(rosterIndex)];
-  if (byIndex) return byIndex;
+  if (rosterIndex >= 0) {
+    const byIndex = active.teachers[String(rosterIndex)];
+    if (byIndex) return byIndex;
+  }
   if (abilityId && active.teachers[abilityId]) return active.teachers[abilityId];
   return null;
+}
+
+const rosterImageIndex = new Map<string, number>();
+const rosterNameIndex = new Map<string, number>();
+let rosterFetchStarted = false;
+
+export function cacheRoster(entries: RosterEntry[]): void {
+  rosterImageIndex.clear();
+  rosterNameIndex.clear();
+  entries.forEach((entry, index) => {
+    if (!rosterImageIndex.has(entry.image)) rosterImageIndex.set(entry.image, index);
+    const lower = entry.image.toLowerCase();
+    if (!rosterImageIndex.has(lower)) rosterImageIndex.set(lower, index);
+    const name = entry.name.trim();
+    if (!rosterNameIndex.has(name)) rosterNameIndex.set(name, index);
+  });
+}
+
+function ensureRosterCache(): void {
+  if (rosterImageIndex.size > 0 || rosterFetchStarted) return;
+  rosterFetchStarted = true;
+  fetchRoster()
+    .then((entries) => {
+      cacheRoster(entries);
+    })
+    .catch(() => {});
+}
+
+function basename(url: string): string {
+  const withoutQuery = url.split(/[?#]/)[0];
+  const idx = withoutQuery.lastIndexOf("/");
+  return idx >= 0 ? withoutQuery.slice(idx + 1) : withoutQuery;
+}
+
+function deriveIndexFromImage(defaultUrl: string): number {
+  const name = basename(defaultUrl);
+  const exact = rosterImageIndex.get(name);
+  if (exact !== undefined) return exact;
+  const lower = rosterImageIndex.get(name.toLowerCase());
+  if (lower !== undefined) return lower;
+  const match = /^(\d{1,4})-/.exec(name);
+  if (match) {
+    const n = Number(match[1]);
+    if (n >= 1) return n - 1;
+  }
+  return -1;
+}
+
+function deriveIndexFromName(defaultName: string): number {
+  const index = rosterNameIndex.get(defaultName.trim());
+  return index !== undefined ? index : -1;
 }
 
 export function resolveTeacherImage(
   abilityId: string | undefined, rosterIndex: number, defaultUrl: string,
 ): string {
-  const entry = resolveEntry(abilityId, rosterIndex);
+  let effectiveIndex = rosterIndex;
+  if (rosterIndex < 0) {
+    ensureRosterCache();
+    effectiveIndex = deriveIndexFromImage(defaultUrl);
+  }
+  const entry = resolveEntry(abilityId, effectiveIndex);
   if (!entry || !active) return defaultUrl;
   const url = active.urls.get(entry.image);
   return url ?? defaultUrl;
@@ -314,6 +374,11 @@ export function resolveTeacherImage(
 export function resolveTeacherName(
   abilityId: string | undefined, rosterIndex: number, defaultName: string,
 ): string {
-  const entry = resolveEntry(abilityId, rosterIndex);
+  let effectiveIndex = rosterIndex;
+  if (rosterIndex < 0) {
+    ensureRosterCache();
+    effectiveIndex = deriveIndexFromName(defaultName);
+  }
+  const entry = resolveEntry(abilityId, effectiveIndex);
   return entry?.name ?? defaultName;
 }

@@ -63,6 +63,7 @@ test("a pack with an entry per roster teacher imports", async ({ page }) => {
   await expect(page.locator("#pack-editor-slots .pack-slot[data-ready=\"true\"]")).toHaveCount(122);
 
   await page.fill("#pack-slot-name-0", "Frau Muster");
+  await page.fill("#pack-slot-name-6", "Herr Sechs");
   await page.fill("#pack-slot-name-121", "Herr Beispiel");
 
   const downloadPromise = page.waitForEvent("download");
@@ -84,6 +85,7 @@ test("a pack with an entry per roster teacher imports", async ({ page }) => {
   expect(teacherKeyCount).toBeGreaterThan(122);
   expect(teacherKeyCount).toBeLessThanOrEqual(256);
   expect(manifest.teachers["0"].name).toBe("Frau Muster");
+  expect(manifest.teachers["6"].name).toBe("Herr Sechs");
   expect(manifest.teachers["121"].name).toBe("Herr Beispiel");
 
   await page.click("#pack-editor-install");
@@ -91,4 +93,21 @@ test("a pack with an entry per roster teacher imports", async ({ page }) => {
   const status = page.locator("#pack-editor-status");
   await expect(status).toHaveText(/installiert/);
   await expect(status).not.toHaveClass(/error/);
+
+  const resolved = await page.evaluate(async () => {
+    const mod = await import("/src/core/texturePacks.ts");
+    const packs = await mod.listPacks();
+    await mod.setActivePackId(packs[0].id);
+    return {
+      byIndex: mod.resolveTeacherImage(undefined, 6, "/teachers/007-Teacher-6.jpg"),
+      derived: mod.resolveTeacherImage(undefined, -1, "/teachers/007-Teacher-6.jpg"),
+      derivedName: mod.resolveTeacherName(undefined, -1, "Teacher 6"),
+      unknown: mod.resolveTeacherImage(undefined, -1, "/teachers/unmatched.jpg"),
+    };
+  });
+
+  expect(resolved.derived.startsWith("blob:")).toBe(true);
+  expect(resolved.derived).toBe(resolved.byIndex);
+  expect(resolved.derivedName).toBe("Herr Sechs");
+  expect(resolved.unknown).toBe("/teachers/unmatched.jpg");
 });
