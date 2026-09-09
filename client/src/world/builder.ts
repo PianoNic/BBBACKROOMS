@@ -1,26 +1,39 @@
-import * as THREE from "three";
+import "@babylonjs/core/Meshes/thinInstanceMesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { Grid } from "../net/protocol";
 import { materials } from "../rendering/materials";
+import { box, group, plane, type Group } from "../rendering/babylon";
 
 export const WALL_HEIGHT = 3;
 
 export type World = {
-  group: THREE.Group;
+  group: Group;
   grid: Grid;
   isWall: (cellX: number, cellY: number) => boolean;
 };
 
 const FLOOR = 1;
 
+function bake(mesh: Mesh, matrices: Float32Array): void {
+  mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
+  mesh.isPickable = false;
+  mesh.alwaysSelectAsActiveMesh = true;
+  mesh.doNotSyncBoundingInfo = true;
+  mesh.freezeWorldMatrix();
+}
+
 export function buildWorld(grid: Grid): World {
   const { width, height, cellSize, cells } = grid;
-  const group = new THREE.Group();
+  const stage = group("world");
 
   const floorCount = cells.filter((c) => c === FLOOR).length;
-  const cellGeom = new THREE.PlaneGeometry(cellSize, cellSize).rotateX(-Math.PI / 2);
-  const floors = new THREE.InstancedMesh(cellGeom, materials.floor, floorCount);
-  const ceilGeom = new THREE.PlaneGeometry(cellSize, cellSize).rotateX(Math.PI / 2);
-  const ceils = new THREE.InstancedMesh(ceilGeom, materials.ceiling, floorCount);
+  const floors = plane(cellSize, cellSize, materials.floor, false, "floors");
+  floors.rotation.x = -Math.PI / 2;
+  floors.bakeCurrentTransformIntoVertices();
+  const ceils = plane(cellSize, cellSize, materials.ceiling, false, "ceils");
+  ceils.rotation.x = Math.PI / 2;
+  ceils.bakeCurrentTransformIntoVertices();
 
   // Count walls: any non-floor cell adjacent (4-neighbours) to a floor cell.
   const isFloor = (x: number, y: number) =>
@@ -57,12 +70,12 @@ export function buildWorld(grid: Grid): World {
   ] as const) {
     if (isFloor(cxi, cyi)) boundary.push([ox, oy]);
   }
-  const wallGeom = new THREE.BoxGeometry(cellSize, WALL_HEIGHT, cellSize);
-  const walls = new THREE.InstancedMesh(
-    wallGeom, materials.wall, wallSet.size + boundary.length,
-  );
+  const walls = box(cellSize, WALL_HEIGHT, cellSize, materials.wall, "walls");
 
-  const dummy = new THREE.Object3D();
+  const floorMatrices = new Float32Array(floorCount * 16);
+  const ceilMatrices = new Float32Array(floorCount * 16);
+  const wallMatrices = new Float32Array((wallSet.size + boundary.length) * 16);
+  const tmp = Matrix.Identity();
   let fIdx = 0;
   let wIdx = 0;
   for (let y = 0; y < height; y++) {
@@ -70,17 +83,14 @@ export function buildWorld(grid: Grid): World {
       const cx = (x + 0.5) * cellSize;
       const cz = (y + 0.5) * cellSize;
       if (cells[y * width + x] === FLOOR) {
-        dummy.position.set(cx, 0, cz);
-        dummy.updateMatrix();
-        floors.setMatrixAt(fIdx, dummy.matrix);
-        dummy.position.set(cx, WALL_HEIGHT, cz);
-        dummy.updateMatrix();
-        ceils.setMatrixAt(fIdx, dummy.matrix);
+        Matrix.TranslationToRef(cx, 0, cz, tmp);
+        tmp.copyToArray(floorMatrices, fIdx * 16);
+        Matrix.TranslationToRef(cx, WALL_HEIGHT, cz, tmp);
+        tmp.copyToArray(ceilMatrices, fIdx * 16);
         fIdx++;
       } else if (wallSet.has(y * width + x)) {
-        dummy.position.set(cx, WALL_HEIGHT / 2, cz);
-        dummy.updateMatrix();
-        walls.setMatrixAt(wIdx, dummy.matrix);
+        Matrix.TranslationToRef(cx, WALL_HEIGHT / 2, cz, tmp);
+        tmp.copyToArray(wallMatrices, wIdx * 16);
         wIdx++;
       }
     }
@@ -88,27 +98,17 @@ export function buildWorld(grid: Grid): World {
   for (const [bx, by] of boundary) {
     const cx = (bx + 0.5) * cellSize;
     const cz = (by + 0.5) * cellSize;
-    dummy.position.set(cx, WALL_HEIGHT / 2, cz);
-    dummy.updateMatrix();
-    walls.setMatrixAt(wIdx, dummy.matrix);
+    Matrix.TranslationToRef(cx, WALL_HEIGHT / 2, cz, tmp);
+    tmp.copyToArray(wallMatrices, wIdx * 16);
     wIdx++;
   }
-  floors.instanceMatrix.needsUpdate = true;
-  ceils.instanceMatrix.needsUpdate = true;
-  walls.instanceMatrix.needsUpdate = true;
-  group.add(floors, ceils, walls);
-
-  // PERF: world geometry is fully static. Skip per-frame matrix updates
-  // on every InstancedMesh so the renderer doesn't recompute matrices
-  // for the entire grid every frame.
-  group.updateMatrixWorld(true);
-  group.traverse((o) => {
-    o.matrixAutoUpdate = false;
-    o.matrixWorldAutoUpdate = false;
-  });
+  stage.add(floors, ceils, walls);
+  bake(floors, floorMatrices);
+  bake(ceils, ceilMatrices);
+  bake(walls, wallMatrices);
 
   return {
-    group,
+    group: stage,
     grid,
     isWall: (cx, cy) => !isFloor(cx, cy),
   };

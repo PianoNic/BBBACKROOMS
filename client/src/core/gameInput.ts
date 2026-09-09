@@ -3,7 +3,8 @@
  *  Owns no state — receives the live game references and `ReviveState`
  *  shared with the packet handler so KeyE press/release can talk to the
  *  revive flow without main.ts juggling another variable. */
-import * as THREE from "three";
+import { cameraForward } from "../rendering/babylon";
+import type { Player } from "../gameplay/player";
 import type { NetClient } from "../net/client";
 import type { ReviveState } from "../net/gamePackets";
 import type { InteractPrompt } from "../ui/interactPrompt";
@@ -17,7 +18,7 @@ import type { ReviveBar } from "../ui/reviveBar";
 
 export type GameInputDeps = {
   net: NetClient;
-  camera: THREE.PerspectiveCamera;
+  player: Player;
   state: { extracted: boolean; hidden: boolean };
   reviveState: ReviveState;
   interactPrompt: InteractPrompt;
@@ -79,14 +80,15 @@ function onKeyDown(d: GameInputDeps, e: KeyboardEvent): void {
 /** Ping the spot the camera looks at: intersect the view ray with the floor
  *  plane, clamped so sky-gazing still drops a marker a few meters ahead. */
 function sendPing(d: GameInputDeps): void {
-  const origin = new THREE.Vector3();
-  d.camera.getWorldPosition(origin);
-  const dir = new THREE.Vector3();
-  d.camera.getWorldDirection(dir);
+  const origin = d.player.position;
+  const dir = cameraForward(d.player.yaw, d.player.pitch);
   let t = 18;
   if (dir.y < -0.02) t = Math.min(40, -origin.y / dir.y);
-  const target = origin.addScaledVector(dir, t);
-  d.net.send({ type: "ping", x: target.x, z: target.z });
+  d.net.send({
+    type: "ping",
+    x: origin.x + dir.x * t,
+    z: origin.z + dir.z * t,
+  });
 }
 
 function handleInteract(d: GameInputDeps): void {
@@ -144,8 +146,7 @@ function onClick(d: GameInputDeps): void {
   if (!document.pointerLockElement || d.laptop.isOpen()) return;
   if (d.state.hidden) return;  // inside a closet only E works
   if (d.chairs.isHoldingChair()) {
-    const fwd = new THREE.Vector3();
-    d.camera.getWorldDirection(fwd);
+    const fwd = cameraForward(d.player.yaw, d.player.pitch);
     d.chairs.requestThrow(d.net, fwd.x, fwd.z);
   }
 }

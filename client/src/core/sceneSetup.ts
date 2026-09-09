@@ -3,7 +3,7 @@
  *  Pulled out of `main.ts` so the bootstrap stays a short, readable wiring
  *  sequence. This module owns no state — it constructs and returns the
  *  managers, then the caller wires them into the packet handler and loop. */
-import * as THREE from "three";
+import type { SpatialListener } from "./spatialAudio";
 import type { WorldInit } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { createRenderContext } from "../rendering/renderer";
@@ -50,36 +50,28 @@ export function buildScene(
   init: WorldInit,
   ctx: ReturnType<typeof createRenderContext>,
   net: NetClient,
-  audioListener: THREE.AudioListener,
+  audioListener: SpatialListener,
   webcam: WebcamMesh,
 ) {
   const world = buildWorld(init.grid);
-  ctx.scene.add(world.group);
   const lights = new FlickerLights(init.lights);
-  ctx.scene.add(lights.group);
-  ctx.scene.add(buildProps(init.props));
+  buildProps(init.props);
   const propColliders = buildPropColliders(init.props);
 
-  ctx.camera.add(audioListener);
-  ctx.scene.add(ctx.camera);
   const remotes = new RemotePlayers();
   remotes.attachAudio(audioListener);
-  ctx.scene.add(remotes.group);
   for (const p of init.players) remotes.add(p);
 
   const quests = new Quests(init.objectives);
-  ctx.scene.add(quests.group);
   new TaskBoard(quests);
 
   const pings = new Pings();
-  ctx.scene.add(pings.group);
 
   const hideouts = new Hideouts(init.props);
 
   const portal = new ExtractionPortal(
     init.extraction.x, init.extraction.z, init.extraction.radius,
   );
-  ctx.scene.add(portal.group);
   if (init.phase === "escape") portal.show();
   if (init.phase === "won") showVictory(net, init.scoreboard ?? null, init.selfId);
   else if (init.phase === "lost") showGameOver(net, init.scoreboard ?? null, init.selfId);
@@ -100,9 +92,7 @@ export function buildScene(
   const stamina = new StaminaBar();
   const interactPrompt = new InteractPrompt();
   const laptops = new Laptops(init.laptops);
-  ctx.scene.add(laptops.group);
   const teachers = new Teachers(init.teachers ?? [], audioListener);
-  ctx.scene.add(teachers.group);
   const teacherById = new Map((init.teachers ?? []).map((t) => [t.id, t]));
   const teacherEffects = new TeacherEffects(
     ctx.scene, ctx.camera, init.selfId, (id) => teacherById.get(id) ?? null,
@@ -116,24 +106,17 @@ export function buildScene(
   ]) preloadSfx(`/sounds/actions/${f}.ogg`);
 
   const corpses = new Corpses();
-  ctx.scene.add(corpses.group);
   for (const c of init.corpses ?? []) {
     const col = init.players.find((p) => p.id === c.id)?.color ?? init.selfColor;
     corpses.add(c.id, c.x, c.z, col);
   }
   const laptop = new LaptopOverlay(net);
   const chairs = new Chairs(init.chairs ?? [], init.selfId, ctx.camera, remotes);
-  ctx.scene.add(chairs.group);
   const pickups = new Pickups(init.pickups ?? []);
-  ctx.scene.add(pickups.group);
   const lockers = new Lockers(init.lockers ?? []);
-  ctx.scene.add(lockers.group);
   const doors = new Doors(init.doors ?? [], propColliders);
-  ctx.scene.add(doors.group);
   const toiletStallDoors = new ToiletStallDoors(init.props);
-  ctx.scene.add(toiletStallDoors.group);
   const fuseBoxes = new FuseBoxes(init.props);
-  ctx.scene.add(fuseBoxes.group);
   const inventory = new InventoryHud();
   inventory.set(
     init.inventory?.medkits ?? 0,
@@ -149,7 +132,7 @@ export function buildScene(
   compass.setEnabled(inventory.hasCompass());
   const heartbeat = new Heartbeat();
 
-  const input = new InputState(ctx.renderer.domElement);
+  const input = new InputState(ctx.canvas);
   const player = new Player(ctx.camera, input, world, propColliders);
   player.spawn(init.spawn.x, init.spawn.z, init.spawn.yaw);
 

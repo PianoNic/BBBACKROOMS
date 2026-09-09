@@ -4,10 +4,13 @@
  *  for the same colored lambert get the SAME material instance — which
  *  means the static-prop merger in `rendering/staticMerge.ts` can
  *  collapse hundreds of meshes into a single draw call per color. */
-import * as THREE from "three";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Prop } from "../../net/protocol";
+import { group } from "../../rendering/babylon";
 
-export type Builder = (prop: Prop) => THREE.Object3D;
+export { M, Basic } from "../../rendering/babylon";
+
+export type Builder = (prop: Prop) => TransformNode;
 
 /** Wrap a wall-prop builder so its mesh contents are offset away from the
  *  wall by `depth` metres (along local +Z, the wall direction). Use when
@@ -16,8 +19,8 @@ export type Builder = (prop: Prop) => THREE.Object3D;
  *  overwritten by the placement code, so we offset an inner wrapper. */
 export function offsetFromWall(build: Builder, depth: number): Builder {
   return (prop) => {
-    const wrapper = new THREE.Group();
-    const inner = build(prop) as THREE.Object3D;
+    const wrapper = group("wallOffset");
+    const inner = build(prop);
     inner.position.z -= depth;
     wrapper.add(inner);
     return wrapper;
@@ -58,23 +61,3 @@ export function mulberry32(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-const M_CACHE = new Map<number, THREE.MeshLambertMaterial>();
-export const M = (color: number): THREE.MeshLambertMaterial => {
-  let mat = M_CACHE.get(color);
-  if (!mat) {
-    mat = new THREE.MeshLambertMaterial({ color });
-    M_CACHE.set(color, mat);
-  }
-  return mat;
-};
-
-const B_CACHE = new Map<number, THREE.MeshBasicMaterial>();
-export const Basic = (color: number): THREE.MeshBasicMaterial => {
-  let mat = B_CACHE.get(color);
-  if (!mat) {
-    mat = new THREE.MeshBasicMaterial({ color });
-    B_CACHE.set(color, mat);
-  }
-  return mat;
-};

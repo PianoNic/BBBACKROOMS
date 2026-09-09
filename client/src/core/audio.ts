@@ -34,6 +34,11 @@ export function unlockAudio(): void {
   if (c && c.state === "suspended") c.resume().catch(() => undefined);
 }
 
+/** Returns the shared AudioContext, creating it on first call. */
+export function getAudioContext(): AudioContext | null {
+  return ensureCtx();
+}
+
 /** Returns the sfx destination gain. Use this as the final output for one-shot sounds. */
 export function getSfxDestination(): GainNode | null {
   ensureCtx();

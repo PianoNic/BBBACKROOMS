@@ -5,6 +5,7 @@
     "": {
       "name": "backrooms-baden-client",
       "dependencies": {
+        "@babylonjs/core": "^9.25.0",
         "lucide": "^1.14.0",
         "stats.js": "^0.17.0",
         "three": "^0.171.0",
@@ -19,6 +20,8 @@
     },
   },
   "packages": {
+    "@babylonjs/core": ["@babylonjs/core@9.25.0", "", {}, "sha512-PflCKhM0ZRQ1o/7fRsYic4r1ogBpE/ZxA/8wJ2K2C9wg7rc0rIkXMVTUAcAypAFeVtE0ix6sp3Bd4zbz/rfHBQ=="],
+
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.25.12", "", { "os": "aix", "cpu": "ppc64" }, "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA=="],
 
     "@esbuild/android-arm": ["@esbuild/android-arm@0.25.12", "", { "os": "android", "cpu": "arm" }, "sha512-VJ+sKvNA/GE7Ccacc9Cha7bpS8nyzVv0jdVgwNDaR4gDMC/2TTRc33Ip8qrNYUcpkOHUT5OZ0bUcNNVZQ9RLlg=="],

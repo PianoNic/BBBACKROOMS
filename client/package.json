@@ -10,6 +10,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@babylonjs/core": "^9.25.0",
     "lucide": "^1.14.0",
     "stats.js": "^0.17.0",
     "three": "^0.171.0"
