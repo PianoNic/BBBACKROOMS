@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import secrets
 
+from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.lobby_registry import ILobbyRegistry
-from app.domain.lobby import Lobby
 
 
 class InMemoryLobbyRegistry(ILobbyRegistry):

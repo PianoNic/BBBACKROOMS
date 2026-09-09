@@ -93,7 +93,7 @@ async def test_pack_announce_ignored_from_non_host():
     lobby.admin_id = host.id
     pkt = PackAnnouncePkt(type="pack_announce", pack_id="foo-pack", pack_hash="a" * 64)
 
-    await dispatch(other.ws, lobby, other, pkt)
+    await dispatch(other.channel, lobby, other, pkt)
 
     assert lobby.pack_id is None
     assert lobby.pack_hash is None
@@ -105,7 +105,7 @@ async def test_pack_announce_from_host_updates_lobby_and_room_state():
     lobby.admin_id = host.id
     pkt = PackAnnouncePkt(type="pack_announce", pack_id="foo-pack", pack_hash="b" * 64)
 
-    await dispatch(host.ws, lobby, host, pkt)
+    await dispatch(host.channel, lobby, host, pkt)
 
     assert lobby.pack_id == "foo-pack"
     assert lobby.pack_hash == "b" * 64

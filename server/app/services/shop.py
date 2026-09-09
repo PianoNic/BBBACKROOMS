@@ -12,7 +12,8 @@ import logging
 from app.db import cosmetics_repo
 from app.db.engine import db_available
 from app.domain.cosmetics.cosmetic_catalog import cosmetic_catalog
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services._helpers import send_safe
 from app.services.broadcast import broadcast
 

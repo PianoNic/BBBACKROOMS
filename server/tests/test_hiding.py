@@ -60,7 +60,7 @@ class TestClosetChoice:
         await hiding.handle_hide(lobby, me)
 
         assert me.hidden_in is None
-        assert me.ws.json_sent[-1] == {"type": "hide_denied", "reason": "occupied"}
+        assert me.channel.json_sent[-1] == {"type": "hide_denied", "reason": "occupied"}
 
     async def test_nothing_in_range_stays_silent(self):
         lobby = make_lobby()
@@ -70,7 +70,7 @@ class TestClosetChoice:
         await hiding.handle_hide(lobby, me)
 
         assert me.hidden_in is None
-        assert me.ws.json_sent == []   # no denial banner for an empty press
+        assert me.channel.json_sent == []   # no denial banner for an empty press
 
 
 class TestEnteringWithAChair:

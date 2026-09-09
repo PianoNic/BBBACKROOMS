@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import secrets
 
-from app.domain.lobby import Lobby, Pickup, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.pickup import Pickup
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services._helpers import is_active
 from app.services.broadcast import broadcast
 from app.services.noise import LOCKER_RADIUS, emit_noise

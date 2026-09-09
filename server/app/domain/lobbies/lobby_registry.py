@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 
 
 class ILobbyRegistry(ABC):

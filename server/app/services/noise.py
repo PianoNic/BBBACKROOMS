@@ -15,7 +15,8 @@ from __future__ import annotations
 import math
 import time as _time
 
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 
 # Speed gate: walking is 5.0 m/s, sprinting 8.5 m/s client-side. Anything
 # implausibly fast (teleports: spawn, revive) is ignored.

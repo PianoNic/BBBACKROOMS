@@ -15,7 +15,8 @@ import math
 import random
 import time as _time
 
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services._abilities_effects import (
     CIRCUIT_STUN_DURATION,
     FINE_SLOW_DURATION, FINE_SLOW_FACTOR,

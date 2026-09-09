@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import math
 
-from app.domain.lobby import Hideout, Lobby, PlayerConn
+from app.domain.lobbies.hideout import Hideout
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
 from app.services.noise import emit_noise

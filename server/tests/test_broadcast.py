@@ -17,11 +17,11 @@ class TestSingleEncode:
 
         await broadcast(lobby, {"type": "ping", "n": 1})
 
-        payloads = {p.ws.text_sent[0] for p in players}
+        payloads = {p.channel.text_sent[0] for p in players}
         assert len(payloads) == 1, "recipients got separately encoded payloads"
         assert json.loads(payloads.pop()) == {"type": "ping", "n": 1}
         # send_json would re-run json.dumps per recipient; send_text does not.
-        assert all(p.ws.json_sent == [] for p in players)
+        assert all(p.channel.json_sent == [] for p in players)
 
     async def test_exclude_skips_that_conn(self):
         lobby = make_lobby()
@@ -30,8 +30,8 @@ class TestSingleEncode:
 
         await broadcast(lobby, {"type": "ping"}, exclude="a")
 
-        assert a.ws.text_sent == []
-        assert len(b.ws.text_sent) == 1
+        assert a.channel.text_sent == []
+        assert len(b.channel.text_sent) == 1
 
     async def test_a_dead_socket_does_not_stop_the_others(self):
         lobby = make_lobby()
@@ -41,11 +41,11 @@ class TestSingleEncode:
         async def boom(_payload):
             raise ConnectionResetError("client vanished")
 
-        dead.ws.send_text = boom
+        dead.channel.send_text = boom
 
         await broadcast(lobby, {"type": "ping"})
 
-        assert len(good.ws.text_sent) == 1
+        assert len(good.channel.text_sent) == 1
 
 
 class TestReadyGate:
@@ -61,8 +61,8 @@ class TestReadyGate:
 
         # The client drops everything received before lobby_state, so an early
         # join packet would be lost and that player missing from the roster.
-        assert joining.ws.text_sent == []
-        assert len(settled.ws.text_sent) == 1
+        assert joining.channel.text_sent == []
+        assert len(settled.channel.text_sent) == 1
 
     async def test_conn_receives_once_ready(self):
         lobby = make_lobby()
@@ -72,4 +72,4 @@ class TestReadyGate:
         p.ready = True
         await broadcast(lobby, {"type": "b"})
 
-        assert [json.loads(t)["type"] for t in p.ws.text_sent] == ["b"]
+        assert [json.loads(t)["type"] for t in p.channel.text_sent] == ["b"]

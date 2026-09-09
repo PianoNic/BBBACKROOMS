@@ -4,11 +4,14 @@ import peewee_async
 import pytest
 
 from app.db.models import ALL_MODELS
-from app.domain.lobby import Chair, Hideout, Lobby, PlayerConn
+from app.domain.lobbies.chair import Chair
+from app.domain.lobbies.hideout import Hideout
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.infrastructure.persistence.engine import DatabaseEngine
 
 
-class FakeWS:
+class FakeChannel:
     def __init__(self) -> None:
         self.json_sent: list[dict] = []
         self.text_sent: list[str] = []
@@ -45,7 +48,7 @@ def make_lobby(width: int = 40, height: int = 40) -> Lobby:
 def add_player(
     lobby: Lobby, pid: str = "p1", x: float = 0.0, z: float = 0.0,
 ) -> PlayerConn:
-    p = PlayerConn(id=pid, name=pid, color="#ffffff", ws=FakeWS())
+    p = PlayerConn(id=pid, name=pid, color="#ffffff", channel=FakeChannel())
     p.x, p.z = x, z
     p.ready = True
     lobby.conns[pid] = p

@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import time as _time
 
-from app.domain.lobby import Lobby, PlayerConn, Revive
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
+from app.domain.lobbies.revive import Revive
 from app.services._helpers import is_active, send_safe
 from app.services.broadcast import broadcast
 from app.domain.world.geom import within_radius_xz

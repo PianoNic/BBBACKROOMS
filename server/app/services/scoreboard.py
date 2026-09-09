@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import time as _time
 
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services.leveling import earned_coins, earned_xp, level_from_total
 
 

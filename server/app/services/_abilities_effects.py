@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import time as _time
 
-from app.domain.lobby import Lobby
+from app.domain.lobbies.lobby import Lobby
 
 # Ability tuning ---------------------------------------------------------------
 POTION_RADIUS = 2.0

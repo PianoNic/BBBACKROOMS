@@ -5,7 +5,8 @@ in `endgame.py` / `db/achievements_repo.py`.
 """
 from __future__ import annotations
 
-from app.domain.lobby import Lobby, PlayerConn
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_conn import PlayerConn
 
 SPEEDRUN_MS = 5 * 60 * 1000
 

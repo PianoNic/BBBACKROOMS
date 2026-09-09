@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import random
 
-from fastapi import WebSocket
-
-from app.domain.lobby import Laptop, Lobby, PlayerConn
+from app.domain.lobbies.laptop import Laptop
+from app.domain.lobbies.lobby import Lobby
+from app.domain.lobbies.player_channel import IPlayerChannel
+from app.domain.lobbies.player_conn import PlayerConn
 from app.services.broadcast import broadcast
 from app.services.laptop_challenges import is_correct
 from app.services.rpg_battle import play_rpg
@@ -64,7 +65,7 @@ def _public_challenge(challenge: dict) -> dict:
     return {k: v for k, v in challenge.items() if k != "correct"}
 
 
-async def handle_gamble_open(ws: WebSocket, lobby: Lobby, me: PlayerConn) -> None:
+async def handle_gamble_open(channel: IPlayerChannel, lobby: Lobby, me: PlayerConn) -> None:
     lp = nearest_laptop(lobby, me.x, me.z)
     if lp is None:
         return
@@ -72,7 +73,7 @@ async def handle_gamble_open(ws: WebSocket, lobby: Lobby, me: PlayerConn) -> Non
     # matches the server state.
     lp.battles.pop(me.id, None)
     done = laptop_done_status(lobby, lp.id)
-    await ws.send_json({
+    await channel.send_json({
         "type": "gamble_state", "laptopId": lp.id, "game": lp.game, "done": done,
         "challenge": _public_challenge(lp.challenge),
     })
@@ -106,14 +107,14 @@ async def mark_laptop_done(lobby: Lobby, laptop_id: str, player_id: str) -> None
 
 
 async def handle_gamble_play(
-    ws: WebSocket, lobby: Lobby, me: PlayerConn, laptop_id: str,
+    channel: IPlayerChannel, lobby: Lobby, me: PlayerConn, laptop_id: str,
     choice: str | None,
 ) -> None:
     lp = lobby.laptops.get(laptop_id)
     if lp is None or laptop_done_status(lobby, lp.id):
         return
     win, detail = play_game(lp, choice, me.id)
-    await ws.send_json({
+    await channel.send_json({
         "type": "gamble_result", "laptopId": lp.id, "game": lp.game, "win": win,
         **detail,
     })
