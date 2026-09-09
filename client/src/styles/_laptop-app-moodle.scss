@@ -46,8 +46,11 @@ $moodle-border: #dee2e6;
   }
 
   .moodle-login-logo {
-    height: 96px; width: auto; object-fit: contain;
     align-self: center; margin-bottom: 18px;
+    padding: 30px 0;
+    font-size: 34px; font-weight: 800; letter-spacing: -0.5px;
+    color: $moodle-red;
+    text-align: center;
   }
 
   .moodle-login-alert {
@@ -122,7 +125,10 @@ $moodle-border: #dee2e6;
 
   .moodle-nav-left { display: flex; align-items: center; }
   .moodle-logo-img {
-    height: 44px; width: auto; display: block;
+    display: block;
+    font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
+    color: $moodle-red;
+    line-height: 44px;
   }
 
   .moodle-nav-center {

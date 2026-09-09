@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import random
 
-# Fake course catalogue (BBB style: Mxxx codes).
+# Fake course catalogue (Mxxx module codes).
 COURSES: list[tuple[str, str]] = [
     ("Programmieren", "M165"),
     ("Datenbanken", "M162"),
@@ -32,7 +32,7 @@ COURSES: list[tuple[str, str]] = [
 CHANNELS: list[str] = [
     "BM23f - Allgemein", "M165 - Programmieren", "M162 - Datenbanken",
     "M114 - Netzwerke", "M150 - Webdesign", "Klassenrat BM23",
-    "Projektgruppe Alpha", "Lehrpersonen BBB",
+    "Projektgruppe Alpha", "Lehrpersonen",
 ]
 
 TEACHER_NAMES: list[str] = [
@@ -40,8 +40,8 @@ TEACHER_NAMES: list[str] = [
     "Anna Hofer", "Markus Iten",
 ]
 
-# BBB-style material names (module code + sequence + type + topic), as on
-# real Moodle course pages.
+# Fake material names (module code + sequence + type + topic), as on
+# a typical Moodle course page.
 FILE_NAMES: list[str] = [
     "INFILA1-010d-PR-WasIstILA.pptx",
     "INFILA1-020d-PR-DateiablageEinrichten.pptx",
