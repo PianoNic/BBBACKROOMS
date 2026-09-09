@@ -37,6 +37,7 @@ provider.
 | `FRONTEND_URL` | SPA origin the callback returns to; also the CORS origin (`http://localhost:5173` dev, `https://backrooms-baden.ch` production). |
 | `SESSION_SECRET` | 32+ random bytes in production; empty = ephemeral dev key. |
 | `SESSION_COOKIE_SECURE` | `true` behind HTTPS, `false` for localhost. |
+| `BLOCKED_SUBJECTS` | Comma-separated `provider:subject` pairs that may not sign in or host. Empty = nobody blocked. |
 
 **Redirect URIs to register** (must match `OAUTH_REDIRECT_BASE` exactly):
 - Dev: `http://localhost:8000/auth/google/callback`
@@ -75,6 +76,29 @@ provider.
   and Microsoft is two accounts (no auto-merge in v1).
 - The OIDC request asks only for `openid profile`; no email address is ever requested or stored.
 - The `account` row holds only `id`, `provider`, `provider_subject`, `display_name`, `created_at` — `display_name` is the default in-game name. Everything else lives in `profile` / `cosmetic_*` / `achievement_unlock`.
+
+## Blocking an account
+To stop a specific person from signing in or hosting a lobby, find their
+`(provider, provider_subject)` pair on the database:
+
+```sql
+SELECT provider, provider_subject, display_name FROM account ORDER BY created_at DESC;
+```
+
+Then set `BLOCKED_SUBJECTS=google:1234567890,microsoft:abcd` in `.env`
+(comma-separated, `provider:subject`, provider lowercase, subject exactly as
+stored). **Restart the server** — the list is read once at startup.
+
+Effect: the OAuth callback refuses the login (no session cookie, browser
+returns to `?login=blocked`, the title screen shows a German notice with the
+contact address kontakt@backrooms-baden.ch); `GET /auth/ws-ticket` answers
+`403`, so the WebSocket falls back to an unauthenticated guest connection;
+`POST /lobbies` answers `403` for a blocked session, so a blocked account
+cannot host.
+
+**Limitation:** guests have no account, so a blocked person can still play as
+a guest under a random name. Blocking is per account only; kicking or banning
+a guest is not implemented and stays a per-lobby / manual matter.
 
 ## Deleting an account
 The profile panel on the server-browser screen shows a **KONTO LÖSCHEN** button

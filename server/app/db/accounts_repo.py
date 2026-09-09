@@ -5,6 +5,7 @@ All functions assume the database is connected (callers check
 """
 from __future__ import annotations
 
+from app.config import is_subject_blocked
 from app.db.engine import database
 from app.db.models import Account, AchievementUnlock, CosmeticEquipped, CosmeticOwnership, Profile
 from app.services.leveling import level_from_total
@@ -46,6 +47,11 @@ async def get_account(account_id: int) -> Account | None:
         return await Account.aio_get(Account.id == account_id)
     except Account.DoesNotExist:
         return None
+
+
+async def is_account_blocked(account_id: int) -> bool:
+    acct = await get_account(account_id)
+    return acct is not None and is_subject_blocked(acct.provider, acct.provider_subject)
 
 
 async def add_rewards(account_id: int, xp_delta: int, coins_delta: int) -> tuple[int, int]:
