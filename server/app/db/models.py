@@ -29,13 +29,12 @@ class Account(BaseModel):
     id = peewee.AutoField()
     provider = peewee.CharField()           # "google" | "microsoft"
     provider_subject = peewee.CharField()   # OIDC `sub` — stable per provider
-    email = peewee.CharField(null=True)
     display_name = peewee.CharField(null=True)
     created_at = peewee.DateTimeField(default=_utcnow)
 
     class Meta:
         table_name = "account"
-        # Natural identity per provider; email is mutable so never key on it.
+        # Natural identity per provider.
         indexes = ((("provider", "provider_subject"), True),)
 
 
