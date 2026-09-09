@@ -1,6 +1,7 @@
-import * as THREE from "three";
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import type { RemotePlayers } from "./remotePlayers";
 import { getSettings } from "../core/settings";
+import { setCameraOrientation } from "../rendering/babylon";
 
 const FOLLOW_DIST = 4.5;
 const HEIGHT_OFFSET = 1.1;     // camera offset above the target's center
@@ -17,7 +18,7 @@ export class Spectator {
   private pitch = -0.25;
 
   constructor(
-    private readonly camera: THREE.PerspectiveCamera,
+    private readonly camera: FreeCamera,
     private readonly remotes: RemotePlayers,
     private readonly selfId: string,
   ) {
@@ -75,11 +76,18 @@ export class Spectator {
     const offX = Math.sin(this.yaw) * FOLLOW_DIST * cosP;
     const offZ = Math.cos(this.yaw) * FOLLOW_DIST * cosP;
     const offY = -sinP * FOLLOW_DIST + HEIGHT_OFFSET;
-    this.camera.position.set(
-      m.position.x + offX,
-      m.position.y + offY,
-      m.position.z + offZ,
-    );
-    this.camera.lookAt(m.position.x, m.position.y + LOOK_HEIGHT - 0.5, m.position.z);
+    const camX = m.position.x + offX;
+    const camY = m.position.y + offY;
+    const camZ = m.position.z + offZ;
+    this.camera.position.set(camX, camY, camZ);
+    const targetX = m.position.x;
+    const targetY = m.position.y + LOOK_HEIGHT - 0.5;
+    const targetZ = m.position.z;
+    const dx = targetX - camX;
+    const dy = targetY - camY;
+    const dz = targetZ - camZ;
+    const yaw = Math.atan2(-dx, -dz);
+    const pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    setCameraOrientation(this.camera, yaw, pitch);
   }
 }

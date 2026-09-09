@@ -1,9 +1,10 @@
-import * as THREE from "three";
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import type { ChairInit, ChairStatePkt, ChairThrowStartPkt, ChairHitPkt } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { RemotePlayers } from "./remotePlayers";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { distanceSquaredXZ } from "../core/geom";
+import { Group, group, setEulerXYZ } from "../rendering/babylon";
 import { buildChairMesh } from "./chairMesh";
 
 export { buildChairMesh };
@@ -13,7 +14,7 @@ const THROW_LIFETIME_MS = 1600;
 
 type Entry = {
   state: ChairInit;
-  mesh: THREE.Group;       // world-position visual (hidden while held)
+  mesh: Group;       // world-position visual (hidden while held)
 };
 
 type Projectile = {
@@ -24,22 +25,22 @@ type Projectile = {
   z: number;
   vx: number;
   vz: number;
-  mesh: THREE.Group;
+  mesh: Group;
   spinPhase: number;
 };
 
 export class Chairs {
-  readonly group = new THREE.Group();
+  readonly group = group("chairs");
   private readonly chairs = new Map<string, Entry>();
   private readonly flights = new Map<string, Projectile>();
-  private readonly heldMesh: THREE.Group;
+  private readonly heldMesh: Group;
   private heldChairId: string | null = null;
   private heldBob = 0;
 
   constructor(
     initial: ChairInit[],
     private readonly selfId: string,
-    private readonly camera: THREE.PerspectiveCamera,
+    private readonly camera: FreeCamera,
     private readonly remotes: RemotePlayers,
   ) {
     for (const c of initial) {
@@ -52,15 +53,14 @@ export class Chairs {
     // First-person held chair: parented to the camera, tucked at the bottom.
     this.heldMesh = buildChairMesh();
     this.heldMesh.position.set(0.35, -0.55, -0.55);
-    this.heldMesh.rotation.y = Math.PI; // back of chair facing forward
-    this.heldMesh.rotation.x = -0.2;
+    setEulerXYZ(this.heldMesh, -0.2, Math.PI, 0); // back of chair facing forward
     this.heldMesh.visible = false;
-    this.camera.add(this.heldMesh);
+    this.heldMesh.parent = this.camera;
     // Carrier-side mesh for other players is rendered via the world mesh
     // floating at the player's position (cheap; no rig).
   }
 
-  private applyMeshPose(mesh: THREE.Group, c: ChairInit): void {
+  private applyMeshPose(mesh: Group, c: ChairInit): void {
     mesh.position.set(c.x, 0, c.z);
     mesh.rotation.y = c.yaw;
   }
@@ -146,7 +146,7 @@ export class Chairs {
       f.z += f.vz * dt;
       f.spinPhase += dt * 14;
       f.mesh.position.set(f.x, 0.9, f.z);
-      f.mesh.rotation.set(f.spinPhase, Math.atan2(f.vx, f.vz), 0);
+      setEulerXYZ(f.mesh, f.spinPhase, Math.atan2(f.vx, f.vz), 0);
     }
     if (held) {
       // Subtle bob so the chair feels carried.
@@ -169,7 +169,7 @@ export class Chairs {
       );
       // Chair model's back is at local -Z; rotate it so the back faces away
       // from the carrier (i.e. the seat is toward the carrier's chest).
-      e.mesh.rotation.set(-0.2, m.rotation.y + Math.PI, 0);
+      setEulerXYZ(e.mesh, -0.2, m.rotation.y + Math.PI, 0);
     }
   }
 

@@ -4,9 +4,9 @@
  *  until the locker is opened. Each locker has a door that swings open
  *  (~90° around its hinge) when opened. Closed lockers expose an interact
  *  target; opened lockers don't (re-opening is a no-op server-side). */
-import * as THREE from "three";
 import type { LockerInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
+import { Group, box, group } from "../rendering/babylon";
 import { materials } from "../rendering/materials";
 
 const OPEN_RADIUS = 1.8;
@@ -21,26 +21,16 @@ const W = 0.5;
 const H = 1.8;
 const D = 0.4;
 
-const BACK = new THREE.BoxGeometry(W, H, T);
-const SIDE = new THREE.BoxGeometry(T, H, D);
-const CAP = new THREE.BoxGeometry(W, T, D);
-const INNER_BACK = new THREE.BoxGeometry(W - 2 * T, H - 2 * T, T * 0.5);
-const SHELF = new THREE.BoxGeometry(W - 2 * T, T, D - 2 * T);
-const DOOR = new THREE.BoxGeometry(W, H - 2 * T, T);
-const VENT = new THREE.BoxGeometry(0.28, 0.012, 0.005);
-const HANDLE_BAR = new THREE.BoxGeometry(0.05, 0.12, 0.025);
-const HOOK = new THREE.BoxGeometry(0.04, 0.04, 0.02);
-
 type Entry = {
   info: LockerInfo;
-  doorPivot: THREE.Group;
+  doorPivot: Group;
   opened: boolean;
   /** Target angle for the door — linearly chased by `update()`. */
   target: number;
 };
 
 export class Lockers {
-  readonly group = new THREE.Group();
+  readonly group = group("lockers");
   private readonly entries = new Map<string, Entry>();
 
   constructor(initial: LockerInfo[]) {
@@ -48,54 +38,54 @@ export class Lockers {
   }
 
   private add(lk: LockerInfo): void {
-    const root = new THREE.Group();
+    const root = group("locker");
     root.position.set(lk.x, 0, lk.z);
     root.rotation.y = lk.yaw;
 
     // 5-sided shell — open on -Z. Each panel is `T` thick so when the door
     // swings out the player sees the (darker) interior, not a solid block.
-    const back = new THREE.Mesh(BACK, materials.locker);
+    const back = box(W, H, T, materials.locker);
     back.position.set(0, H / 2, -T / 2);
     root.add(back);
-    const left = new THREE.Mesh(SIDE, materials.locker);
+    const left = box(T, H, D, materials.locker);
     left.position.set(-W / 2 + T / 2, H / 2, -D / 2);
     root.add(left);
-    const right = new THREE.Mesh(SIDE, materials.locker);
+    const right = box(T, H, D, materials.locker);
     right.position.set(W / 2 - T / 2, H / 2, -D / 2);
     root.add(right);
-    const top = new THREE.Mesh(CAP, materials.locker);
+    const top = box(W, T, D, materials.locker);
     top.position.set(0, H - T / 2, -D / 2);
     root.add(top);
-    const bottom = new THREE.Mesh(CAP, materials.locker);
+    const bottom = box(W, T, D, materials.locker);
     bottom.position.set(0, T / 2, -D / 2);
     root.add(bottom);
 
     // Interior dressing: dark backboard overlay + shelf at hat-height + hook.
-    const innerBack = new THREE.Mesh(INNER_BACK, materials.lockerInside);
+    const innerBack = box(W - 2 * T, H - 2 * T, T * 0.5, materials.lockerInside);
     innerBack.position.set(0, H / 2, -T - T * 0.25);
     root.add(innerBack);
-    const shelf = new THREE.Mesh(SHELF, materials.lockerInside);
+    const shelf = box(W - 2 * T, T, D - 2 * T, materials.lockerInside);
     shelf.position.set(0, H - 0.3, -D / 2);
     root.add(shelf);
-    const hook = new THREE.Mesh(HOOK, materials.lampPole);
+    const hook = box(0.04, 0.04, 0.02, materials.lampPole);
     hook.position.set(0, H - 0.45, -0.06);
     root.add(hook);
 
     // Door hinges on the outer-left front edge. The pivot Group sits at the
     // hinge; the door + slats + handle are offset inside it so rotating the
     // pivot swings the whole assembly outward in one motion.
-    const doorPivot = new THREE.Group();
+    const doorPivot = group("lockerDoorPivot");
     doorPivot.position.set(-W / 2, H / 2, -D);
-    const door = new THREE.Mesh(DOOR, materials.lockerDoor);
+    const door = box(W, H - 2 * T, T, materials.lockerDoor);
     door.position.set(W / 2, 0, -T / 2);
     doorPivot.add(door);
     // Four horizontal ventilation slats across the upper portion of the door.
     for (let i = 0; i < 4; i++) {
-      const slat = new THREE.Mesh(VENT, materials.lampPole);
+      const slat = box(0.28, 0.012, 0.005, materials.lampPole);
       slat.position.set(W / 2, 0.5 + i * 0.06, -T - 0.003);
       doorPivot.add(slat);
     }
-    const handle = new THREE.Mesh(HANDLE_BAR, materials.lampPole);
+    const handle = box(0.05, 0.12, 0.025, materials.lampPole);
     handle.position.set(W - 0.07, -0.1, -T - 0.013);
     doorPivot.add(handle);
     root.add(doorPivot);

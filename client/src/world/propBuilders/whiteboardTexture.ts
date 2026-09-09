@@ -4,7 +4,9 @@
  *  scribbles; the rest use the plain material. Lines + doodles are
  *  generated deterministically from the prop's world coords so the
  *  same room looks the same every reload. */
-import * as THREE from "three";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { activeScene } from "../../rendering/babylon";
 import { mulberry32 } from "./_common";
 
 const SCRIBBLE_LINES = [
@@ -54,18 +56,23 @@ function drawScribble(c: HTMLCanvasElement, seed: number): void {
 }
 
 
-export function makeWhiteboardTexture(seed: number): THREE.CanvasTexture {
+export function makeWhiteboardTexture(seed: number): DynamicTexture {
   const c = document.createElement("canvas");
   c.width = 1024; c.height = 512;
   drawScribble(c, seed);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  const tex = new DynamicTexture(
+    "whiteboard", { width: c.width, height: c.height },
+    activeScene(), true, Texture.NEAREST_SAMPLINGMODE,
+  );
+  tex.getContext().drawImage(c, 0, 0);
+  tex.update(false);
+  tex.anisotropicFilteringLevel = 4;
   // Webfonts may not be ready on first paint — redraw once they load.
   if ("fonts" in document) {
     document.fonts.load(`48px Caveat`).then(() => {
       drawScribble(c, seed);
-      tex.needsUpdate = true;
+      tex.getContext().drawImage(c, 0, 0);
+      tex.update(false);
     });
   }
   return tex;

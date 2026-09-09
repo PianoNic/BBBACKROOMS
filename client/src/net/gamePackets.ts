@@ -3,7 +3,6 @@
  *  Lives outside `main.ts` so the main bootstrap stays a short wiring
  *  sequence. Every dependency is passed in explicitly — this module owns
  *  *no* state of its own. */
-import type * as THREE from "three";
 import type { NetClient } from "./client";
 import { routePacket } from "./router";
 import type { WorldInit, ServerPacket } from "./protocol";
@@ -63,7 +62,6 @@ export type GamePacketDeps = {
   portal: ExtractionPortal;
   spectator: Spectator;
   player: Player;
-  camera: THREE.PerspectiveCamera;
   state: { extracted: boolean; hidden: boolean };
   reviveState: ReviveState;
   /** Deadlines for thermal-goggles reveal + cooldown (performance.now()

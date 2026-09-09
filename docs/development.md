@@ -48,6 +48,17 @@ bun run build      # tsc -b && vite build
 bun run preview    # serves dist/
 ```
 
+### Debugging the 3D scene
+The dev build exposes `window.bbbDev` once a round has started. It carries the
+`WORLD_INIT` payload, the local `Player` (`bbbDev.player.spawn(x, z, yaw)` teleports)
+and an inspector toggle:
+```js
+bbbDev.inspector(true)    // opens the Babylon.js Inspector (scene.debugLayer.show())
+bbbDev.inspector(false)   // closes it again
+```
+The inspector bundle is fetched on demand, so it costs nothing in a production build,
+and `window.bbbDev` is stripped from production builds entirely.
+
 ## Tests
 Service-level tests for the server live in `server/tests`. They build `Lobby`
 objects directly instead of going through a WebSocket, so they need no running

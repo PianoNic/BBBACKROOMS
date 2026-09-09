@@ -1,4 +1,4 @@
-/** Collapse a static Three.js subtree into one merged mesh per material.
+/** Collapse a static prop subtree into one merged mesh per material.
  *
  *  Without this, every prop's individual sub-meshes (a counter has ~10,
  *  a locker ~8, etc.) becomes its own draw call. With ~2000 props on a
@@ -8,59 +8,69 @@
  *  Caveats:
  *  - Transparent or textured materials are passed through unchanged
  *    (depth sorting depends on per-mesh world matrices).
- *  - InstancedMesh is forwarded — it's already efficient on its own.
+ *  - Thin-instance meshes are forwarded — already efficient on their own.
  *  - Caller is responsible for ensuring the subtree's matrices are up to
- *    date (the merger reads `mesh.matrixWorld`).
+ *    date (the merger bakes world transforms into the merged geometry).
  */
-import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { Material } from "@babylonjs/core/Materials/material";
+import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { group, type Group } from "./babylon";
 
+function isPassthrough(mat: Material | null): boolean {
+  if (!mat) return true;
+  if (mat.needAlphaBlending()) return true;
+  const std = mat as StandardMaterial;
+  return !!std.diffuseTexture || !!std.opacityTexture || !!std.emissiveTexture;
+}
 
-export function mergeStaticMeshes(stage: THREE.Group): THREE.Group {
-  const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
-  const passthrough: THREE.Mesh[] = [];
-  stage.traverse((obj) => {
-    const mesh = obj as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    if ((mesh as THREE.InstancedMesh).isInstancedMesh) return;
-    const mat = mesh.material as THREE.Material;
-    if (mat.transparent || (mat as THREE.MeshLambertMaterial).map) {
+export function mergeStaticMeshes(stage: TransformNode): Group {
+  const byMaterial = new Map<Material, Mesh[]>();
+  const passthrough: Mesh[] = [];
+  const out = group("props");
+
+  for (const node of stage.getDescendants(false)) {
+    const mesh = node as Mesh;
+    if (!(mesh instanceof Mesh)) continue;
+    if (mesh.getTotalVertices() === 0) continue;
+    if (mesh.thinInstanceCount > 0) continue;
+    const mat = mesh.material;
+    if (isPassthrough(mat)) {
       passthrough.push(mesh);
-      return;
-    }
-    const baked = mesh.geometry.clone();
-    baked.applyMatrix4(mesh.matrixWorld);
-    if (!byMaterial.has(mat)) byMaterial.set(mat, []);
-    byMaterial.get(mat)!.push(baked);
-  });
-  const out = new THREE.Group();
-  for (const [mat, geoms] of byMaterial) {
-    if (geoms.length === 0) continue;
-    const merged = mergeGeometries(geoms, false);
-    if (!merged) {
-      // mergeGeometries returns null when attribute sets differ; fall
-      // back to individual meshes for that material group.
-      for (const g of geoms) out.add(new THREE.Mesh(g, mat));
       continue;
     }
-    const mesh = new THREE.Mesh(merged, mat);
-    mesh.matrixAutoUpdate = false;
-    mesh.matrixWorldAutoUpdate = false;
-    mesh.frustumCulled = false;
-    out.add(mesh);
+    const list = byMaterial.get(mat!);
+    if (list) list.push(mesh);
+    else byMaterial.set(mat!, [mesh]);
   }
-  stage.traverse((obj) => {
-    if ((obj as THREE.InstancedMesh).isInstancedMesh) out.add(obj);
-  });
-  // Textured / transparent meshes are reparented directly onto `out`
-  // with their world transform preserved. Reparenting via `attach`
-  // recomputes the local matrix so the mesh stays at its world pose.
-  // We avoid cloning so the original geometry's UVs and any per-mesh
-  // material state are kept exactly as the builder created them.
+
+  for (const [mat, meshes] of byMaterial) {
+    for (const m of meshes) m.computeWorldMatrix(true);
+    const merged = Mesh.MergeMeshes(meshes, true, true, undefined, false, false);
+    if (!merged) continue;
+    merged.material = mat;
+    merged.isPickable = false;
+    merged.parent = out;
+    merged.computeWorldMatrix(true);
+    merged.freezeWorldMatrix();
+    merged.alwaysSelectAsActiveMesh = true;
+  }
+
+  // Textured / transparent meshes keep their own draw call. `setParent`
+  // recomputes the local transform so the mesh stays at its world pose.
   for (const mesh of passthrough) {
-    out.attach(mesh);
+    mesh.setParent(out);
+    mesh.isPickable = false;
+    mesh.computeWorldMatrix(true);
+    mesh.freezeWorldMatrix();
   }
-  out.matrixAutoUpdate = false;
-  out.updateMatrixWorld(true);
+
+  for (const node of stage.getDescendants(false)) {
+    const mesh = node as Mesh;
+    if (mesh instanceof Mesh && mesh.thinInstanceCount > 0) mesh.parent = out;
+  }
+
+  stage.dispose(false, false);
   return out;
 }

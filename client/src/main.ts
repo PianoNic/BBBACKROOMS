@@ -1,6 +1,6 @@
 import "./styles/main.scss";
 import Stats from "stats.js";
-import * as THREE from "three";
+import { SpatialListener } from "./core/spatialAudio";
 import { runGameLoop } from "./core/gameLoop";
 import { connect, type NetClient } from "./net/client";
 import { showLobbyRoom } from "./ui/lobbyRoom";
@@ -19,6 +19,7 @@ import { installVoiceNoise } from "./gameplay/voiceNoise";
 import { buildScene } from "./core/sceneSetup";
 import { getSettings, onSettingsChange, updateSetting } from "./core/settings";
 import { ensureCatalog } from "./gameplay/cosmetics";
+import { installDevTools } from "./core/devTools";
 
 
 async function main(): Promise<void> {
@@ -70,9 +71,14 @@ async function main(): Promise<void> {
   setLoading("building world…");
   await yieldToPaint();
   const ctx = createRenderContext(mount);
-  const audioListener = new THREE.AudioListener();
+  const audioListener = new SpatialListener();
   await ensureCatalog();  // so equipped cosmetics resolve when seeding players
   const s = buildScene(init, ctx, net, audioListener, webcam);
+  installDevTools({
+    init, player: s.player, camera: ctx.camera,
+    teacherPositions: () => s.teachers.getMapPositions(),
+    inspector: (on: boolean) => ctx.showInspector(on),
+  });
 
   const reviveState = { active: false };
   const gogglesState = { activeUntilMs: 0, cooldownUntilMs: 0 };
@@ -84,7 +90,7 @@ async function main(): Promise<void> {
     pickups: s.pickups, lockers: s.lockers, doors: s.doors, inventory: s.inventory,
     compass: s.compass, reviveBar: s.reviveBar, laptop: s.laptop,
     portal: s.portal, spectator: s.spectator, player: s.player,
-    camera: ctx.camera, state: s.state, reviveState, gogglesState,
+    state: s.state, reviveState, gogglesState,
   }));
   // Voice state: the settings `voiceMode` decides the default ("open" =
   // always live, "ptt" = only while V is held). The pause-menu MIC button
@@ -113,7 +119,8 @@ async function main(): Promise<void> {
     () => !s.state.extracted,
   );
   installGameInput({
-    net, camera: ctx.camera, state: s.state, reviveState,
+    net, state: s.state, reviveState,
+    player: s.player,
     interactPrompt: s.interactPrompt, laptop: s.laptop, chairs: s.chairs,
     spectator: s.spectator, inventory: s.inventory, reviveBar: s.reviveBar,
     toiletStallDoors: s.toiletStallDoors,
@@ -133,7 +140,7 @@ async function main(): Promise<void> {
     if (init.phase === "tasks" || init.phase === "escape") {
       music.setPhase(init.phase);
     }
-    captureInput(ctx.renderer.domElement);
+    captureInput(ctx.canvas);
   };
 
   let pauseOpen = false;
@@ -165,11 +172,11 @@ async function main(): Promise<void> {
     });
   };
 
-  ctx.renderer.domElement.addEventListener("click", () => {
+  ctx.canvas.addEventListener("click", () => {
     if (!document.pointerLockElement) enterGame();
   });
   document.addEventListener("pointerlockchange", () => {
-    if (document.pointerLockElement !== ctx.renderer.domElement && !s.laptop.isOpen()) {
+    if (document.pointerLockElement !== ctx.canvas && !s.laptop.isOpen()) {
       if (document.getElementById("victory")) return; // game-over UI is showing
       openPause();
     }
@@ -187,8 +194,8 @@ async function main(): Promise<void> {
   }
   // Auto-focus the canvas so keyboard input works without any click.
   // Mouse look still requires one click (browsers hard-block auto pointer lock).
-  ctx.renderer.domElement.tabIndex = 0;
-  ctx.renderer.domElement.focus();
+  ctx.canvas.tabIndex = 0;
+  ctx.canvas.focus();
   runGameLoop({
     ctx, net, stats,
     player: s.player, lights: s.lights, remotes: s.remotes, minimap: s.minimap,
@@ -199,6 +206,7 @@ async function main(): Promise<void> {
     toiletStallDoors: s.toiletStallDoors, fuseBoxes: s.fuseBoxes,
     corpses: s.corpses, inventory: s.inventory, compass: s.compass,
     heartbeat: s.heartbeat, proximityVoice: s.proximityVoice,
+    audioListener,
     gogglesState,
   });
 }

@@ -29,6 +29,9 @@ import type { InventoryHud } from "../ui/inventory";
 import type { TaskCompass } from "../ui/compass";
 import type { Heartbeat } from "./heartbeat";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
+import type { SpatialListener } from "./spatialAudio";
+import { updateSpatialAudio } from "./spatialAudio";
+import { viewForward } from "../rendering/babylon";
 import { setCarryingChair } from "./playerStatus";
 
 export type GameDeps = {
@@ -61,6 +64,7 @@ export type GameDeps = {
   compass: TaskCompass;
   heartbeat: Heartbeat;
   proximityVoice: ProximityVoice;
+  audioListener: SpatialListener;
   gogglesState: { activeUntilMs: number; cooldownUntilMs: number };
 };
 
@@ -114,7 +118,8 @@ export function runGameLoop(d: GameDeps): void {
       d.spectator.update();
     } else {
       d.stamina.update(d.player.stamina);
-      d.interactPrompt.update(d.ctx.camera, d.player.position, [
+      d.interactPrompt.update(
+        d.ctx.camera, d.player.yaw, d.player.pitch, d.player.position, [
         ...d.quests.getInteractTargets(d.remotes.positions()),
         ...d.laptops.getInteractTargets(),
         ...d.chairs.getInteractTargets(),
@@ -125,7 +130,8 @@ export function runGameLoop(d: GameDeps): void {
         ...d.fuseBoxes.getInteractTargets(),
         ...d.hideouts.getInteractTargets(),
         ...d.corpses.getInteractTargets(d.inventory.hasMedkit()),
-      ]);
+        ],
+      );
     }
     const tracked = {
       items: d.inventory.hasTracker() ? d.pickups.getMapPositions() : [],
@@ -168,7 +174,14 @@ export function runGameLoop(d: GameDeps): void {
       }
     }
 
-    d.ctx.composer.render(dt);
+    const listenerPos = d.ctx.camera.globalPosition;
+    const listenerDir = viewForward(d.ctx.camera);
+    updateSpatialAudio(
+      d.audioListener,
+      listenerPos.x, listenerPos.y, listenerPos.z,
+      listenerDir.x, listenerDir.y, listenerDir.z,
+    );
+    d.ctx.render(dt);
     d.stats.end();
     requestAnimationFrame(frame);
   };

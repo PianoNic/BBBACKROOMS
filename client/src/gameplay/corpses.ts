@@ -1,21 +1,21 @@
-import * as THREE from "three";
 import type { InteractTarget } from "../ui/interactPrompt";
+import type { Mesh } from "../rendering/babylon";
+import { Color3, box, group, lambertMaterial } from "../rendering/babylon";
 
-const GEOM = new THREE.BoxGeometry(1.6, 0.5, 0.6);
 const REVIVE_RADIUS = 2.2;
 
-type Entry = { id: string; x: number; z: number; mesh: THREE.Mesh };
+type Entry = { id: string; x: number; z: number; mesh: Mesh };
 
 /** Tracks downed-player markers. Each corpse keeps its server id so the
  *  interact prompt can target a specific revive. */
 export class Corpses {
-  readonly group = new THREE.Group();
+  readonly group = group("corpses");
   private readonly entries = new Map<string, Entry>();
 
   add(id: string, x: number, z: number, color: string): void {
     if (this.entries.has(id)) return;
-    const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(color) });
-    const mesh = new THREE.Mesh(GEOM, mat);
+    const mat = lambertMaterial(Color3.FromHexString(color));
+    const mesh = box(1.6, 0.5, 0.6, mat);
     mesh.position.set(x, 0.25, z);
     mesh.rotation.y = Math.random() * Math.PI * 2;
     this.group.add(mesh);
@@ -26,8 +26,7 @@ export class Corpses {
     const e = this.entries.get(id);
     if (!e) return;
     this.group.remove(e.mesh);
-    e.mesh.geometry.dispose?.();
-    (e.mesh.material as THREE.Material).dispose?.();
+    e.mesh.dispose(false, true);
     this.entries.delete(id);
   }
 

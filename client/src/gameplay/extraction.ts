@@ -1,4 +1,9 @@
-import * as THREE from "three";
+import { PointLight } from "@babylonjs/core/Lights/pointLight";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { Mesh, StandardMaterial, TransformNode } from "../rendering/babylon";
+import {
+  Color3, activeScene, basicMaterial, box, color3, group, lambertMaterial, plane,
+} from "../rendering/babylon";
 
 const GRATE_COLOR = 0x2a2a30;
 const FRAME_COLOR = 0x4a4a55;
@@ -12,11 +17,13 @@ const GLOW_COLOR = 0x6ed8ff;
  *  toggled the light's visibility on phase change Three.js would
  *  recompile every Lambert material in the school, causing a ~5s freeze
  *  the moment the last task is finished. */
+const LINEAR_FALLOFF_FIT = 0.16;
+
 export class ExtractionPortal {
-  readonly group = new THREE.Group();
-  private readonly glow: THREE.Mesh;
-  private readonly light: THREE.PointLight;
-  private readonly visuals: THREE.Object3D[] = [];
+  readonly group = group("extractionPortal");
+  private readonly glow: Mesh;
+  private readonly light: PointLight;
+  private readonly visuals: TransformNode[] = [];
   private active = false;
 
   constructor(x: number, z: number, radius: number) {
@@ -26,33 +33,26 @@ export class ExtractionPortal {
     const half = size / 2;
 
     // Recessed dark pit so the vent reads as an opening, not just a texture.
-    const pit = new THREE.Mesh(
-      new THREE.BoxGeometry(size, 0.6, size),
-      new THREE.MeshLambertMaterial({ color: 0x05050a }),
-    );
+    const pit = box(size, 0.6, size, lambertMaterial(0x05050a));
     pit.position.y = -0.3;
     this.group.add(pit);
     this.visuals.push(pit);
 
     // Glow at the bottom of the pit.
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: GLOW_COLOR, transparent: true, opacity: 0.55,
-    });
-    this.glow = new THREE.Mesh(
-      new THREE.PlaneGeometry(size * 0.92, size * 0.92),
-      glowMat,
-    );
+    const glowMat = basicMaterial(GLOW_COLOR);
+    glowMat.alpha = 0.55;
+    this.glow = plane(size * 0.92, size * 0.92, glowMat);
     this.glow.rotation.x = -Math.PI / 2;
     this.glow.position.y = 0.005;
     this.group.add(this.glow);
     this.visuals.push(this.glow);
 
     // Outer metal frame around the vent (4 thin bars forming a border).
-    const frameMat = new THREE.MeshLambertMaterial({ color: FRAME_COLOR });
+    const frameMat = lambertMaterial(FRAME_COLOR);
     const frameThickness = 0.12;
     const frameHeight = 0.06;
     const mkFrame = (w: number, d: number, ox: number, oz: number): void => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, frameHeight, d), frameMat);
+      const m = box(w, frameHeight, d, frameMat);
       m.position.set(ox, frameHeight / 2 + 0.001, oz);
       this.group.add(m);
       this.visuals.push(m);
@@ -63,16 +63,13 @@ export class ExtractionPortal {
     mkFrame(frameThickness, size,  half - frameThickness / 2, 0);
 
     // Grate bars across the opening (parallel slats with gaps).
-    const barMat = new THREE.MeshLambertMaterial({ color: GRATE_COLOR });
+    const barMat = lambertMaterial(GRATE_COLOR);
     const barCount = Math.max(5, Math.floor(size / 0.35));
     const slotPitch = (size - frameThickness * 2) / barCount;
     const barWidth = slotPitch * 0.55;
     const barLen = size - frameThickness * 2;
     for (let i = 0; i < barCount; i++) {
-      const bar = new THREE.Mesh(
-        new THREE.BoxGeometry(barWidth, 0.05, barLen),
-        barMat,
-      );
+      const bar = box(barWidth, 0.05, barLen, barMat);
       const x0 = -half + frameThickness + slotPitch * (i + 0.5);
       bar.position.set(x0, 0.025, 0);
       this.group.add(bar);
@@ -81,8 +78,11 @@ export class ExtractionPortal {
 
     // PointLight present from the start at intensity 0, so the shader
     // programs lock in the light count. Bump on `show()`.
-    this.light = new THREE.PointLight(GLOW_COLOR, 0, 10, 2);
-    this.light.position.set(0, 0.5, 0);
+    this.light = new PointLight("extractionGlow", new Vector3(0, 0.5, 0), activeScene());
+    this.light.diffuse = color3(GLOW_COLOR);
+    this.light.specular = Color3.Black();
+    this.light.range = 10;
+    this.light.intensity = 0;
     this.group.add(this.light);
 
     this.group.position.set(x, 0, z);
@@ -93,7 +93,7 @@ export class ExtractionPortal {
   show(): void {
     this.active = true;
     for (const v of this.visuals) v.visible = true;
-    this.light.intensity = 4;
+    this.light.intensity = 4 * LINEAR_FALLOFF_FIT;
   }
 
   hide(): void {
@@ -105,7 +105,7 @@ export class ExtractionPortal {
   update(elapsed: number): void {
     if (!this.active) return;
     const t = (Math.sin(elapsed * 2.0) + 1) * 0.5;
-    (this.glow.material as THREE.MeshBasicMaterial).opacity = 0.4 + t * 0.35;
-    this.light.intensity = 3 + t * 4;
+    (this.glow.material as StandardMaterial).alpha = 0.4 + t * 0.35;
+    this.light.intensity = (3 + t * 4) * LINEAR_FALLOFF_FIT;
   }
 }

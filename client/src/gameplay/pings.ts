@@ -1,16 +1,19 @@
 /** In-world teammate ping markers: a bobbing diamond over a light beam and
  *  ground ring in the pinging player's colour. Markers live ~6 seconds and
  *  fade out over the last one. Minimap dots come from `getMapDots`. */
-import * as THREE from "three";
+import type { Group, Mesh, StandardMaterial } from "../rendering/babylon";
+import {
+  Color3, basicMaterial, cylinder, group, octahedron, ring,
+} from "../rendering/babylon";
 
 const LIFETIME_S = 6;
 const FADE_S = 1;
 const DIAMOND_Y = 1.7;
 
 type Entry = {
-  group: THREE.Group;
-  diamond: THREE.Mesh;
-  mats: THREE.MeshBasicMaterial[];
+  group: Group;
+  diamond: Mesh;
+  mats: StandardMaterial[];
   born: number;
   x: number;
   z: number;
@@ -18,38 +21,35 @@ type Entry = {
 };
 
 export class Pings {
-  readonly group = new THREE.Group();
+  readonly group = group("pings");
   private readonly entries: Entry[] = [];
   private elapsed = 0;
 
   add(x: number, z: number, color: string): void {
-    const c = new THREE.Color(color);
-    const g = new THREE.Group();
-    const mats: THREE.MeshBasicMaterial[] = [];
-    const mat = (opacity: number, double = false): THREE.MeshBasicMaterial => {
-      const m = new THREE.MeshBasicMaterial({
-        color: c, transparent: true, opacity, depthWrite: false,
-        side: double ? THREE.DoubleSide : THREE.FrontSide,
-      });
-      m.userData.baseOpacity = opacity;
+    const c = Color3.FromHexString(color);
+    const g = group("ping");
+    const mats: StandardMaterial[] = [];
+    const mat = (opacity: number): StandardMaterial => {
+      const m = basicMaterial(c);
+      m.alpha = opacity;
+      m.disableDepthWrite = true;
+      m.metadata = { baseOpacity: opacity };
       mats.push(m);
       return m;
     };
 
-    const diamond = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), mat(0.95));
+    const diamond = octahedron(0.22, mat(0.95));
     diamond.position.y = DIAMOND_Y;
     g.add(diamond);
 
-    const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.05, 0.05, DIAMOND_Y, 8), mat(0.25),
-    );
+    const beam = cylinder(0.05, 0.05, DIAMOND_Y, 8, mat(0.25));
     beam.position.y = DIAMOND_Y / 2;
     g.add(beam);
 
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.45, 24), mat(0.55, true));
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.03;
-    g.add(ring);
+    const ringMesh = ring(0.3, 0.45, 24, mat(0.55), true);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.y = 0.03;
+    g.add(ringMesh);
 
     g.position.set(x, 0, z);
     this.group.add(g);
@@ -70,7 +70,7 @@ export class Pings {
       p.diamond.position.y = DIAMOND_Y + Math.sin(elapsed * 3 + p.born) * 0.12;
       const fade = Math.min(1, (LIFETIME_S - age) / FADE_S);
       for (const m of p.mats) {
-        m.opacity = (m.userData.baseOpacity as number) * fade;
+        m.alpha = (m.metadata.baseOpacity as number) * fade;
       }
     }
   }
@@ -82,7 +82,7 @@ export class Pings {
 
   private dispose(p: Entry): void {
     this.group.remove(p.group);
-    p.group.traverse((o) => (o as THREE.Mesh).geometry?.dispose?.());
+    p.group.traverse((o) => (o as Mesh).geometry?.dispose?.());
     for (const m of p.mats) m.dispose();
   }
 }

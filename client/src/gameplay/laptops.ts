@@ -1,16 +1,16 @@
-import * as THREE from "three";
 import type { LaptopInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { LAPTOP_INTERACT_RADIUS } from "../core/constants";
+import { StandardMaterial, color3, group } from "../rendering/babylon";
 import { buildLaptopNode, LAPTOP_SCREEN_ACTIVE, LAPTOP_SCREEN_DONE } from "./laptopMesh";
 
 type Entry = {
   info: LaptopInfo;
-  faceMat: THREE.MeshBasicMaterial;
+  faceMat: StandardMaterial;
 };
 
 export class Laptops {
-  readonly group = new THREE.Group();
+  readonly group = group("laptops");
   private readonly entries = new Map<string, Entry>();
 
   constructor(list: LaptopInfo[]) {
@@ -29,7 +29,7 @@ export class Laptops {
     const e = this.entries.get(id);
     if (!e) return;
     e.info.done = true;
-    e.faceMat.color.setHex(LAPTOP_SCREEN_DONE);
+    e.faceMat.emissiveColor = color3(LAPTOP_SCREEN_DONE);
   }
 
   getInteractTargets(): InteractTarget[] {

@@ -1,7 +1,7 @@
 import type { ItemType, Objective } from "../net/protocol";
 import { SPOT_BASE_Y, buildSpot, type SpotVisuals } from "./questSpot";
 import { withinRadiusXZ } from "../core/geom";
-import * as THREE from "three";
+import { group } from "../rendering/babylon";
 
 function labelForItem(item: ItemType | null): string {
   if (item === "sponge") return "wipe";
@@ -16,7 +16,7 @@ export type QuestInteractTarget = {
 };
 
 export class Quests {
-  readonly group = new THREE.Group();
+  readonly group = group("quests");
   private readonly entries = new Map<string, Entry>();
   private readonly listeners = new Set<() => void>();
 
@@ -131,10 +131,10 @@ export class Quests {
     for (const e of this.entries.values()) {
       for (const v of e.spots) {
         if (!v.marker.visible) continue;
-        if (v.marker.userData.spinning !== false) {
+        if (v.marker.metadata.spinning !== false) {
           v.marker.rotation.y = elapsed * 1.0 + v.bobSeed;
         }
-        const baseY = (v.marker.userData.baseY as number) ?? SPOT_BASE_Y;
+        const baseY = (v.marker.metadata.baseY as number) ?? SPOT_BASE_Y;
         v.marker.position.y = baseY + Math.sin(elapsed * 2 + v.bobSeed) * 0.08;
       }
     }

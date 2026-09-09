@@ -1,16 +1,21 @@
 /** Per-player voxel renderer, footstep audio, and live-video swapping.
  *  Mesh material factories live in `remotePlayerMaterials.ts`. */
-import * as THREE from "three";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import type { VideoTexture } from "@babylonjs/core/Materials/Textures/videoTexture";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { EquippedCosmetics, RemotePlayer } from "../net/protocol";
+import { PositionalSound, type SpatialListener } from "../core/spatialAudio";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { withinRadiusXZ } from "../core/geom";
+import { group } from "../rendering/babylon";
 import {
-  buildHat, disposeHat, disposeMaterial, makeAvatarMaterials,
-  makeColorMaterial, makeFacePatternMaterials, makeVideoMaterials,
+  buildHat, buildVoxelMesh, disposeHat, disposeVoxelMaterial, makeAvatarMaterials,
+  makeColorMaterial, makeFacePatternMaterials, makeVideoMaterials, setVoxelMaterial,
 } from "./remotePlayerMaterials";
 import { resolveCosmetic } from "./cosmetics";
 
-const BOX = new THREE.BoxGeometry(0.6, 1.7, 0.6);
 const Y = 0.85;
 const STEP_DISTANCE = 1.1;
 const REF_DISTANCE = 2.5;
@@ -26,34 +31,34 @@ function bodyColor(equipped: EquippedCosmetics, fallback: string): string {
 }
 
 type Entry = {
-  mesh: THREE.Mesh;
+  mesh: Mesh;
   color: string;
-  target: THREE.Vector3;
+  target: Vector3;
   targetYaw: number;
-  audio: THREE.PositionalAudio | null;
+  audio: PositionalSound | null;
   lastStepX: number;
   lastStepZ: number;
   avatarUrl: string | null;
   video: HTMLVideoElement | null;
-  videoTex: THREE.VideoTexture | null;
+  videoTex: VideoTexture | null;
   equipped: EquippedCosmetics;
-  hat: THREE.Object3D | null;
+  hat: TransformNode | null;
 };
 
 export class RemotePlayers {
-  readonly group = new THREE.Group();
+  readonly group = group("remotePlayers");
   private readonly entries = new Map<string, Entry>();
   /** Looks of downed players, kept so the recreated voxel on revive keeps
    *  its avatar and cosmetics (the live entry is destroyed by `markDead`). */
   private readonly retiredLooks = new Map<
     string, { avatarUrl: string | null; equipped: EquippedCosmetics }
   >();
-  private listener: THREE.AudioListener | null = null;
+  private listener: SpatialListener | null = null;
   private readonly buffers: AudioBuffer[] = [];
   private buffersLoaded = false;
 
   /** Optional: attaching a listener enables spatial footsteps. */
-  attachAudio(listener: THREE.AudioListener): void {
+  attachAudio(listener: SpatialListener): void {
     if (this.listener) return;
     this.listener = listener;
     this.loadBuffers();
@@ -67,6 +72,7 @@ export class RemotePlayers {
   private async loadBuffers(): Promise<void> {
     if (!this.listener) return;
     const ctx = this.listener.context;
+    if (!ctx) { this.buffersLoaded = true; return; }
     for (const url of FOOTSTEP_URLS) {
       try {
         const res = await fetch(url);
@@ -82,25 +88,25 @@ export class RemotePlayers {
     this.retiredLooks.delete(p.id);
     const equipped = p.equipped ?? look?.equipped ?? {};
     const avatar = p.avatar ?? look?.avatarUrl ?? null;
-    const mesh = new THREE.Mesh(BOX, makeColorMaterial(bodyColor(equipped, p.color)));
+    const mesh = buildVoxelMesh(0.6, 1.7, 0.6, makeColorMaterial(bodyColor(equipped, p.color)));
     mesh.position.set(p.x, Y, p.z);
     mesh.rotation.y = p.yaw;
     this.group.add(mesh);
 
-    let audio: THREE.PositionalAudio | null = null;
+    let audio: PositionalSound | null = null;
     if (this.listener) {
-      audio = new THREE.PositionalAudio(this.listener);
+      audio = new PositionalSound(this.listener);
       audio.setRefDistance(REF_DISTANCE);
       audio.setMaxDistance(MAX_DISTANCE);
       audio.setRolloffFactor(ROLLOFF);
       audio.setDistanceModel("inverse");
       audio.setVolume(getSettings().sfxVolume);
-      mesh.add(audio);
+      audio.attachTo(mesh);
     }
 
     this.entries.set(p.id, {
       mesh, color: p.color,
-      target: new THREE.Vector3(p.x, Y, p.z),
+      target: new Vector3(p.x, Y, p.z),
       targetYaw: p.yaw, audio,
       lastStepX: p.x, lastStepZ: p.z,
       avatarUrl: avatar,
@@ -134,9 +140,7 @@ export class RemotePlayers {
     void makeFacePatternMaterials(path).then((mats) => {
       const still = this.entries.get(id);
       if (!mats || still !== e || e.video || e.avatarUrl) return;
-      const old = e.mesh.material;
-      e.mesh.material = mats;
-      disposeMaterial(old);
+      setVoxelMaterial(e.mesh, mats);
     });
   }
 
@@ -149,9 +153,7 @@ export class RemotePlayers {
       this.applyFacePattern(id);
       return;
     }
-    const old = e.mesh.material;
-    e.mesh.material = makeColorMaterial(bodyColor(e.equipped, e.color));
-    disposeMaterial(old);
+    setVoxelMaterial(e.mesh, makeColorMaterial(bodyColor(e.equipped, e.color)));
   }
 
   /** Apply a live equipped-cosmetics update (from the player_cosmetic packet). */
@@ -208,9 +210,7 @@ export class RemotePlayers {
       const mats = await makeAvatarMaterials(avatar);
       const still = this.entries.get(id);
       if (still !== e || e.video) return; // video took over while we loaded
-      const old = e.mesh.material;
-      e.mesh.material = mats;
-      disposeMaterial(old);
+      setVoxelMaterial(e.mesh, mats);
     } catch (err) {
       console.warn("avatar load failed", err);
     }
@@ -223,14 +223,12 @@ export class RemotePlayers {
     if (!e) return;
     if (stream) {
       const { mats, video, tex } = makeVideoMaterials(
-        stream, e.video, new THREE.Color(e.color),
+        stream, e.video, Color3.FromHexString(e.color),
       );
       e.video = video;
-      const old = e.mesh.material;
-      e.mesh.material = mats;
       e.videoTex?.dispose();
       e.videoTex = tex;
-      disposeMaterial(old);
+      setVoxelMaterial(e.mesh, mats);
     } else {
       if (e.video) { e.video.srcObject = null; e.video = null; }
       e.videoTex?.dispose();
@@ -266,7 +264,8 @@ export class RemotePlayers {
     if (!e) return;
     if (e.hat) disposeHat(e.hat);
     this.group.remove(e.mesh);
-    disposeMaterial(e.mesh.material);
+    disposeVoxelMaterial(e.mesh);
+    e.audio?.dispose();
     if (e.video) e.video.srcObject = null;
     e.videoTex?.dispose();
     this.entries.delete(id);
@@ -278,12 +277,12 @@ export class RemotePlayers {
     }));
   }
   ids(): string[] { return [...this.entries.keys()]; }
-  getMesh(id: string): THREE.Mesh | null { return this.entries.get(id)?.mesh ?? null; }
+  getMesh(id: string): Mesh | null { return this.entries.get(id)?.mesh ?? null; }
 
   update(dt: number): void {
     const lerp = Math.min(1, dt * 12);
     for (const e of this.entries.values()) {
-      e.mesh.position.lerp(e.target, lerp);
+      Vector3.LerpToRef(e.mesh.position, e.target, lerp, e.mesh.position);
       e.mesh.rotation.y += (e.targetYaw - e.mesh.rotation.y) * lerp;
     }
   }

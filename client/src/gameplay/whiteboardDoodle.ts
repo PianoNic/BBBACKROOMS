@@ -1,4 +1,9 @@
-import * as THREE from "three";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
+import { activeScene, plane } from "../rendering/babylon";
 
 const W = 256;
 const H = 128;
@@ -40,12 +45,22 @@ function drawDoodles(): HTMLCanvasElement {
 }
 
 /** A flat doodle plane the size of a whiteboard face, sittting just in front of it. */
-export function buildWhiteboardDoodle(): THREE.Mesh {
-  const tex = new THREE.CanvasTexture(drawDoodles());
-  tex.magFilter = THREE.NearestFilter;
-  tex.minFilter = THREE.NearestFilter;
-  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-  const geom = new THREE.PlaneGeometry(2.2, 1.0);
-  const mesh = new THREE.Mesh(geom, mat);
+export function buildWhiteboardDoodle(): Mesh {
+  const c = drawDoodles();
+  const tex = new DynamicTexture(
+    "whiteboardDoodle", { width: c.width, height: c.height },
+    activeScene(), true, Texture.NEAREST_SAMPLINGMODE,
+  );
+  tex.getContext().drawImage(c, 0, 0);
+  tex.update(false);
+  const mat = new StandardMaterial("whiteboardDoodle", activeScene());
+  mat.diffuseTexture = tex;
+  tex.hasAlpha = true;
+  mat.useAlphaFromDiffuseTexture = true;
+  mat.emissiveTexture = tex;
+  mat.emissiveColor = Color3.White();
+  mat.diffuseColor = Color3.Black();
+  mat.disableLighting = true;
+  const mesh = plane(2.2, 1.0, mat);
   return mesh;
 }

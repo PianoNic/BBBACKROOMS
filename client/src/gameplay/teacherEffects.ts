@@ -3,7 +3,11 @@
  * Server fires teacher_ability packets; this module owns the visuals: floor
  * puddles, thrown projectiles, screen filters, banners, etc. Server-side
  * effects (stun, slow) are pushed separately via player_status. */
-import * as THREE from "three";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { Scene } from "@babylonjs/core/scene";
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
+import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TeacherAbilityPkt, TeacherInfo } from "../net/protocol";
 import { showBanner } from "../ui/banner";
 import {
@@ -14,29 +18,26 @@ import {
   buildBall, buildBowl, buildFlask, buildLawbook,
   buildPlate, buildScissors, buildWrench, type Projectile,
 } from "./teacherEffectModels";
-
-const PUDDLE_GEO = new THREE.CircleGeometry(1, 24);
+import { basicMaterial, disc, group } from "../rendering/babylon";
 
 type TeacherLookup = (id: string) => TeacherInfo | null;
 type FlyingProjectile = Projectile & {
-  from: THREE.Vector3; to: THREE.Vector3;
+  from: Vector3; to: Vector3;
   t0: number; durationMs: number;
   onArrive?: () => void; arrived?: boolean;
 };
 
 export class TeacherEffects {
-  readonly group = new THREE.Group();
-  private readonly puddles = new Map<symbol, { mesh: THREE.Mesh; until: number }>();
+  readonly group = group("teacherEffects");
+  private readonly puddles = new Map<symbol, { mesh: Mesh; until: number }>();
   private readonly projectiles = new Map<symbol, FlyingProjectile>();
 
   constructor(
-    scene: THREE.Scene,
-    private readonly camera: THREE.PerspectiveCamera,
+    _scene: Scene,
+    private readonly camera: FreeCamera,
     private readonly selfId: string,
     private readonly getTeacher: TeacherLookup,
-  ) {
-    scene.add(this.group);
-  }
+  ) {}
 
   handle(pkt: TeacherAbilityPkt): void {
     const t = this.getTeacher(pkt.id);
@@ -53,8 +54,8 @@ export class TeacherEffects {
         const travelMs = payload.travelMs ?? 750;
         this.throwArc(
           buildFlask(),
-          new THREE.Vector3(pkt.x, 1.4, pkt.z),
-          new THREE.Vector3(targetX, 0.2, targetZ),
+          new Vector3(pkt.x, 1.4, pkt.z),
+          new Vector3(targetX, 0.2, targetZ),
           travelMs,
           () => this.spawnPuddle(targetX, targetZ, radius, duration),
         );
@@ -64,8 +65,8 @@ export class TeacherEffects {
       case "lawsuit_stun":
         this.throwArc(
           buildLawbook(),
-          new THREE.Vector3(pkt.x, 1.4, pkt.z),
-          new THREE.Vector3(payload.targetX, 1.2, payload.targetZ),
+          new Vector3(pkt.x, 1.4, pkt.z),
+          new Vector3(payload.targetX, 1.2, payload.targetZ),
           payload.travelMs ?? 700,
         );
         if (targeted) {
@@ -82,8 +83,8 @@ export class TeacherEffects {
           /* dodgeball */                      buildBall(0xc62828, 0.12);
         this.throwArc(
           ball,
-          new THREE.Vector3(pkt.x, 1.4, pkt.z),
-          new THREE.Vector3(payload.targetX, 1.2, payload.targetZ),
+          new Vector3(pkt.x, 1.4, pkt.z),
+          new Vector3(payload.targetX, 1.2, payload.targetZ),
           payload.travelMs ?? 600,
         );
         if (targeted) {
@@ -148,8 +149,8 @@ export class TeacherEffects {
           /* wrench */                       buildWrench();
         this.throwArc(
           proj,
-          new THREE.Vector3(pkt.x, 1.4, pkt.z),
-          new THREE.Vector3(payload.targetX, 1.2, payload.targetZ),
+          new Vector3(pkt.x, 1.4, pkt.z),
+          new Vector3(payload.targetX, 1.2, payload.targetZ),
           payload.travelMs ?? 600,
         );
         if (targeted) {
@@ -172,8 +173,8 @@ export class TeacherEffects {
         const travelMs = payload.travelMs ?? 650;
         this.throwArc(
           buildBowl(isOil ? 0x222018 : 0xcd9b4a),
-          new THREE.Vector3(pkt.x, 1.4, pkt.z),
-          new THREE.Vector3(targetX, 0.2, targetZ),
+          new Vector3(pkt.x, 1.4, pkt.z),
+          new Vector3(targetX, 0.2, targetZ),
           travelMs,
           () => this.spawnPuddle(targetX, targetZ, radius, duration, isOil ? 0x222018 : 0xcd9b4a),
         );
@@ -211,12 +212,11 @@ export class TeacherEffects {
     x: number, z: number, radius: number, durationS: number,
     color = 0x6fcf3a,
   ): void {
-    const mat = new THREE.MeshBasicMaterial({
-      color, transparent: true, opacity: 0.55, depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    const mesh = new THREE.Mesh(PUDDLE_GEO, mat);
-    mesh.scale.setScalar(radius);
+    const mat = basicMaterial(color);
+    mat.alpha = 0.55;
+    mat.disableDepthWrite = true;
+    const mesh = disc(1, 24, mat, true);
+    mesh.scaling.set(radius, radius, radius);
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(x, 0.02, z);
     this.group.add(mesh);
@@ -226,12 +226,12 @@ export class TeacherEffects {
 
   private throwArc(
     proj: Projectile,
-    from: THREE.Vector3,
-    to: THREE.Vector3,
+    from: Vector3,
+    to: Vector3,
     travelMs: number,
     onArrive?: () => void,
   ): void {
-    proj.obj.position.copy(from);
+    proj.obj.position.copyFrom(from);
     this.group.add(proj.obj);
     this.projectiles.set(Symbol("proj"), {
       ...proj, from: from.clone(), to: to.clone(),
@@ -245,10 +245,10 @@ export class TeacherEffects {
       const left = v.until - now;
       if (left <= 0) {
         this.group.remove(v.mesh);
-        (v.mesh.material as THREE.MeshBasicMaterial).dispose();
+        (v.mesh.material as StandardMaterial).dispose();
         this.puddles.delete(k);
       } else if (left < 1000) {
-        (v.mesh.material as THREE.MeshBasicMaterial).opacity = 0.55 * (left / 1000);
+        (v.mesh.material as StandardMaterial).alpha = 0.55 * (left / 1000);
       }
     }
     for (const [k, p] of this.projectiles) {
@@ -261,8 +261,8 @@ export class TeacherEffects {
         this.projectiles.delete(k);
         continue;
       }
-      p.obj.position.lerpVectors(p.from, p.to, t);
-      p.obj.position.y = THREE.MathUtils.lerp(p.from.y, p.to.y, t) + 1.8 * t * (1 - t);
+      Vector3.LerpToRef(p.from, p.to, t, p.obj.position);
+      p.obj.position.y = p.from.y + (p.to.y - p.from.y) * t + 1.8 * t * (1 - t);
       p.obj.rotation.y += 0.25;
       p.obj.rotation.z += 0.15;
     }

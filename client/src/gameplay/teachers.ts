@@ -1,8 +1,14 @@
-import * as THREE from "three";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { Vector2 } from "@babylonjs/core/Maths/math.vector";
 import type { TeacherInfo } from "../net/protocol";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { distanceSquaredXZ, withinRadiusXZ } from "../core/geom";
 import { resolveTeacherImage } from "../core/texturePacks";
+import { PositionalSound, type SpatialListener } from "../core/spatialAudio";
+import { activeScene, color3, group, plane } from "../rendering/babylon";
 
 const SPRITE_HEIGHT = 1.9;
 const SPRITE_WIDTH = 1.3;
@@ -14,13 +20,13 @@ const ROLLOFF = 1.8;
 const FOOTSTEP_URLS = [1, 2, 3, 4, 5].map((i) => `/sounds/footsteps/step-${i}.ogg`);
 
 type Entry = {
-  sprite: THREE.Sprite;
+  sprite: Mesh;
   /** Through-wall thermal outline. Hidden by default; toggled on while the
    *  player's goggles are active. Renders ignoring depth so walls don't
    *  occlude it. */
-  outline: THREE.Sprite;
-  target: THREE.Vector2;
-  audio: THREE.PositionalAudio | null;
+  outline: Mesh;
+  target: Vector2;
+  audio: PositionalSound | null;
   lastStepX: number;
   lastStepZ: number;
   silent: boolean; // silent_steps ability — never plays footsteps
@@ -28,14 +34,13 @@ type Entry = {
 };
 
 export class Teachers {
-  readonly group = new THREE.Group();
+  readonly group = group("teachers");
   private readonly entries = new Map<string, Entry>();
-  private readonly loader = new THREE.TextureLoader();
-  private readonly listener: THREE.AudioListener;
+  private readonly listener: SpatialListener;
   private readonly buffers: AudioBuffer[] = [];
   private buffersLoaded = false;
 
-  constructor(list: TeacherInfo[], listener: THREE.AudioListener) {
+  constructor(list: TeacherInfo[], listener: SpatialListener) {
     this.listener = listener;
     this.loadBuffers();
     for (const t of list) this.spawn(t);
@@ -48,6 +53,7 @@ export class Teachers {
 
   private async loadBuffers(): Promise<void> {
     const ctx = this.listener.context;
+    if (!ctx) { this.buffersLoaded = true; return; }
     for (const url of FOOTSTEP_URLS) {
       try {
         const res = await fetch(url);
@@ -62,39 +68,56 @@ export class Teachers {
   }
 
   private spawn(t: TeacherInfo): void {
-    const tex = this.loader.load(resolveTeacherImage(t.ability, -1, `/teachers/${t.image}`));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(SPRITE_WIDTH, SPRITE_HEIGHT, 1);
+    const tex = new Texture(
+      resolveTeacherImage(t.ability, -1, `/teachers/${t.image}`), activeScene(),
+    );
+    tex.hasAlpha = true;
+    tex.uRotationCenter = 0.5;
+    tex.vRotationCenter = 0.5;
+    const mat = new StandardMaterial("teacher", activeScene());
+    mat.diffuseTexture = tex;
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.emissiveTexture = tex;
+    mat.emissiveColor = Color3.White();
+    mat.diffuseColor = Color3.Black();
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    const sprite = plane(SPRITE_WIDTH, SPRITE_HEIGHT, mat);
+    sprite.billboardMode = Mesh.BILLBOARDMODE_ALL;
     sprite.position.set(t.x, SPRITE_HEIGHT / 2, t.z);
     this.group.add(sprite);
 
     // Through-wall thermal silhouette: same texture, but tinted hot-red,
     // depth-test disabled so walls never occlude it, and rendered after
     // the regular pass. Hidden until goggles toggle it on.
-    const outlineMat = new THREE.SpriteMaterial({
-      map: tex, transparent: true, depthTest: false,
-      color: new THREE.Color(0xff3a3a), opacity: 0.85,
-    });
-    const outline = new THREE.Sprite(outlineMat);
-    outline.scale.set(SPRITE_WIDTH, SPRITE_HEIGHT, 1);
+    const outlineMat = new StandardMaterial("teacherOutline", activeScene());
+    outlineMat.diffuseTexture = tex;
+    outlineMat.useAlphaFromDiffuseTexture = true;
+    outlineMat.emissiveTexture = tex;
+    outlineMat.emissiveColor = color3(0xff3a3a);
+    outlineMat.diffuseColor = Color3.Black();
+    outlineMat.disableLighting = true;
+    outlineMat.alpha = 0.85;
+    outlineMat.depthFunction = 519;
+    outlineMat.backFaceCulling = false;
+    const outline = plane(SPRITE_WIDTH, SPRITE_HEIGHT, outlineMat);
+    outline.billboardMode = Mesh.BILLBOARDMODE_ALL;
     outline.position.set(t.x, SPRITE_HEIGHT / 2, t.z);
     outline.visible = false;
-    outline.renderOrder = 999;
+    outline.renderingGroupId = 1;
     this.group.add(outline);
 
-    const audio = new THREE.PositionalAudio(this.listener);
+    const audio = new PositionalSound(this.listener);
     audio.setRefDistance(REF_DISTANCE);
     audio.setMaxDistance(MAX_DISTANCE);
     audio.setRolloffFactor(ROLLOFF);
     audio.setDistanceModel("inverse");
     audio.setVolume(getSettings().sfxVolume);
-    sprite.add(audio);
+    audio.attachTo(sprite);
 
     this.entries.set(t.id, {
       sprite, outline, audio,
-      target: new THREE.Vector2(t.x, t.z),
+      target: new Vector2(t.x, t.z),
       lastStepX: t.x, lastStepZ: t.z,
       silent: t.ability === "silent_steps",
       stunUntilMs: 0,
@@ -161,17 +184,18 @@ export class Teachers {
     for (const e of this.entries.values()) {
       e.sprite.position.x += (e.target.x - e.sprite.position.x) * LERP;
       e.sprite.position.z += (e.target.y - e.sprite.position.z) * LERP;
-      e.outline.position.copy(e.sprite.position);
+      e.outline.position.copyFrom(e.sprite.position);
       const stunned = now < e.stunUntilMs;
-      const mat = e.sprite.material as THREE.SpriteMaterial;
+      const mat = e.sprite.material as StandardMaterial;
+      const tex = mat.diffuseTexture as Texture;
       if (stunned) {
         // Wobble + yellowish daze tint.
         const wob = Math.sin(now * 0.02) * 0.06;
-        e.sprite.material.rotation = wob;
-        mat.color.setRGB(1.4, 1.1, 0.5);
-      } else if (mat.color.r !== 1 || mat.color.g !== 1 || mat.color.b !== 1) {
-        e.sprite.material.rotation = 0;
-        mat.color.setRGB(1, 1, 1);
+        tex.wAng = wob;
+        mat.emissiveColor.set(1.4, 1.1, 0.5);
+      } else if (mat.emissiveColor.r !== 1 || mat.emissiveColor.g !== 1 || mat.emissiveColor.b !== 1) {
+        tex.wAng = 0;
+        mat.emissiveColor.set(1, 1, 1);
       }
     }
   }

@@ -2,7 +2,7 @@
 
 ## Stack
 - **Backend** — Python 3, FastAPI, Uvicorn, Pydantic v2, httpx. Authoritative state, worldgen, AI, signaling.
-- **Frontend** — Vite, TypeScript, Three.js, SCSS, stats.js, lucide icons. Rendering, input, UI, audio, WebRTC peers.
+- **Frontend** — Vite, TypeScript, Babylon.js, SCSS, stats.js, lucide icons. Rendering, input, UI, audio, WebRTC peers.
 - **Transports** — JSON packets over WebSocket for gameplay; WebRTC mesh (P2P) for webcam and proximity voice. The server is only a dumb-pipe relay for WebRTC.
 
 ## Onion layout (server)
@@ -30,7 +30,7 @@ server/app/
 client/src/
   main.ts        entry: title → connect → lobby → world → loop
   core/          gameLoop, input, audio, sceneSetup, settings, heartbeat
-  rendering/     Three.js renderer, materials, lights
+  rendering/     Babylon.js engine, materials, lights, post-processing
   net/           WS client, packet router, protocol types, gamePackets
   world/         build world from server grid, props, colliders
   gameplay/      player, remotePlayers, teachers, doors, lockers, chairs,
@@ -48,7 +48,7 @@ client/src/
 2. Client opens `ws://…/ws/{lobbyId}?pwd=…`. Server assigns `pid`, `color`, broadcasts lobby state.
 3. In the lobby room: players see webcam tiles (WebRTC mesh, signaling over WS), admin assigns teacher slots.
 4. Admin sends `start_game` → server generates the world (`world/generator.py`) and sends `world_init` with grid, spawns, lights, props, tasks, extraction point.
-5. Client builds the Three.js scene from the grid and starts the game loop. The player sends `move` packets, the server validates and broadcasts snapshots.
+5. Client builds the Babylon.js scene from the grid and starts the game loop. The player sends `move` packets, the server validates and broadcasts snapshots.
 6. Teacher loop runs server-side in the background (`services/teacher_loop.py`).
 7. On extraction / death: `back_to_lobby` resets the lobby; players stay connected.
 

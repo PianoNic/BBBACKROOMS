@@ -1,7 +1,15 @@
-/** Tiny self-contained THREE viewer used in the tutorial showcase.
+/** Tiny self-contained Babylon viewer used in the tutorial showcase.
  *  Spins a model around the Y axis. Returns a dispose fn so the title
  *  screen can release the WebGL contexts when leaving the tutorial. */
-import * as THREE from "three";
+import { Engine } from "@babylonjs/core/Engines/engine";
+import { Scene } from "@babylonjs/core/scene";
+import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
+import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Group, setCameraOrientation, withScene } from "../rendering/babylon";
 
 export type MiniViewer = {
   canvas: HTMLCanvasElement;
@@ -9,39 +17,57 @@ export type MiniViewer = {
 };
 
 export function createItemViewer(
-  model: THREE.Group, size = 140,
+  build: () => TransformNode, size = 140,
 ): MiniViewer {
+  const dpr = Math.min(window.devicePixelRatio, 2);
   const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
   canvas.style.width = `${size}px`;
   canvas.style.height = `${size}px`;
 
-  const renderer = new THREE.WebGLRenderer({
-    canvas, alpha: true, antialias: true,
-  });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(size, size, false);
+  const engine = new Engine(canvas, true, { alpha: true, stencil: false }, false);
+  engine.setSize(size * dpr, size * dpr);
 
-  const scene = new THREE.Scene();
-  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-  dir.position.set(2, 3, 2);
-  scene.add(dir);
+  const scene = new Scene(engine);
+  scene.useRightHandedSystem = true;
+  scene.clearColor = new Color4(0, 0, 0, 0);
+
+  const ambient = new HemisphericLight("amb", new Vector3(0, 1, 0), scene);
+  ambient.diffuse = Color3.White();
+  ambient.groundColor = Color3.White();
+  ambient.specular = Color3.Black();
+  ambient.intensity = 0.65;
+  const dir = new DirectionalLight("dir", new Vector3(-2, -3, -2).normalize(), scene);
+  dir.diffuse = Color3.White();
+  dir.specular = Color3.Black();
+  dir.intensity = 0.9;
+
+  const wrapper = new Group("viewerWrapper", scene);
+  const model = withScene(scene, build);
+  model.parent = wrapper;
+  wrapper.computeWorldMatrix(true);
 
   // Center the model on its bounding box so rotation looks balanced.
-  const box = new THREE.Box3().setFromObject(model);
-  const center = box.getCenter(new THREE.Vector3());
-  const span = box.getSize(new THREE.Vector3()).length();
-  model.position.sub(center);
-  const wrapper = new THREE.Group();
-  wrapper.add(model);
-  scene.add(wrapper);
+  const bounds = wrapper.getHierarchyBoundingVectors(true);
+  const cx = (bounds.min.x + bounds.max.x) / 2;
+  const cy = (bounds.min.y + bounds.max.y) / 2;
+  const cz = (bounds.min.z + bounds.max.z) / 2;
+  const span = bounds.max.subtract(bounds.min).length();
+  model.position.set(
+    model.position.x - cx, model.position.y - cy, model.position.z - cz,
+  );
 
-  const cam = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+  const cam = new FreeCamera("viewer", new Vector3(0, 0, 0), scene);
+  cam.fov = (35 * Math.PI) / 180;
+  cam.minZ = 0.05;
+  cam.maxZ = 100;
+  cam.inputs.clear();
   const dist = Math.max(span * 1.5, 0.9);
-  cam.position.set(0, span * 0.35, dist);
-  cam.lookAt(0, 0, 0);
+  const camY = span * 0.35;
+  cam.position.set(0, camY, dist);
+  setCameraOrientation(cam, 0, Math.atan2(-camY, dist));
+  scene.activeCamera = cam;
 
   let raf = 0;
   let disposed = false;
@@ -51,7 +77,7 @@ export function createItemViewer(
     const dt = (now - last) / 1000;
     last = now;
     wrapper.rotation.y += dt * 0.9;
-    renderer.render(scene, cam);
+    scene.render();
     raf = requestAnimationFrame(tick);
   }
   raf = requestAnimationFrame(tick);
@@ -61,15 +87,8 @@ export function createItemViewer(
     dispose: () => {
       disposed = true;
       cancelAnimationFrame(raf);
-      renderer.dispose();
-      renderer.forceContextLoss();
-      scene.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (mesh.geometry) mesh.geometry.dispose();
-        const mat = mesh.material;
-        if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
-        else if (mat && "dispose" in mat) (mat as THREE.Material).dispose();
-      });
+      scene.dispose();
+      engine.dispose();
     },
   };
 }

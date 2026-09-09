@@ -1,12 +1,15 @@
-import * as THREE from "three";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Viewport } from "@babylonjs/core/Maths/math.viewport";
+import type { Camera } from "@babylonjs/core/Cameras/camera";
+import { cameraForward } from "../rendering/babylon";
 import { distanceSquaredXZ } from "../core/geom";
 
 const MIN_DOT = 0.55;
 const RANGE_PAD = 1.5;
 const PROMPT_HEIGHT = 0.9;
 
-const fwd = new THREE.Vector3();
-const tmp = new THREE.Vector3();
+const fwd = new Vector3();
+const tmp = new Vector3();
 
 export type InteractTarget = {
   x: number;
@@ -39,13 +42,16 @@ export class InteractPrompt {
     this.label = this.el.querySelector(".label") as HTMLSpanElement;
   }
 
-  update(camera: THREE.PerspectiveCamera, player: THREE.Vector3, targets: InteractTarget[]): void {
+  update(
+    camera: Camera, yaw: number, pitch: number,
+    player: Vector3, targets: InteractTarget[],
+  ): void {
     this.current = null;
     if (targets.length === 0) {
       this.hide();
       return;
     }
-    camera.getWorldDirection(fwd);
+    cameraForward(yaw, pitch, fwd);
 
     let bestScore = MIN_DOT;
     for (const t of targets) {
@@ -70,13 +76,19 @@ export class InteractPrompt {
     const ay = this.current.anchorY ?? PROMPT_HEIGHT;
     const az = this.current.anchorZ ?? this.current.z;
     tmp.set(ax, ay, az);
-    tmp.project(camera);
-    if (tmp.z > 1) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const projected = Vector3.Project(
+      tmp, Matrix.IdentityReadOnly,
+      camera.getViewMatrix().multiply(camera.getProjectionMatrix()),
+      new Viewport(0, 0, w, h),
+    );
+    if (projected.z > 1 || projected.z < 0) {
       this.hide();
       return;
     }
-    const sx = ((tmp.x + 1) / 2) * window.innerWidth;
-    const sy = ((-tmp.y + 1) / 2) * window.innerHeight;
+    const sx = projected.x;
+    const sy = projected.y;
     this.el.style.left = `${sx}px`;
     this.el.style.top = `${sy}px`;
     if (this.label.textContent !== this.current.label) this.label.textContent = this.current.label;

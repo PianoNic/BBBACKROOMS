@@ -5,9 +5,9 @@
  *  State is client-local: opening a stall doesn't sync to other players.
  *  Initial pose is deterministic from the prop's xz so the same map
  *  renders identical mixes of open/closed stalls across clients. */
-import * as THREE from "three";
 import type { Prop } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
+import { Group, box, group } from "../rendering/babylon";
 import { M, mulberry32, seedFromPos } from "../world/propBuilders/_common";
 
 const OPEN_ANGLE = -Math.PI / 2.4;     // ~75° swing out toward the room
@@ -19,22 +19,18 @@ const DOOR_W = 0.85;
 const DOOR_H = 1.5;
 const REACH = 1.8;
 
-const DOOR_GEOM = new THREE.BoxGeometry(DOOR_W, DOOR_H, 0.04);
-const INSET_GEOM = new THREE.BoxGeometry(0.65, 1.05, 0.04);
-const LATCH_GEOM = new THREE.BoxGeometry(0.06, 0.04, 0.03);
-
 type Entry = {
   id: string;
   x: number;
   z: number;
   yaw: number;
-  pivot: THREE.Group;
+  pivot: Group;
   isOpen: boolean;
   target: number;
 };
 
 export class ToiletStallDoors {
-  readonly group = new THREE.Group();
+  readonly group = group("toiletStallDoors");
   private readonly entries = new Map<string, Entry>();
 
   constructor(props: Prop[]) {
@@ -46,26 +42,26 @@ export class ToiletStallDoors {
   }
 
   private add(id: string, p: Prop): void {
-    const root = new THREE.Group();
+    const root = group("toiletStall");
     root.position.set(p.x, 0, p.z);
     root.rotation.y = p.yaw;
     // toilet_stall uses offsetFromWall(0.5), shifting the inner contents
     // by z=-0.5 in the prop's local frame. We mirror that shift here so
     // the door lines up with the stall shell.
-    const inner = new THREE.Group();
+    const inner = group("inner");
     inner.position.z = -0.5;
     root.add(inner);
 
-    const pivot = new THREE.Group();
+    const pivot = group("stallDoorPivot");
     pivot.position.set(HINGE_X, DOOR_Y, HINGE_Z);
 
-    const door = new THREE.Mesh(DOOR_GEOM, M(0xb8a070));
+    const door = box(DOOR_W, DOOR_H, 0.04, M(0xb8a070));
     door.position.set(-DOOR_W / 2, 0, 0);
     pivot.add(door);
-    const inset = new THREE.Mesh(INSET_GEOM, M(0x8a7a50));
+    const inset = box(0.65, 1.05, 0.04, M(0x8a7a50));
     inset.position.set(-DOOR_W / 2, 0, 0.001);
     pivot.add(inset);
-    const latch = new THREE.Mesh(LATCH_GEOM, M(0xb8b8c0));
+    const latch = box(0.06, 0.04, 0.03, M(0xb8b8c0));
     latch.position.set(-DOOR_W + 0.07, 0, -0.03);
     pivot.add(latch);
     inner.add(pivot);

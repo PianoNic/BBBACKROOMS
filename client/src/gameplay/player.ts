@@ -1,4 +1,6 @@
-import * as THREE from "three";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
+import { setCameraOrientation } from "../rendering/babylon";
 import type { InputState } from "../core/input";
 import type { World } from "../world/builder";
 import type { Rect } from "../world/colliders";
@@ -27,7 +29,7 @@ const STAMINA_MIN_TO_START = 0.15;
 export class Player {
   yaw = 0;
   pitch = 0;
-  readonly position = new THREE.Vector3();
+  readonly position = new Vector3();
   stamina = STAMINA_MAX;
   sprinting = false;
   crouching = false;
@@ -36,7 +38,7 @@ export class Player {
   private stepCooldown = 0;
 
   constructor(
-    private readonly camera: THREE.PerspectiveCamera,
+    private readonly camera: FreeCamera,
     private readonly input: InputState,
     private readonly world: World,
     private readonly propColliders: Rect[] = [],
@@ -49,8 +51,7 @@ export class Player {
     this.bobPhase = 0;
     this.bobY = 0;
     this.stamina = STAMINA_MAX;
-    this.camera.fov = getSettings().fov;
-    this.camera.updateProjectionMatrix();
+    this.camera.fov = (getSettings().fov * Math.PI) / 180;
     this.syncCamera();
   }
 
@@ -123,10 +124,10 @@ export class Player {
 
     const baseFov = getSettings().fov;
     const targetFov = this.sprinting ? baseFov + SPRINT_FOV_BONUS : baseFov;
-    const next = this.camera.fov + (targetFov - this.camera.fov) * Math.min(1, dt * FOV_LERP);
-    if (Math.abs(next - this.camera.fov) > 0.01) {
-      this.camera.fov = next;
-      this.camera.updateProjectionMatrix();
+    const currentFov = (this.camera.fov * 180) / Math.PI;
+    const next = currentFov + (targetFov - currentFov) * Math.min(1, dt * FOV_LERP);
+    if (Math.abs(next - currentFov) > 0.01) {
+      this.camera.fov = (next * Math.PI) / 180;
     }
 
     this.syncCamera();
@@ -154,8 +155,6 @@ export class Player {
 
   private syncCamera(): void {
     this.camera.position.set(this.position.x, this.position.y + this.bobY, this.position.z);
-    this.camera.rotation.order = "YXZ";
-    this.camera.rotation.y = this.yaw;
-    this.camera.rotation.x = this.pitch;
+    setCameraOrientation(this.camera, this.yaw, this.pitch);
   }
 }
