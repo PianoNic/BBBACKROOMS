@@ -197,6 +197,11 @@ function buildMainMenu(
   const account = el<HTMLDivElement>("div", "account-widget");
   fillAccountWidget(account);
   menu.appendChild(account);
+  const legalLink = el<HTMLAnchorElement>("a", "menu-legal-link", "Datenschutz & Impressum");
+  legalLink.href = "/datenschutz.html";
+  legalLink.target = "_blank";
+  legalLink.rel = "noopener noreferrer";
+  menu.appendChild(legalLink);
   root.appendChild(menu);
 }
 

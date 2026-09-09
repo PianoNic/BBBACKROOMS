@@ -101,7 +101,11 @@ export function showLobbyRoom(
   };
   const leaveBtn = el<HTMLButtonElement>("button", "menu-btn back", "← LEAVE");
   const adminNote = el<HTMLDivElement>("note", "admin-note");
-  footer.append(adminNote, startBtn, settingsBtn, shopBtn, media.micBtn, media.camBtn, leaveBtn);
+  const legalLink = el<HTMLAnchorElement>("a", "legal-link", "Datenschutz");
+  legalLink.href = "/datenschutz.html";
+  legalLink.target = "_blank";
+  legalLink.rel = "noopener noreferrer";
+  footer.append(adminNote, legalLink, startBtn, settingsBtn, shopBtn, media.micBtn, media.camBtn, leaveBtn);
   panel.appendChild(footer);
 
   const remoteStreams = new Map<string, MediaStream>();

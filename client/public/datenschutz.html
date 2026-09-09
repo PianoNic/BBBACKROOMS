@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenschutz & Impressum · Backrooms Baden</title>
+<style>
+  :root {
+    --bg: #0a0a0d;
+    --ink: #d9d2c4;
+    --accent: #c8a25a;
+    --accent-bright: #e8c44a;
+    --dim: #6a6258;
+    --panel-bg: rgba(8, 6, 4, 0.55);
+    --panel-border: rgba(106, 98, 88, 0.45);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: system-ui, "Segoe UI", sans-serif;
+    line-height: 1.6;
+    font-size: 1rem;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 6vh 1.5rem 8vh;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-family: "VT323", "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+  }
+
+  .back-link:hover {
+    color: var(--accent-bright);
+  }
+
+  h1 {
+    font-family: "VT323", "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    margin: 0 0 0.4rem;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    margin: 0 0 3rem;
+    color: var(--dim);
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+  }
+
+  h2 {
+    font-family: "VT323", "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-size: 1.4rem;
+    margin: 2.8rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  h2:first-of-type {
+    margin-top: 0;
+  }
+
+  h3 {
+    font-family: "VT323", "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-bright);
+    font-size: 1.05rem;
+    margin: 1.6rem 0 0.5rem;
+  }
+
+  p {
+    margin: 0 0 1rem;
+  }
+
+  ul {
+    margin: 0 0 1rem;
+    padding-left: 1.3rem;
+  }
+
+  li {
+    margin-bottom: 0.4rem;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  a:hover {
+    color: var(--accent-bright);
+  }
+
+  .section {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    padding: 1.5rem 1.5rem 0.2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .muted {
+    color: var(--dim);
+  }
+
+  .footer-note {
+    margin-top: 4rem;
+    color: var(--dim);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 420px) {
+    .page {
+      padding: 5vh 1rem 6vh;
+    }
+    .section {
+      padding: 1.2rem 1rem 0.2rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back-link" href="/">← Zurück zum Spiel</a>
+
+  <h1>DATENSCHUTZ &amp; IMPRESSUM</h1>
+  <p class="subtitle">Backrooms Baden</p>
+
+  <div class="section">
+    <h2>Impressum</h2>
+    <ul>
+      <li>Betreiber: PianoNic</li>
+      <li>Privates Hobbyprojekt, nicht kommerziell.</li>
+      <li>Kontakt: <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a></li>
+    </ul>
+    <p>„Privates Hobbyprojekt ohne Verbindung zu einer realen Schule. Alle Lehrpersonen und Namen sind frei erfunden.“</p>
+  </div>
+
+  <div class="section">
+    <h2>Datenschutz</h2>
+    <p>Verantwortlich für die Bearbeitung der Daten ist der Betreiber (siehe Impressum), erreichbar unter <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a>.</p>
+
+    <h3>Login</h3>
+    <p>Die Anmeldung ist freiwillig; ohne Konto ist das Spiel spielbar. Login läuft über Google oder Microsoft (OpenID Connect). Vom Anbieter erhalten wir eine eindeutige Benutzerkennung (OIDC-Subject) und den Anzeigenamen. Gespeichert werden nur: Anbieter (Google oder Microsoft), Benutzerkennung des Anbieters, Anzeigename, Zeitpunkt der Kontoerstellung.</p>
+
+    <h3>Spielfortschritt</h3>
+    <p>Zum Konto gespeichert werden XP, Level, Coins, gekaufte und ausgerüstete Cosmetics sowie freigeschaltete Achievements. Ohne Login wird kein Fortschritt gespeichert.</p>
+
+    <h3>Cookies</h3>
+    <ul>
+      <li><code>bbb_session</code>: signiertes Sitzungs-Token nach dem Login, 30 Tage gültig.</li>
+      <li><code>bbb_oauth</code>: kurzlebiges Cookie, nur während des Login-Vorgangs.</li>
+    </ul>
+    <p>Keine Drittanbieter-Cookies, keine Werbe- oder Tracking-Cookies.</p>
+
+    <h3>Browser-Speicher</h3>
+    <p>Einstellungen, Anzeigename, Avatar und Farbe sowie installierte Texture Packs (IndexedDB) bleiben lokal im Browser und werden nicht an den Server übertragen. Name und Avatar werden im Spiel als Teil des Lobby-Zustands an die Mitspielenden gesendet.</p>
+
+    <h3>Spielkommunikation</h3>
+    <p>Während einer Runde überträgt der Browser über eine WebSocket-Verbindung Anzeigename, Avatar, Position, Cosmetics, Pings und Chatnachrichten. Der Chat liegt nur im Arbeitsspeicher der Lobby und wird nicht gespeichert; er verschwindet, wenn die Lobby endet.</p>
+
+    <h3>Voice und Webcam</h3>
+    <p>Sprache und Bild laufen über WebRTC direkt zwischen den Mitspielenden (peer-to-peer). Der Server übernimmt ausschliesslich die Signalisierung des Verbindungsaufbaus. Es wird nichts aufgezeichnet.</p>
+
+    <h3>TURN und STUN</h3>
+    <p>Kommt keine direkte Verbindung zustande, wird der Medienstrom über einen TURN-Server von Cloudflare weitergeleitet; die Übertragung bleibt dabei verschlüsselt (DTLS-SRTP) und wird nicht gespeichert. Für den Verbindungsaufbau werden STUN-Server von Cloudflare (stun.cloudflare.com) und Google (stun.l.google.com) angefragt; deren Betreiber sehen dabei die IP-Adresse.</p>
+
+    <h3>Server- und Proxy-Logs</h3>
+    <p>Server und Reverse Proxy protokollieren IP-Adresse, Zeitpunkt und angefragten Pfad. Aufbewahrung: 14 Tage, danach werden die Logs gelöscht. Die Aufbewahrungsdauer legt der Betreiber der jeweiligen Installation fest.</p>
+
+    <h3>Keine Analyse-Dienste</h3>
+    <p>Es werden keine Analyse-, Tracking- oder Werbedienste eingesetzt und keine entsprechenden Skripte geladen.</p>
+
+    <h3>Löschung und Auskunft</h3>
+    <p>Das Konto lässt sich jederzeit im Profil über „Konto löschen“ entfernen; Kontodaten und Spielfortschritt werden dabei gelöscht. Alternativ genügt eine Mail an <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a>.</p>
+
+    <h3>Hosting</h3>
+    <p>Server und Datenbank laufen in der Schweiz bzw. der EU. <span class="muted">(vom Betreiber zu bestätigen)</span></p>
+  </div>
+
+  <div class="section" id="nutzungsbedingungen">
+    <h2>Nutzungsbedingungen</h2>
+    <p>Die Nutzungsbedingungen werden hier ergänzt.</p>
+  </div>
+
+  <p class="footer-note">Stand: 2026-09-09</p>
+</div>
+</body>
+</html>
