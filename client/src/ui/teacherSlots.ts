@@ -73,7 +73,8 @@ export function showTeacherSlots(
       reelsEl.appendChild(reel);
       reels.push({ el: reel, strip });
       const desc = el<HTMLDivElement>("div", "desc");
-      desc.textContent = `${t.name} — ${abilityCopy(t.ability).desc}`;
+      const descName = resolveTeacherName(t.ability, -1, t.name);
+      desc.textContent = `${descName} — ${abilityCopy(t.ability).desc}`;
       descsEl.appendChild(desc);
     });
 
