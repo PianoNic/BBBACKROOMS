@@ -1,3 +1,5 @@
+import type { RoomArchetype } from "../world/rooms";
+
 export type GraphicsTier = "niedrig" | "mittel" | "hoch";
 
 export type TierFeatures = {
@@ -175,4 +177,129 @@ export const AMBIENCE = {
     farMinDistance: 15,
     farMaxDistance: 30,
   },
+  materials: {
+    environment: {
+      url: "/textures/pbr/hdri/creepy_bathroom_1k.hdr",
+      size: 128,
+      intensity: 0.2,
+    },
+    dadoRail: {
+      category: "floor_wood",
+      tint: 0x4f3a24,
+      roughness: 0.55,
+    },
+    decal: {
+      category: "decal_leak",
+      perRoom: 3,
+      minScale: 0.6,
+      maxScale: 1.4,
+      alpha: 0.55,
+    },
+    rooms: {
+      classroom: {
+        wall: "wall_plaster_plain", wallTint: 0x8b8471, wallRoughness: 0.62, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        dado: { category: "dado_tile_green", tint: 0x1e2a22, roughness: 0.32 },
+        dadoHeight: 1.0,
+        floor: "floor_lino", floorTint: 0x787158, floorRoughness: 0.40, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_tile", ceilingTint: 0x847d5a, ceilingRoughness: 0.88, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      hallway: {
+        wall: "wall_plaster_green", wallTint: 0x788172, wallRoughness: 0.65, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        dado: { category: "dado_tile_green", tint: 0x1e2a22, roughness: 0.32 },
+        dadoHeight: 1.0,
+        floor: "floor_terrazzo", floorTint: 0x817e75, floorRoughness: 0.40, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_tile", ceilingTint: 0x847d5a, ceilingRoughness: 0.88, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      toilet: {
+        wall: "wall_tile_white", wallTint: 0x8f948c, wallRoughness: 0.22, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        dado: { category: "dado_tile_green", tint: 0x1e2a22, roughness: 0.32 },
+        dadoHeight: 1.0,
+        floor: "floor_lino", floorTint: 0x766e5d, floorRoughness: 0.18, floorMetallic: 0,
+        floorEnvironment: 0.55, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_plaster", ceilingTint: 0x817f75, ceilingRoughness: 0.90, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      cafeteria: {
+        wall: "wall_plaster_plain", wallTint: 0x87877d, wallRoughness: 0.60, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        floor: "floor_stone_tile", floorTint: 0x837f72, floorRoughness: 0.24, floorMetallic: 0,
+        floorEnvironment: 0.55, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_tile", ceilingTint: 0x847d5a, ceilingRoughness: 0.88, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      chemistry_lab: {
+        wall: "wall_tile_hex", wallTint: 0x878a86, wallRoughness: 0.28, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        floor: "floor_terrazzo_dark", floorTint: 0x484a4d, floorRoughness: 0.42, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_tile", ceilingTint: 0x7f7c62, ceilingRoughness: 0.88, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      gym: {
+        wall: "wall_plaster_plain", wallTint: 0x7f7c6c, wallRoughness: 0.70, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        floor: "floor_wood", floorTint: 0x6d502e, floorRoughness: 0.45, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_plaster", ceilingTint: 0x7c7d74, ceilingRoughness: 0.92, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      janitor_room: {
+        wall: "wall_concrete", wallTint: 0x5c5a54, wallRoughness: 0.72, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        floor: "wall_concrete", floorTint: 0x52514b, floorRoughness: 0.70, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_plaster", ceilingTint: 0x6d6c64, ceilingRoughness: 0.92, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      server_room: {
+        wall: "wall_concrete", wallTint: 0x646768, wallRoughness: 0.60, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        floor: "floor_lino", floorTint: 0x52565a, floorRoughness: 0.35, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_plaster", ceilingTint: 0x686b6c, ceilingRoughness: 0.90, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+      teacher_room: {
+        wall: "wall_plaster_plain", wallTint: 0x888172, wallRoughness: 0.62, wallMetallic: 0,
+        wallRepeatU: 1, wallRepeatV: 1.5,
+        floor: "floor_carpet", floorTint: 0x463b22, floorRoughness: 0.90, floorMetallic: 0,
+        floorEnvironment: 0.18, floorRepeatU: 1, floorRepeatV: 1,
+        ceiling: "ceiling_tile", ceilingTint: 0x827b58, ceilingRoughness: 0.88, ceilingMetallic: 0,
+        ceilingRepeatU: 1, ceilingRepeatV: 1,
+      },
+    } as Record<RoomArchetype, RoomMaterialConfig>,
+  },
+};
+
+export type DadoConfig = { category: string; tint: number; roughness: number };
+
+export type RoomMaterialConfig = {
+  wall: string;
+  wallTint: number;
+  wallRoughness: number;
+  wallMetallic: number;
+  wallRepeatU: number;
+  wallRepeatV: number;
+  dado?: DadoConfig;
+  dadoHeight?: number;
+  floor: string;
+  floorTint: number;
+  floorRoughness: number;
+  floorMetallic: number;
+  floorEnvironment: number;
+  floorRepeatU: number;
+  floorRepeatV: number;
+  ceiling: string;
+  ceilingTint: number;
+  ceilingRoughness: number;
+  ceilingMetallic: number;
+  ceilingRepeatU: number;
+  ceilingRepeatV: number;
 };

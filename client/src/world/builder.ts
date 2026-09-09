@@ -1,8 +1,12 @@
 import "@babylonjs/core/Meshes/thinInstanceMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { Matrix } from "@babylonjs/core/Maths/math.vector";
-import type { Grid } from "../net/protocol";
-import { materials } from "../rendering/materials";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { Grid, Prop } from "../net/protocol";
+import { getDecalMaterial, getRoomMaterials } from "../rendering/materials";
+import { AMBIENCE, tierFeatures } from "../rendering/ambience";
+import { getSettings } from "../core/settings";
+import { RoomInference, type RoomArchetype } from "./rooms";
+import { mulberry32 } from "./propBuilders/_common";
 import { box, group, plane, type Group } from "../rendering/babylon";
 
 export const WALL_HEIGHT = 3;
@@ -11,9 +15,14 @@ export type World = {
   group: Group;
   grid: Grid;
   isWall: (cellX: number, cellY: number) => boolean;
+  shadowCasters: Mesh[];
 };
 
 const FLOOR = 1;
+const DADO_RAIL_HEIGHT = 0.06;
+const WALL_DECAL_Y = 2.1;
+const CEILING_DECAL_MARGIN = 0.02;
+const WALL_FACE_MARGIN = 0.01;
 
 function bake(mesh: Mesh, matrices: Float32Array): void {
   mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
@@ -23,21 +32,17 @@ function bake(mesh: Mesh, matrices: Float32Array): void {
   mesh.freezeWorldMatrix();
 }
 
-export function buildWorld(grid: Grid): World {
+export function buildWorld(grid: Grid, props: Prop[]): World {
   const { width, height, cellSize, cells } = grid;
   const stage = group("world");
+  const tier = getSettings().graphicsTier;
+  const pbr = tierFeatures(tier).pbrSurfaces;
 
-  const floorCount = cells.filter((c) => c === FLOOR).length;
-  const floors = plane(cellSize, cellSize, materials.floor, false, "floors");
-  floors.rotation.x = -Math.PI / 2;
-  floors.bakeCurrentTransformIntoVertices();
-  const ceils = plane(cellSize, cellSize, materials.ceiling, false, "ceils");
-  ceils.rotation.x = Math.PI / 2;
-  ceils.bakeCurrentTransformIntoVertices();
-
-  // Count walls: any non-floor cell adjacent (4-neighbours) to a floor cell.
   const isFloor = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === FLOOR;
+
+  const inference = new RoomInference(grid, props);
+
   const wallSet = new Set<number>();
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -47,9 +52,7 @@ export function buildWorld(grid: Grid): World {
       }
     }
   }
-  // Map-edge virtual walls: for every FLOOR cell sitting on the grid
-  // boundary, place an extra wall cube just outside the grid so rooms
-  // flush against the edge don't show void on that side.
+
   const boundary: [number, number][] = [];
   for (let y = 0; y < height; y++) {
     if (isFloor(0, y)) boundary.push([-1, y]);
@@ -59,9 +62,6 @@ export function buildWorld(grid: Grid): World {
     if (isFloor(x, 0)) boundary.push([x, -1]);
     if (isFloor(x, height - 1)) boundary.push([x, height]);
   }
-  // A floor cell in a grid corner gets two boundary cubes that meet only at
-  // a point, leaving a hairline diagonal gap to look through. Plug the
-  // diagonal too. Rare — 17 corners across 100 generated maps — but free.
   for (const [cxi, cyi, ox, oy] of [
     [0, 0, -1, -1],
     [0, height - 1, -1, height],
@@ -70,48 +70,189 @@ export function buildWorld(grid: Grid): World {
   ] as const) {
     if (isFloor(cxi, cyi)) boundary.push([ox, oy]);
   }
-  const walls = box(cellSize, WALL_HEIGHT, cellSize, materials.wall, "walls");
 
-  const floorMatrices = new Float32Array(floorCount * 16);
-  const ceilMatrices = new Float32Array(floorCount * 16);
-  const wallMatrices = new Float32Array((wallSet.size + boundary.length) * 16);
-  const tmp = Matrix.Identity();
-  let fIdx = 0;
-  let wIdx = 0;
+  function wallArchetype(x: number, y: number): RoomArchetype {
+    const neighbours: [number, number][] = [
+      [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y],
+    ];
+    for (const [nx, ny] of neighbours) {
+      if (isFloor(nx, ny)) return inference.archetypeAt(ny * width + nx);
+    }
+    return "hallway";
+  }
+
+  const shadowCasters: Mesh[] = [];
+  const floorByArchetype = new Map<RoomArchetype, number[]>();
+  const wallByArchetype = new Map<RoomArchetype, [number, number][]>();
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const cx = (x + 0.5) * cellSize;
-      const cz = (y + 0.5) * cellSize;
-      if (cells[y * width + x] === FLOOR) {
-        Matrix.TranslationToRef(cx, 0, cz, tmp);
-        tmp.copyToArray(floorMatrices, fIdx * 16);
-        Matrix.TranslationToRef(cx, WALL_HEIGHT, cz, tmp);
-        tmp.copyToArray(ceilMatrices, fIdx * 16);
-        fIdx++;
-      } else if (wallSet.has(y * width + x)) {
-        Matrix.TranslationToRef(cx, WALL_HEIGHT / 2, cz, tmp);
-        tmp.copyToArray(wallMatrices, wIdx * 16);
-        wIdx++;
+      const idx = y * width + x;
+      if (cells[idx] === FLOOR) {
+        const a = inference.archetypeAt(idx);
+        const list = floorByArchetype.get(a);
+        if (list) list.push(idx);
+        else floorByArchetype.set(a, [idx]);
+      } else if (wallSet.has(idx)) {
+        const a = wallArchetype(x, y);
+        const list = wallByArchetype.get(a);
+        if (list) list.push([x, y]);
+        else wallByArchetype.set(a, [[x, y]]);
       }
     }
   }
   for (const [bx, by] of boundary) {
-    const cx = (bx + 0.5) * cellSize;
-    const cz = (by + 0.5) * cellSize;
-    Matrix.TranslationToRef(cx, WALL_HEIGHT / 2, cz, tmp);
-    tmp.copyToArray(wallMatrices, wIdx * 16);
-    wIdx++;
+    const a = wallArchetype(bx, by);
+    const list = wallByArchetype.get(a);
+    if (list) list.push([bx, by]);
+    else wallByArchetype.set(a, [[bx, by]]);
   }
-  stage.add(floors, ceils, walls);
-  bake(floors, floorMatrices);
-  bake(ceils, ceilMatrices);
-  bake(walls, wallMatrices);
-  floors.receiveShadows = true;
-  walls.receiveShadows = true;
+
+  for (const [archetype, idxs] of floorByArchetype) {
+    const matSet = getRoomMaterials(archetype);
+    const floorMesh = plane(cellSize, cellSize, matSet.floor, false, `floors_${archetype}`);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.bakeCurrentTransformIntoVertices();
+    const ceilMesh = plane(cellSize, cellSize, matSet.ceiling, false, `ceils_${archetype}`);
+    ceilMesh.rotation.x = Math.PI / 2;
+    ceilMesh.bakeCurrentTransformIntoVertices();
+
+    const floorMatrices = new Float32Array(idxs.length * 16);
+    const ceilMatrices = new Float32Array(idxs.length * 16);
+    const tmp = Matrix.Identity();
+    idxs.forEach((idx, i) => {
+      const x = idx % width;
+      const y = (idx / width) | 0;
+      const cx = (x + 0.5) * cellSize;
+      const cz = (y + 0.5) * cellSize;
+      Matrix.TranslationToRef(cx, 0, cz, tmp);
+      tmp.copyToArray(floorMatrices, i * 16);
+      Matrix.TranslationToRef(cx, WALL_HEIGHT, cz, tmp);
+      tmp.copyToArray(ceilMatrices, i * 16);
+    });
+    stage.add(floorMesh, ceilMesh);
+    bake(floorMesh, floorMatrices);
+    bake(ceilMesh, ceilMatrices);
+    floorMesh.receiveShadows = true;
+    shadowCasters.push(floorMesh, ceilMesh);
+  }
+
+  for (const [archetype, coords] of wallByArchetype) {
+    const matSet = getRoomMaterials(archetype);
+    const wallMesh = box(cellSize, WALL_HEIGHT, cellSize, matSet.wall, `walls_${archetype}`);
+    const wallMatrices = new Float32Array(coords.length * 16);
+    const tmp = Matrix.Identity();
+    coords.forEach(([x, y], i) => {
+      const cx = (x + 0.5) * cellSize;
+      const cz = (y + 0.5) * cellSize;
+      Matrix.TranslationToRef(cx, WALL_HEIGHT / 2, cz, tmp);
+      tmp.copyToArray(wallMatrices, i * 16);
+    });
+    stage.add(wallMesh);
+    bake(wallMesh, wallMatrices);
+    wallMesh.receiveShadows = true;
+    shadowCasters.push(wallMesh);
+
+    if (pbr) {
+      const config = AMBIENCE.materials.rooms[archetype];
+      if (config.dado && matSet.dado && matSet.rail) {
+        const dadoHeight = config.dadoHeight ?? 1.0;
+        const dadoMesh = box(
+          cellSize + 0.02, dadoHeight, cellSize + 0.02, matSet.dado, `dado_${archetype}`,
+        );
+        const railMesh = box(
+          cellSize + 0.05, DADO_RAIL_HEIGHT, cellSize + 0.05, matSet.rail, `rail_${archetype}`,
+        );
+        const dadoMatrices = new Float32Array(coords.length * 16);
+        const railMatrices = new Float32Array(coords.length * 16);
+        const tmp2 = Matrix.Identity();
+        coords.forEach(([x, y], i) => {
+          const cx = (x + 0.5) * cellSize;
+          const cz = (y + 0.5) * cellSize;
+          Matrix.TranslationToRef(cx, dadoHeight / 2, cz, tmp2);
+          tmp2.copyToArray(dadoMatrices, i * 16);
+          Matrix.TranslationToRef(cx, dadoHeight, cz, tmp2);
+          tmp2.copyToArray(railMatrices, i * 16);
+        });
+        stage.add(dadoMesh, railMesh);
+        bake(dadoMesh, dadoMatrices);
+        bake(railMesh, railMatrices);
+        shadowCasters.push(dadoMesh, railMesh);
+      }
+    }
+  }
+
+  if (pbr && inference.rooms.length > 0) {
+    const decalCfg = AMBIENCE.materials.decal;
+    const decalMat = getDecalMaterial();
+    const decalMesh = plane(1, 1, decalMat, false, "decals");
+    decalMesh.receiveShadows = false;
+
+    const composed: Matrix[] = [];
+
+    for (const room of inference.rooms) {
+      const rng = mulberry32(room.seed);
+      const wallCandidates: { wx: number; wy: number; dx: number; dy: number }[] = [];
+      for (let y = room.minY; y <= room.maxY; y++) {
+        for (let x = room.minX; x <= room.maxX; x++) {
+          const dirs: [number, number][] = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+          for (const [dx, dy] of dirs) {
+            const wx = x + dx;
+            const wy = y + dy;
+            if (wx < 0 || wy < 0 || wx >= width || wy >= height) continue;
+            if (wallSet.has(wy * width + wx)) {
+              wallCandidates.push({ wx, wy, dx: -dx, dy: -dy });
+            }
+          }
+        }
+      }
+
+      for (let i = 0; i < decalCfg.perRoom; i++) {
+        const scale = decalCfg.minScale + rng() * (decalCfg.maxScale - decalCfg.minScale);
+        const onCeiling = rng() < 0.5;
+        if (onCeiling) {
+          const rx = room.minX + Math.floor(rng() * (room.maxX - room.minX + 1));
+          const ry = room.minY + Math.floor(rng() * (room.maxY - room.minY + 1));
+          const cx = (rx + 0.5) * cellSize;
+          const cz = (ry + 0.5) * cellSize;
+          const spin = rng() * Math.PI * 2;
+          const rot = Quaternion.RotationAxis(Vector3.Up(), spin).multiply(
+            Quaternion.RotationAxis(Vector3.Right(), Math.PI / 2),
+          );
+          composed.push(Matrix.Compose(
+            new Vector3(scale, scale, scale), rot,
+            new Vector3(cx, WALL_HEIGHT - CEILING_DECAL_MARGIN, cz),
+          ));
+        } else if (wallCandidates.length > 0) {
+          const pick = wallCandidates[Math.floor(rng() * wallCandidates.length)];
+          const cx = (pick.wx + 0.5) * cellSize;
+          const cz = (pick.wy + 0.5) * cellSize;
+          const faceX = cx + pick.dx * (cellSize / 2 - WALL_FACE_MARGIN);
+          const faceZ = cz + pick.dy * (cellSize / 2 - WALL_FACE_MARGIN);
+          const yaw = Math.atan2(pick.dx, pick.dy);
+          const rot = Quaternion.RotationAxis(Vector3.Up(), yaw);
+          composed.push(Matrix.Compose(
+            new Vector3(scale, scale, scale), rot,
+            new Vector3(faceX, WALL_DECAL_Y, faceZ),
+          ));
+        }
+      }
+    }
+
+    if (composed.length === 0) {
+      decalMesh.dispose();
+    } else {
+      const decalMatrices = new Float32Array(composed.length * 16);
+      composed.forEach((m, i) => m.copyToArray(decalMatrices, i * 16));
+      stage.add(decalMesh);
+      bake(decalMesh, decalMatrices);
+    }
+  }
 
   return {
     group: stage,
     grid,
     isWall: (cx, cy) => !isFloor(cx, cy),
+    shadowCasters,
   };
 }
