@@ -66,5 +66,12 @@ die Klasse, eine Schule oder ein Verein. Kommerzielle Nutzung ist nicht lizenzie
 als bezahlten Dienst betreiben braucht eine separate Vereinbarung. Source-available, nicht Open
 Source.
 
+## Nutzungsbedingungen / Missbrauch melden
+
+Texture Packs bleiben lokal im Browser, verantwortlich ist, wer sie erstellt oder weitergibt. Packs
+mit Bildern oder Namen realer Personen ohne deren Einwilligung sind nicht erlaubt. Meldungen gehen an
+<kontakt@backrooms-baden.ch> — Hosts, die solche Packs verwenden, können vom öffentlichen Server
+gesperrt werden. Die vollständigen Bedingungen stehen in [TERMS.md](TERMS.md).
+
 ---
 <p align="center">Made with ❤️ by <a href="https://github.com/Pianonic">PianoNic</a></p>
