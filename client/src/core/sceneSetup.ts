@@ -7,7 +7,7 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { SpatialListener } from "./spatialAudio";
 import type { Prop, WorldInit } from "../net/protocol";
 import type { NetClient } from "../net/client";
-import type { createRenderContext } from "../rendering/renderer";
+import { AmbientLights, type createRenderContext } from "../rendering/renderer";
 import type { WebcamMesh } from "../gameplay/webcam";
 import { buildWorld } from "../world/builder";
 import { buildProps } from "../world/props";
@@ -57,13 +57,14 @@ export function buildScene(
   webcam: WebcamMesh,
 ) {
   const world = buildWorld(init.grid, init.props);
-  const lights = new FlickerLights(init.lights);
-  const particles = new AmbienceParticles(ctx.scene);
-  const regionOf = (prop: Prop): number => world.inference.regionAtXY(
-    Math.floor(prop.x / init.grid.cellSize),
-    Math.floor(prop.z / init.grid.cellSize),
+  const regionOfXY = (x: number, z: number): number => world.inference.regionAtXY(
+    Math.floor(x / init.grid.cellSize),
+    Math.floor(z / init.grid.cellSize),
     init.grid.width,
   );
+  const lights = new FlickerLights(init.lights, regionOfXY);
+  const particles = new AmbienceParticles(ctx.scene);
+  const regionOf = (prop: Prop): number => regionOfXY(prop.x, prop.z);
   const { group: propsGroup, regionMeshes: propRegionMeshes } = buildProps(init.props, regionOf);
   lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.shadowCasters]);
   const propColliders = buildPropColliders(init.props);
@@ -75,6 +76,8 @@ export function buildScene(
     if (list) list.push(...meshes);
     else regionMeshes.set(id, [...meshes]);
   }
+  lights.setRegionMeshes(regionMeshes);
+  const ambientLights = new AmbientLights(ctx.scene);
 
   const remotes = new RemotePlayers();
   remotes.attachAudio(audioListener);
@@ -165,11 +168,13 @@ export function buildScene(
   webcam.onRemoteAudio((id, stream) => proximityVoice.setStream(id, stream));
   webcam.setPeers(init.players.map((p) => p.id));
 
+  ambientLights.update(ctx.scene);
+
   return {
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice, particles,
-    regionMeshes, inference: world.inference,
+    regionMeshes, inference: world.inference, ambientLights,
   };
 }

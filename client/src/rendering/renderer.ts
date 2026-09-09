@@ -2,6 +2,7 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 
@@ -9,6 +10,37 @@ import { getSettings, onSettingsChange } from "../core/settings";
 import { setActiveScene, color3 } from "./babylon";
 import { AMBIENCE } from "./ambience";
 import { Ambience } from "./pipeline";
+
+export class AmbientLights {
+  readonly ambient: HemisphericLight;
+  readonly ambientPbr: HemisphericLight;
+  private lastMeshCount = -1;
+
+  constructor(scene: Scene) {
+    const up = new Vector3(0, 1, 0);
+    const color = color3(AMBIENCE.ambientLight.color);
+
+    this.ambient = new HemisphericLight("ambient", up, scene);
+    this.ambient.diffuse = color.clone();
+    this.ambient.groundColor = color.clone();
+    this.ambient.specular = Color3.Black();
+    this.ambient.intensity = AMBIENCE.ambientLight.intensity;
+
+    this.ambientPbr = new HemisphericLight("ambientPbr", up, scene);
+    this.ambientPbr.diffuse = color.clone();
+    this.ambientPbr.groundColor = color.clone();
+    this.ambientPbr.specular = Color3.Black();
+    this.ambientPbr.intensity = AMBIENCE.ambientLight.intensity / Math.PI;
+  }
+
+  update(scene: Scene): void {
+    if (scene.meshes.length === this.lastMeshCount) return;
+    this.lastMeshCount = scene.meshes.length;
+    const pbrMeshes = scene.meshes.filter((m) => m.material instanceof PBRMaterial);
+    this.ambient.excludedMeshes = pbrMeshes;
+    this.ambientPbr.includedOnlyMeshes = pbrMeshes;
+  }
+}
 
 export type RenderContext = {
   engine: Engine;
@@ -49,12 +81,6 @@ export function createRenderContext(mount: HTMLElement): RenderContext {
   camera.maxZ = 200;
   camera.inputs.clear();
   scene.activeCamera = camera;
-
-  const ambient = new HemisphericLight("ambient", new Vector3(0, 1, 0), scene);
-  ambient.diffuse = color3(AMBIENCE.ambientLight.color);
-  ambient.groundColor = color3(AMBIENCE.ambientLight.color);
-  ambient.specular = Color3.Black();
-  ambient.intensity = AMBIENCE.ambientLight.intensity;
 
   const ambience = new Ambience(engine, scene, camera, canvas);
 

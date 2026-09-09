@@ -15,12 +15,13 @@ export type TierFeatures = {
   glow: boolean;
   glowRatio: number;
   pbrSurfaces: boolean;
+  maxLights: number;
 };
 
 export const TIERS: Record<GraphicsTier, TierFeatures> = {
-  niedrig: { shadowLights: 0, shadowMapSize: 256, ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: false },
-  mittel:  { shadowLights: 1, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 0.5, glow: true,  glowRatio: 0.5, pbrSurfaces: true  },
-  hoch:    { shadowLights: 4, shadowMapSize: 512, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true  },
+  niedrig: { shadowLights: 0, shadowMapSize: 256,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: false, maxLights: 3 },
+  mittel:  { shadowLights: 1, shadowMapSize: 1024, ssao: true,  ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 48, fxaa: true,  particleScale: 0.5, glow: true,  glowRatio: 0.5, pbrSurfaces: true,  maxLights: 5 },
+  hoch:    { shadowLights: 2, shadowMapSize: 1024, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true,  maxLights: 7 },
 };
 
 export function tierFeatures(tier: GraphicsTier): TierFeatures {
@@ -87,14 +88,14 @@ export const AMBIENCE = {
   tube: {
     color: 0xfff2cf,
     baseIntensity: 3.4,
-    range: 12,
+    range: 9.5,
     poolSize: 6,
-    spotAngle: 1.7,
-    spotExponent: 1,
+    spotAngle: 2.6,
+    spotExponent: 0.05,
     shadowDarkness: 0.32,
     shadowBlurKernel: 16,
     shadowMinZ: 0.15,
-    shadowMaxZ: 13,
+    shadowMaxZ: 10,
     shadowBias: 0.00005,
     shadowNormalBias: 0.02,
     emissiveFloor: 0.05,

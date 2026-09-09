@@ -2,6 +2,7 @@ import { PointLight } from "@babylonjs/core/Lights/pointLight";
 import { SpotLight } from "@babylonjs/core/Lights/spotLight";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
@@ -12,7 +13,7 @@ import { getSettings, onSettingsChange } from "../core/settings";
 import { mulberry32, seedFromPos } from "../world/propBuilders/_common";
 import { activeScene, basicMaterial, box, color3, group, lambertMaterial } from "./babylon";
 
-const SPOT_COUNT = 4;
+const SPOT_COUNT = 2;
 const POINT_COUNT = AMBIENCE.tube.poolSize - SPOT_COUNT;
 
 type Pattern = "stable" | "buzzing" | "dying" | "strobing";
@@ -20,6 +21,7 @@ type Pattern = "stable" | "buzzing" | "dying" | "strobing";
 type Fixture = {
   x: number;
   z: number;
+  region: number;
   material: StandardMaterial;
   pattern: Pattern;
   phase: number;
@@ -65,15 +67,22 @@ export class FlickerLights {
   private readonly pool: (SpotLight | PointLight)[] = [];
   private readonly tubeColor: Color3;
   private shadowGenerators: ShadowGenerator[] = [];
+  private shadowSlotCount = 0;
   private casters: AbstractMesh[] = [];
   private tier: GraphicsTier;
   private activeBlackout: { x: number; z: number; endTime: number } | null = null;
+  private readonly regionOf: (x: number, z: number) => number;
+  private regionMeshes: ReadonlyMap<number, Mesh[]> = new Map();
+  private allRegionMeshes: Mesh[] = [];
+  private readonly excludedByRegion = new Map<number, Mesh[]>();
+  private readonly slotRegion: (number | null)[] = [];
 
-  constructor(positions: Light[]) {
+  constructor(positions: Light[], regionOf: (x: number, z: number) => number) {
     const ceilY = WALL_HEIGHT - 0.04;
     const scene = activeScene();
     const frameMat = lambertMaterial(0x2a2a2e, "lightFrame");
     this.tubeColor = color3(AMBIENCE.tube.color);
+    this.regionOf = regionOf;
 
     for (const p of positions) {
       const fixture = group("fixture");
@@ -120,7 +129,7 @@ export class FlickerLights {
       else cycleLen = 4 + rng() * 5;
 
       this.fixtures.push({
-        x: p.x, z: p.z, material: fixtureMat,
+        x: p.x, z: p.z, region: this.regionOf(p.x, p.z), material: fixtureMat,
         pattern, phase, rate, cycleLen, seed, intensity: 1,
       });
     }
@@ -145,12 +154,21 @@ export class FlickerLights {
       pl.intensity = 0;
       this.pool.push(pl);
     }
+    for (let i = 0; i < this.pool.length; i++) this.slotRegion.push(null);
 
     this.tier = getSettings().graphicsTier;
     this.rebuildShadows(this.tier);
     onSettingsChange((s) => {
       if (s.graphicsTier !== this.tier) this.setTier(s.graphicsTier);
     });
+  }
+
+  setRegionMeshes(map: ReadonlyMap<number, Mesh[]>): void {
+    this.regionMeshes = map;
+    this.allRegionMeshes = [];
+    for (const meshes of map.values()) this.allRegionMeshes.push(...meshes);
+    this.excludedByRegion.clear();
+    this.slotRegion.fill(null);
   }
 
   setShadowCasters(meshes: AbstractMesh[]): void {
@@ -174,6 +192,7 @@ export class FlickerLights {
     for (const gen of this.shadowGenerators) gen.dispose();
     this.shadowGenerators = [];
     const count = Math.min(tierFeatures(tier).shadowLights, SPOT_COUNT);
+    this.shadowSlotCount = count;
     const mapSize = tierFeatures(tier).shadowMapSize;
     const supportsShadowSampler = activeScene().getEngine().getCaps().depthTextureExtension;
     for (let i = 0; i < count; i++) {
@@ -235,15 +254,56 @@ export class FlickerLights {
       distances.push({ i, d: dx * dx + dz * dz });
     }
     distances.sort((a, b) => a.d - b.d);
+
+    const playerRegion = this.regionOf(px, pz);
+    const ordered: number[] = [];
+    const used = new Set<number>();
+    for (const d of distances) {
+      if (ordered.length >= this.shadowSlotCount) break;
+      if (this.fixtures[d.i].region === playerRegion) {
+        ordered.push(d.i);
+        used.add(d.i);
+      }
+    }
+    for (const d of distances) {
+      if (ordered.length >= this.shadowSlotCount) break;
+      if (!used.has(d.i)) {
+        ordered.push(d.i);
+        used.add(d.i);
+      }
+    }
+    for (const d of distances) {
+      if (!used.has(d.i)) {
+        ordered.push(d.i);
+        used.add(d.i);
+      }
+    }
+
     for (let k = 0; k < this.pool.length; k++) {
       const slot = this.pool[k];
-      if (k >= distances.length) {
+      if (k >= ordered.length) {
         slot.intensity = 0;
         continue;
       }
-      const f = this.fixtures[distances[k].i];
+      const f = this.fixtures[ordered[k]];
       slot.position.set(f.x, WALL_HEIGHT - 0.19, f.z);
       slot.intensity = AMBIENCE.tube.baseIntensity * f.intensity;
+      this.applySlotRegion(k, slot, f.region);
     }
+  }
+
+  private applySlotRegion(k: number, slot: SpotLight | PointLight, region: number): void {
+    if (this.slotRegion[k] === region) return;
+    this.slotRegion[k] = region;
+    slot.excludedMeshes = this.excludedFor(region);
+  }
+
+  private excludedFor(region: number): Mesh[] {
+    const cached = this.excludedByRegion.get(region);
+    if (cached) return cached;
+    const owned = new Set<Mesh>(this.regionMeshes.get(region) ?? []);
+    const excluded = this.allRegionMeshes.filter((m) => !owned.has(m));
+    this.excludedByRegion.set(region, excluded);
+    return excluded;
   }
 }
