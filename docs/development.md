@@ -65,7 +65,7 @@ the test toolchain.
 One `Dockerfile` at the repo root builds everything — Bun compiles the client,
 then the output is copied into the Python image as `app/static`:
 ```powershell
-docker build -t ghcr.io/pianonic/bbbackrooms:dev .
+docker build -t ghcr.io/pianonic/backroomsbaden:dev .
 ```
 Running the server from a source checkout has no `static/` directory, so it
 serves the API only and Vite hosts the client — see [Frontend](#frontend).
@@ -89,7 +89,7 @@ Get TURN credentials at *Cloudflare dashboard → Realtime → TURN Server → c
 ```powershell
 docker compose up -d
 ```
-- Pulls `ghcr.io/pianonic/bbbackrooms` — one image holding the API *and* the
+- Pulls `ghcr.io/pianonic/backroomsbaden` — one image holding the API *and* the
   built client. FastAPI serves the SPA itself (`app.frontend()` in `main.py`),
   so there is no separate web server and no way to deploy a client and a
   server that disagree about the wire protocol.
