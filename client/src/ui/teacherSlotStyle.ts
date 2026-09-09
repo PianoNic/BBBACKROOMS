@@ -42,7 +42,7 @@ export function ensureTeacherSlotStyle(): void {
       box-sizing: border-box;
     }
     #teacher-slots .reel .cell img {
-      width: 180px; height: 180px; object-fit: cover;
+      width: 180px; height: 240px; object-fit: cover;
       filter: contrast(1.15) saturate(0.85) brightness(0.92);
       border: 1px solid #4a3818;
     }

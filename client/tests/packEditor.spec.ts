@@ -10,20 +10,20 @@ const PNG = Buffer.from(
 
 const ROSTER = [
   {
-    image: "001-Yasmin-Caduff.jpg",
-    name: "Yasmin Caduff",
+    image: "001-Rosmarie-Egger.jpg",
+    name: "Rosmarie Egger",
     subject: "Sport",
     ability: "basketball_throw",
   },
   {
-    image: "002-Matteo-Rohrer.jpg",
-    name: "Matteo Rohrer",
+    image: "002-Monika-Uehlinger.jpg",
+    name: "Monika Uehlinger",
     subject: "Sport",
     ability: "dodgeball_throw",
   },
   {
-    image: "003-Ladina-Wettstein.jpg",
-    name: "Ladina Wettstein",
+    image: "003-Kurt-Jauch.jpg",
+    name: "Kurt Jauch",
     subject: "Sport",
     ability: "shotput_throw",
   },

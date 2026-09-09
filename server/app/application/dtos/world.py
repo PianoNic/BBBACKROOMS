@@ -74,7 +74,7 @@ class ExtractionZone(BaseModel):
 
 class Teacher(BaseModel):
     id: str
-    image: str  # filename under /teachers/, e.g. "001-Alma-Egli.jpg"
+    image: str  # filename under /teachers/, e.g. "001-Rosmarie-Egger.jpg"
     name: str
     subject: str
     ability: str  # ability id, see app/domain/world/teachers.py

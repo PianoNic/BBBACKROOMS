@@ -11,7 +11,7 @@ import { PositionalSound, type SpatialListener } from "../core/spatialAudio";
 import { activeScene, color3, group, plane } from "../rendering/babylon";
 
 const SPRITE_HEIGHT = 1.9;
-const SPRITE_WIDTH = 1.3;
+const SPRITE_ASPECT = 3 / 4;
 const LERP = 0.18; // smoothing toward server target each frame
 const STEP_DISTANCE = 1.0; // play a footstep every N meters of movement
 const REF_DISTANCE = 2.5;  // distance at which audio is at full volume
@@ -82,7 +82,7 @@ export class Teachers {
     mat.diffuseColor = Color3.Black();
     mat.disableLighting = true;
     mat.backFaceCulling = false;
-    const sprite = plane(SPRITE_WIDTH, SPRITE_HEIGHT, mat);
+    const sprite = plane(SPRITE_HEIGHT * SPRITE_ASPECT, SPRITE_HEIGHT, mat);
     sprite.billboardMode = Mesh.BILLBOARDMODE_ALL;
     sprite.position.set(t.x, SPRITE_HEIGHT / 2, t.z);
     this.group.add(sprite);
@@ -100,7 +100,7 @@ export class Teachers {
     outlineMat.alpha = 0.85;
     outlineMat.depthFunction = 519;
     outlineMat.backFaceCulling = false;
-    const outline = plane(SPRITE_WIDTH, SPRITE_HEIGHT, outlineMat);
+    const outline = plane(SPRITE_HEIGHT * SPRITE_ASPECT, SPRITE_HEIGHT, outlineMat);
     outline.billboardMode = Mesh.BILLBOARDMODE_ALL;
     outline.position.set(t.x, SPRITE_HEIGHT / 2, t.z);
     outline.visible = false;
@@ -122,6 +122,19 @@ export class Teachers {
       silent: t.ability === "silent_steps",
       stunUntilMs: 0,
     });
+
+    const applyAspect = () => {
+      const size = tex.getSize();
+      if (size.height <= 0) return;
+      const scaleX = (size.width / size.height) / SPRITE_ASPECT;
+      sprite.scaling.x = scaleX;
+      outline.scaling.x = scaleX;
+    };
+    if (tex.isReady()) {
+      applyAspect();
+    } else {
+      tex.onLoadObservable.addOnce(applyAspect);
+    }
   }
 
   /** Toggle thermal-outline visibility globally (driven by the local
