@@ -106,6 +106,8 @@ export function buildWorld(grid: Grid): World {
   bake(floors, floorMatrices);
   bake(ceils, ceilMatrices);
   bake(walls, wallMatrices);
+  floors.receiveShadows = true;
+  walls.receiveShadows = true;
 
   return {
     group: stage,

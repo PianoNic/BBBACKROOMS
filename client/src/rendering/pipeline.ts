@@ -5,10 +5,32 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imageProcessingConfiguration";
+import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 import { AMBIENCE, tierFeatures, type GraphicsTier } from "./ambience";
 import { getSettings, onSettingsChange } from "../core/settings";
 import { color3 } from "./babylon";
+
+let currentGlowLayer: GlowLayer | null = null;
+const pendingGlowMeshes: AbstractMesh[] = [];
+
+export function registerGlowMesh(mesh: AbstractMesh): void {
+  if (mesh.isDisposed()) return;
+  pendingGlowMeshes.push(mesh);
+  if (currentGlowLayer) currentGlowLayer.addIncludedOnlyMesh(mesh as Mesh);
+}
+
+function applyGlowQueue(layer: GlowLayer): void {
+  for (let i = pendingGlowMeshes.length - 1; i >= 0; i--) {
+    if (pendingGlowMeshes[i].isDisposed()) {
+      pendingGlowMeshes.splice(i, 1);
+      continue;
+    }
+    layer.addIncludedOnlyMesh(pendingGlowMeshes[i] as Mesh);
+  }
+}
 
 function clamp01(v: number): number {
   if (v < 0) return 0;
@@ -27,6 +49,7 @@ export class Ambience {
   private readonly camera: FreeCamera;
   private readonly canvas: HTMLCanvasElement;
   private renderPipeline: DefaultRenderingPipeline;
+  private glowLayer: GlowLayer | null = null;
   private tier: GraphicsTier;
   private unsubscribe: (() => void)[] = [];
 
@@ -48,6 +71,7 @@ export class Ambience {
     scene.fogDensity = this.fogDensity;
 
     this.renderPipeline = this.buildPipeline(this.tier);
+    this.buildGlow(this.tier);
 
     this.applySize();
     window.addEventListener("resize", this.applySize);
@@ -112,6 +136,18 @@ export class Ambience {
     return pipeline;
   }
 
+  private buildGlow(tier: GraphicsTier): void {
+    this.glowLayer = tierFeatures(tier).glow
+      ? new GlowLayer("ambienceGlow", this.scene)
+      : null;
+    if (this.glowLayer) {
+      this.glowLayer.intensity = AMBIENCE.glow.intensity;
+      this.glowLayer.blurKernelSize = AMBIENCE.glow.blurKernelSize;
+      applyGlowQueue(this.glowLayer);
+    }
+    currentGlowLayer = this.glowLayer;
+  }
+
   private applySize = (): void => {
     const scale = Math.max(1, getSettings().pixelation);
     this.canvas.style.width = `${window.innerWidth}px`;
@@ -152,6 +188,8 @@ export class Ambience {
     this.tier = tier;
     this.renderPipeline.dispose();
     this.renderPipeline = this.buildPipeline(tier);
+    this.glowLayer?.dispose();
+    this.buildGlow(tier);
   }
 
   get pipeline(): DefaultRenderingPipeline {
@@ -163,5 +201,7 @@ export class Ambience {
     for (const off of this.unsubscribe) off();
     this.unsubscribe = [];
     this.renderPipeline.dispose();
+    this.glowLayer?.dispose();
+    if (currentGlowLayer === this.glowLayer) currentGlowLayer = null;
   }
 }

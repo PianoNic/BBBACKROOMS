@@ -66,7 +66,7 @@ export const AMBIENCE = {
   },
   ambientLight: {
     color: 0x39424c,
-    intensity: 0.22,
+    intensity: 0.26,
   },
   clearColor: 0x090b08,
   chase: {
@@ -79,11 +79,11 @@ export const AMBIENCE = {
   },
   tube: {
     color: 0xfff2cf,
-    baseIntensity: 2.6,
+    baseIntensity: 3.4,
     range: 12,
     poolSize: 6,
     spotAngle: 2.3,
-    spotExponent: 6,
+    spotExponent: 1,
     shadowDarkness: 0.32,
     shadowBlurKernel: 8,
     emissiveFloor: 0.05,

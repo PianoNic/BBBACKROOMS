@@ -103,7 +103,7 @@ export function runGameLoop(d: GameDeps): void {
 
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
-    d.lights.update(elapsed, d.player.position.x, d.player.position.z);
+    d.lights.update(dt, elapsed, d.player.position.x, d.player.position.z);
     d.remotes.update(dt);
     d.quests.update(elapsed);
     d.pings.update(elapsed);

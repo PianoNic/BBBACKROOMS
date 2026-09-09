@@ -22,7 +22,9 @@ function isPassthrough(mat: Material | null): boolean {
   if (!mat) return true;
   if (mat.needAlphaBlending()) return true;
   const std = mat as StandardMaterial;
-  return !!std.diffuseTexture || !!std.opacityTexture || !!std.emissiveTexture;
+  if (std.diffuseTexture || std.opacityTexture || std.emissiveTexture) return true;
+  const pbr = mat as unknown as { albedoTexture?: unknown };
+  return !!pbr.albedoTexture;
 }
 
 export function mergeStaticMeshes(stage: TransformNode): Group {
@@ -55,6 +57,7 @@ export function mergeStaticMeshes(stage: TransformNode): Group {
     merged.computeWorldMatrix(true);
     merged.freezeWorldMatrix();
     merged.alwaysSelectAsActiveMesh = true;
+    merged.receiveShadows = true;
   }
 
   // Textured / transparent meshes keep their own draw call. `setParent`
@@ -64,6 +67,7 @@ export function mergeStaticMeshes(stage: TransformNode): Group {
     mesh.isPickable = false;
     mesh.computeWorldMatrix(true);
     mesh.freezeWorldMatrix();
+    mesh.receiveShadows = true;
   }
 
   for (const node of stage.getDescendants(false)) {

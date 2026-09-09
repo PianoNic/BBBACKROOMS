@@ -56,7 +56,8 @@ export function buildScene(
 ) {
   const world = buildWorld(init.grid);
   const lights = new FlickerLights(init.lights);
-  buildProps(init.props);
+  const propsGroup = buildProps(init.props);
+  lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.group.getChildMeshes()]);
   const propColliders = buildPropColliders(init.props);
 
   const remotes = new RemotePlayers();

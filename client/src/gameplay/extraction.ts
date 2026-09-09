@@ -4,6 +4,7 @@ import type { Mesh, StandardMaterial, TransformNode } from "../rendering/babylon
 import {
   Color3, activeScene, basicMaterial, box, color3, group, lambertMaterial, plane,
 } from "../rendering/babylon";
+import { registerGlowMesh } from "../rendering/pipeline";
 
 const GRATE_COLOR = 0x2a2a30;
 const FRAME_COLOR = 0x4a4a55;
@@ -46,6 +47,7 @@ export class ExtractionPortal {
     this.glow.position.y = 0.005;
     this.group.add(this.glow);
     this.visuals.push(this.glow);
+    registerGlowMesh(this.glow);
 
     // Outer metal frame around the vent (4 thin bars forming a border).
     const frameMat = lambertMaterial(FRAME_COLOR);
