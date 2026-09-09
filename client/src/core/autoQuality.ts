@@ -33,8 +33,10 @@ export class AutoQuality {
 
     if (this.overMs >= AMBIENCE.autoDrop.holdSeconds * 1000) {
       this.fired = true;
-      updateSetting("graphicsTier", "niedrig");
-      showBanner("Performance low — graphics dropped to Niedrig.", 5000);
+      requestAnimationFrame(() => {
+        updateSetting("graphicsTier", "niedrig");
+        showBanner("Performance low — graphics dropped to Niedrig.", 5000);
+      });
     }
   }
 }
