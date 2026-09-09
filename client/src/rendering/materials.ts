@@ -102,6 +102,10 @@ function ensureEnvironmentTexture(): void {
   if (environmentApplied) return;
   environmentApplied = true;
   const scene = activeScene();
+  if (AMBIENCE.materials.environment.intensity <= 0) {
+    scene.environmentTexture = null;
+    return;
+  }
   try {
     const hdr = new HDRCubeTexture(
       AMBIENCE.materials.environment.url, scene, AMBIENCE.materials.environment.size,
@@ -125,8 +129,7 @@ function loadPbrTexture(
   url: string, gammaSpace: boolean, tier: GraphicsTier, repeat: [number, number],
 ): Texture {
   const hoch = tier === "hoch";
-  const sampling = hoch ? Texture.TRILINEAR_SAMPLINGMODE : Texture.NEAREST_SAMPLINGMODE;
-  const tex = new Texture(url, activeScene(), !hoch, true, sampling);
+  const tex = new Texture(url, activeScene(), false, true, Texture.TRILINEAR_SAMPLINGMODE);
   tex.wrapU = Texture.WRAP_ADDRESSMODE;
   tex.wrapV = Texture.WRAP_ADDRESSMODE;
   tex.uScale = repeat[0];
@@ -136,7 +139,7 @@ function loadPbrTexture(
   return tex;
 }
 
-const NORMAL_STRENGTH = 0.6;
+const NORMAL_STRENGTH = 0.35;
 
 function buildPbrSurface(
   name: string, category: string, tint: number, roughness: number, metallic: number,
@@ -158,7 +161,7 @@ function buildPbrSurface(
   mat.roughness = roughness;
   mat.metallic = metallic;
   mat.directIntensity = AMBIENCE.surfaces.directIntensity;
-  mat.environmentIntensity = environmentIntensity;
+  mat.environmentIntensity = AMBIENCE.materials.environment.intensity <= 0 ? 0 : environmentIntensity;
   mat.maxSimultaneousLights = maxLights();
   mat.usePhysicalLightFalloff = false;
   mat.ambientTexture = grime;

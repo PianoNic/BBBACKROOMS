@@ -42,7 +42,7 @@ try {
 
 export const DEFAULTS: Settings = {
   fov: 75,
-  pixelation: 4,
+  pixelation: 2,
   fpsCap: 0,
   vsync: true,
   musicVolume: 0.4,

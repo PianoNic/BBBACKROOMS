@@ -18,17 +18,18 @@ export class AmbientLights {
 
   constructor(scene: Scene) {
     const up = new Vector3(0, 1, 0);
-    const color = color3(AMBIENCE.ambientLight.color);
+    const sky = color3(AMBIENCE.ambientLight.skyColor);
+    const ground = color3(AMBIENCE.ambientLight.groundColor);
 
     this.ambient = new HemisphericLight("ambient", up, scene);
-    this.ambient.diffuse = color.clone();
-    this.ambient.groundColor = color.clone();
+    this.ambient.diffuse = sky.clone();
+    this.ambient.groundColor = ground.clone();
     this.ambient.specular = Color3.Black();
     this.ambient.intensity = AMBIENCE.ambientLight.intensity;
 
     this.ambientPbr = new HemisphericLight("ambientPbr", up, scene);
-    this.ambientPbr.diffuse = color.clone();
-    this.ambientPbr.groundColor = color.clone();
+    this.ambientPbr.diffuse = sky.clone();
+    this.ambientPbr.groundColor = ground.clone();
     this.ambientPbr.specular = Color3.Black();
     this.ambientPbr.intensity = AMBIENCE.ambientLight.intensity / Math.PI;
   }

@@ -13,7 +13,7 @@ import { getSettings, onSettingsChange } from "../core/settings";
 import { mulberry32, seedFromPos } from "../world/propBuilders/_common";
 import { activeScene, basicMaterial, box, color3, group, lambertMaterial } from "./babylon";
 
-const SPOT_COUNT = 2;
+const SPOT_COUNT = 1;
 const POINT_COUNT = AMBIENCE.tube.poolSize - SPOT_COUNT;
 
 type Pattern = "stable" | "buzzing" | "dying" | "strobing";
