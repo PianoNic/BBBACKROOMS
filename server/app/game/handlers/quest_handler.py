@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import time as _time
 
+from mediatorx import Mediator
+
+from app.application.commands.end_round_command import EndRoundCommand
 from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.player_conn import PlayerConn
 from app.game.broadcaster import Broadcaster
@@ -11,9 +14,15 @@ from app.domain.world.geom import within_radius
 
 
 class QuestHandler:
-    def __init__(self, broadcaster: Broadcaster, chair_handler: ChairHandler) -> None:
+    def __init__(
+        self, broadcaster: Broadcaster, chair_handler: ChairHandler, mediator: Mediator | None = None,
+    ) -> None:
         self._broadcaster = broadcaster
         self._chair_handler = chair_handler
+        self._mediator = mediator
+
+    def set_mediator(self, mediator: Mediator) -> None:
+        self._mediator = mediator
 
     async def try_complete_spots(
         self, lobby: Lobby, p: PlayerConn, *, require_interact: bool,
@@ -74,6 +83,5 @@ class QuestHandler:
             if lobby.conns and all(
                 pid in lobby.extracted or pid in lobby.dead for pid in lobby.conns
             ):
-                from app.services.endgame import broadcast_endgame
                 lobby.phase = "won"
-                await broadcast_endgame(lobby, "won")
+                await self._mediator.send(EndRoundCommand(lobby, "won"))

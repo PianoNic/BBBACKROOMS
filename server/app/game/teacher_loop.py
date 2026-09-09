@@ -5,6 +5,9 @@ import asyncio
 import random
 import time as _time
 
+from mediatorx import Mediator
+
+from app.application.commands.end_round_command import EndRoundCommand
 from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.lobby_registry import ILobbyRegistry
 from app.game.broadcaster import Broadcaster
@@ -33,6 +36,7 @@ class TeacherLoop:
         pickup_handler: PickupHandler,
         revive_handler: ReviveHandler,
         status_handler: StatusHandler,
+        mediator: Mediator | None = None,
     ) -> None:
         self._lobby_registry = lobby_registry
         self._broadcaster = broadcaster
@@ -43,7 +47,11 @@ class TeacherLoop:
         self._pickup_handler = pickup_handler
         self._revive_handler = revive_handler
         self._status_handler = status_handler
+        self._mediator = mediator
         self._teacher_tasks: dict[str, asyncio.Task] = {}
+
+    def set_mediator(self, mediator: Mediator) -> None:
+        self._mediator = mediator
 
     def ensure(self, lobby: Lobby) -> None:
         if lobby.id in self._teacher_tasks:
@@ -83,16 +91,15 @@ class TeacherLoop:
         all_done = all(
             pid in lobby.extracted or pid in lobby.dead for pid in lobby.conns
         )
-        from app.services.endgame import broadcast_endgame
         if all_dead:
             lobby.phase = "lost"
-            await broadcast_endgame(lobby, "lost")
+            await self._mediator.send(EndRoundCommand(lobby, "lost"))
             # NOTE: lobby is kept alive so players can press "Back to lobby".
             # Stale-cleanup happens on the last conn leaving (handled elsewhere).
             return True
         if lobby.phase == "escape" and all_done:
             lobby.phase = "won"
-            await broadcast_endgame(lobby, "won")
+            await self._mediator.send(EndRoundCommand(lobby, "won"))
         return False
 
     async def _teacher_loop(self, lobby_id: str) -> None:

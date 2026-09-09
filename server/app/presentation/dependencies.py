@@ -4,6 +4,7 @@ from mediatorx import DictResolver, Mediator
 
 from app.application.behaviors.exception_logging_behavior import ExceptionLoggingBehavior
 from app.application.behaviors.logging_behavior import LoggingBehavior
+from app.application.commands.back_to_lobby_command import BackToLobbyCommand, BackToLobbyHandler
 from app.application.commands.buy_cosmetic_command import BuyCosmeticCommand, BuyCosmeticHandler
 from app.application.commands.complete_oauth_login_command import (
     CompleteOAuthLoginCommand,
@@ -11,9 +12,14 @@ from app.application.commands.complete_oauth_login_command import (
 )
 from app.application.commands.create_lobby_command import CreateLobbyCommand, CreateLobbyHandler
 from app.application.commands.delete_account_command import DeleteAccountCommand, DeleteAccountHandler
+from app.application.commands.end_round_command import EndRoundCommand, EndRoundHandler
 from app.application.commands.equip_cosmetic_command import EquipCosmeticCommand, EquipCosmeticHandler
 from app.application.commands.issue_ws_ticket_command import IssueWsTicketCommand, IssueWsTicketHandler
+from app.application.commands.start_game_command import StartGameCommand, StartGameHandler
 from app.application.commands.start_oauth_login_command import StartOAuthLoginCommand, StartOAuthLoginHandler
+from app.application.notifications.persist_rewards_handler import PersistRewardsHandler
+from app.application.notifications.round_ended_notification import RoundEndedNotification
+from app.application.notifications.unlock_achievements_handler import UnlockAchievementsHandler
 from app.application.queries.get_cosmetic_catalog_query import (
     GetCosmeticCatalogHandler,
     GetCosmeticCatalogQuery,
@@ -35,9 +41,16 @@ from app.domain.accounts.account_repository import IAccountRepository
 from app.domain.achievements.achievement_catalog import achievement_catalog
 from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog, cosmetic_catalog
 from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
+from app.domain.progression.achievement_evaluator import AchievementEvaluator
 from app.domain.progression.level_calculator import LevelCalculator
+from app.domain.progression.reward_calculator import RewardCalculator
+from app.domain.progression.scoreboard_builder import ScoreboardBuilder
 from app.domain.security.blocked_subject_policy import BlockedSubjectPolicy
 from app.domain.security.pkce_generator import PkceGenerator
+from app.domain.world.challenges.laptop_challenge_factory import LaptopChallengeFactory
+from app.domain.world.generator import generate
+from app.domain.world.pickups import fill_lockers
+from app.domain.world.teachers import spawn_teachers
 from app.game.game_core import GameCore, game_core
 from app.game.lobby_registry import lobby_registry
 from app.infrastructure.configuration.settings import settings
@@ -68,6 +81,10 @@ def build_mediator() -> Mediator:
     levels = LevelCalculator()
     pkce_generator = PkceGenerator()
     ice_server_provider = CloudflareIceServerProvider()
+    reward_calculator = RewardCalculator()
+    scoreboard_builder = ScoreboardBuilder(reward_calculator, levels)
+    achievement_evaluator = AchievementEvaluator()
+    challenge_factory = LaptopChallengeFactory()
 
     resolver = DictResolver()
     resolver.add_factory(GetHealthHandler, lambda: GetHealthHandler())
@@ -115,10 +132,26 @@ def build_mediator() -> Mediator:
     )
     resolver.add_factory(GetTeacherRosterHandler, lambda: GetTeacherRosterHandler(TEACHER_ROSTER))
     resolver.add_factory(GetIceServersHandler, lambda: GetIceServersHandler(ice_server_provider))
+    resolver.add_factory(
+        StartGameHandler,
+        lambda: StartGameHandler(generate, spawn_teachers, fill_lockers, challenge_factory),
+    )
+    resolver.add_factory(BackToLobbyHandler, lambda: BackToLobbyHandler())
+    resolver.add_factory(
+        PersistRewardsHandler,
+        lambda: PersistRewardsHandler(profiles, levels, database_engine),
+    )
+    resolver.add_factory(
+        UnlockAchievementsHandler,
+        lambda: UnlockAchievementsHandler(
+            achievement_evaluator, achievements, achievement_catalog, profiles, database_engine,
+        ),
+    )
     resolver.add_instance(ExceptionLoggingBehavior, ExceptionLoggingBehavior(_log))
     resolver.add_instance(LoggingBehavior, LoggingBehavior(_log))
 
     mediator = Mediator(resolver=resolver)
+    resolver.add_factory(EndRoundHandler, lambda: EndRoundHandler(scoreboard_builder, mediator))
     mediator.register(GetHealthQuery, GetHealthHandler)
     mediator.register(GetVersionQuery, GetVersionHandler)
     mediator.register(GetOAuthProvidersQuery, GetOAuthProvidersHandler)
@@ -135,12 +168,18 @@ def build_mediator() -> Mediator:
     mediator.register(CreateLobbyCommand, CreateLobbyHandler)
     mediator.register(GetTeacherRosterQuery, GetTeacherRosterHandler)
     mediator.register(GetIceServersQuery, GetIceServersHandler)
+    mediator.register(StartGameCommand, StartGameHandler)
+    mediator.register(EndRoundCommand, EndRoundHandler)
+    mediator.register(BackToLobbyCommand, BackToLobbyHandler)
+    mediator.register_notification(RoundEndedNotification, PersistRewardsHandler)
+    mediator.register_notification(RoundEndedNotification, UnlockAchievementsHandler)
     mediator.add_behavior(ExceptionLoggingBehavior)
     mediator.add_behavior(LoggingBehavior)
     return mediator
 
 
 _mediator = build_mediator()
+game_core.set_mediator(_mediator)
 
 
 def get_mediator() -> Mediator:

@@ -5,7 +5,7 @@ from app.game.broadcaster import Broadcaster
 from app.game.handlers.chair_handler import ChairHandler
 from app.game.handlers.hiding_handler import HidingHandler
 from app.game.handlers.noise_handler import NoiseHandler
-from app.services.back_to_lobby import _reset_runtime_state
+from app.application.commands.back_to_lobby_command import BackToLobbyHandler
 
 from ..conftest import add_chair, add_hideout, add_player, make_lobby
 
@@ -26,7 +26,7 @@ class TestRoundReset:
         add_hideout(lobby, "h1", 10.0, 10.0)
         add_hideout(lobby, "h2", 20.0, 20.0)
 
-        _reset_runtime_state(lobby)
+        BackToLobbyHandler()._reset_runtime_state(lobby)
 
         # Left behind, a stale closet would sit at last round's coordinates —
         # and `hide` resolves by proximity, with no closet id to sanity-check.
@@ -39,7 +39,7 @@ class TestRoundReset:
         add_hideout(lobby, "h1", 10.0, 10.0, occupied_by=p.id)
         p.hidden_in = "h1"
 
-        _reset_runtime_state(lobby)
+        BackToLobbyHandler()._reset_runtime_state(lobby)
 
         # A dangling id would make the next round drop all their move packets.
         assert p.hidden_in is None

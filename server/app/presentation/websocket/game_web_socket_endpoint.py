@@ -25,7 +25,6 @@ from app.presentation.dependencies import (
     get_game_core,
     get_token_service,
 )
-from app.services.lobby_service import lobby_room_state
 
 
 # How long an empty lobby is kept around after the last player leaves, so
@@ -105,7 +104,7 @@ async def ws_endpoint(
     if lobby.admin_id is None:
         lobby.admin_id = pid
 
-    await ws.send_json(lobby_room_state(lobby, pid))
+    await ws.send_json(game_core.lobby_state_builder.build(lobby, pid))
     me.ready = True  # only now may broadcasts reach this conn
     await game_core.broadcaster.broadcast(
         lobby,
