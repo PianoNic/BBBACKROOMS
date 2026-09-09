@@ -162,9 +162,7 @@ const EMISSIVE = {
   lampShade: 0xf3d98a,
 } as const;
 
-/** Central palette. PS1-ish: Lambert for surfaces, Basic for emissives.
- *  floor/wall/ceiling become PBRMaterial when the tier's pbrSurfaces flag
- *  is on (see build()) — Material is the common base for both cases. */
+/** Central palette. PS1-ish: Lambert for surfaces, Basic for emissives. */
 export type Materials =
   Record<keyof typeof FLAT | keyof typeof EMISSIVE, StandardMaterial>
   & { floor: Material; wall: Material; ceiling: Material }
