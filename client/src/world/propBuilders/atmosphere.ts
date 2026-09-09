@@ -1,5 +1,4 @@
 /** Atmosphere: plants, backpacks, papers, fire extinguishers, floor lamps. */
-import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { box, cylinder, group, icosahedron } from "../../rendering/babylon";
 import { materials } from "../../rendering/materials";
 import { buildItemModel } from "../../gameplay/itemModels";
@@ -35,7 +34,7 @@ const buildBackpack: Builder = () => {
 };
 
 const buildPapers: Builder = () => {
-  const g = buildItemModel("papers") as unknown as TransformNode;
+  const g = buildItemModel("papers");
   g.position.y = 0.02;
   return g;
 };

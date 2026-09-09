@@ -1,28 +1,25 @@
-import * as THREE from "three";
+import { Group, StandardMaterial, box, group, M, basicMaterial, plane } from "../rendering/babylon";
 
-export const LAPTOP_BASE_GEOM = new THREE.BoxGeometry(0.36, 0.025, 0.26);
-export const LAPTOP_SCREEN_BACK_GEOM = new THREE.BoxGeometry(0.36, 0.24, 0.015);
-export const LAPTOP_SCREEN_FACE_GEOM = new THREE.PlaneGeometry(0.32, 0.20);
-export const LAPTOP_BODY_MAT = new THREE.MeshLambertMaterial({ color: 0x1a1a1e });
+export const laptopBodyMat = (): StandardMaterial => M(0x1a1a1e);
 
 export const LAPTOP_SCREEN_ACTIVE = 0x6ed8ff;
 export const LAPTOP_SCREEN_DONE = 0x4ade80;
 
 /** Build a laptop node plus the screen face material so callers can mutate its color. */
 export function buildLaptopNode(initialColor: number): {
-  node: THREE.Group;
-  faceMat: THREE.MeshBasicMaterial;
+  node: Group;
+  faceMat: StandardMaterial;
 } {
-  const node = new THREE.Group();
-  const base = new THREE.Mesh(LAPTOP_BASE_GEOM, LAPTOP_BODY_MAT);
+  const node = group("laptop");
+  const base = box(0.36, 0.025, 0.26, laptopBodyMat());
   base.position.y = 0.75 + 0.012;
   node.add(base);
-  const screen = new THREE.Mesh(LAPTOP_SCREEN_BACK_GEOM, LAPTOP_BODY_MAT);
+  const screen = box(0.36, 0.24, 0.015, laptopBodyMat());
   screen.position.set(0, 0.75 + 0.135, -0.125);
   screen.rotation.x = -0.18;
   node.add(screen);
-  const faceMat = new THREE.MeshBasicMaterial({ color: initialColor });
-  const face = new THREE.Mesh(LAPTOP_SCREEN_FACE_GEOM, faceMat);
+  const faceMat = basicMaterial(initialColor);
+  const face = plane(0.32, 0.20, faceMat);
   face.position.set(0, 0.75 + 0.135, -0.117);
   face.rotation.x = -0.18;
   node.add(face);

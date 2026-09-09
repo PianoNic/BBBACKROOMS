@@ -1,9 +1,10 @@
 /** World pickups: spawn meshes for medkits / potions / compasses / etc.
  *  Mesh geometry lives in `pickupModels.ts`; this file just owns the
  *  per-pickup runtime state (bob/spin, interact targets, lifecycle). */
-import * as THREE from "three";
 import type { PickupInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
+import type { TransformNode } from "../rendering/babylon";
+import { group } from "../rendering/babylon";
 import { buildPickupModel, pickupLabel } from "./pickupModels";
 
 const Y = 0.45;
@@ -11,14 +12,14 @@ const PICKUP_RADIUS = 1.5;
 
 type Entry = {
   info: PickupInfo;
-  mesh: THREE.Object3D;
+  mesh: TransformNode;
   bobSeed: number;
 };
 
 export { buildPickupModel } from "./pickupModels";
 
 export class Pickups {
-  readonly group = new THREE.Group();
+  readonly group = group("pickups");
   private readonly entries = new Map<string, Entry>();
 
   constructor(initial: PickupInfo[]) {

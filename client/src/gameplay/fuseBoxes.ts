@@ -3,11 +3,11 @@
  *  pivots stay addressable. Open the door, flip every lever, the manager
  *  fires the standard quest `interact` packet. State is client-local
  *  apart from the final quest completion. */
-import * as THREE from "three";
 import type { NetClient } from "../net/client";
 import type { Prop } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { playSfx } from "../core/audio";
+import { Group, box, group } from "../rendering/babylon";
 import { M } from "../world/propBuilders/_common";
 
 const LEVER_ROWS = 2;
@@ -26,15 +26,8 @@ const LEVER_UP = 0.25;                         // lever tilted "on"
 const REACH_DOOR = 1.8;
 const REACH_LEVER = 1.6;
 
-const DOOR_GEOM = new THREE.BoxGeometry(DOOR_W, DOOR_H, DOOR_T);
-const DOOR_LABEL_GEOM = new THREE.BoxGeometry(DOOR_W * 0.7, 0.05, DOOR_T * 1.5);
-const HANDLE_GEOM = new THREE.BoxGeometry(0.06, 0.04, 0.025);
-const LEVER_BASE_GEOM = new THREE.BoxGeometry(0.07, 0.10, 0.02);
-const LEVER_ARM_GEOM = new THREE.BoxGeometry(0.025, 0.10, 0.025);
-const LEVER_KNOB_GEOM = new THREE.BoxGeometry(0.04, 0.04, 0.035);
-
 type Lever = {
-  pivot: THREE.Group;
+  pivot: Group;
   on: boolean;
   target: number;
   worldX: number;
@@ -46,7 +39,7 @@ type Entry = {
   x: number;
   z: number;
   yaw: number;
-  doorPivot: THREE.Group;
+  doorPivot: Group;
   doorOpen: boolean;
   doorTarget: number;
   levers: Lever[];
@@ -54,7 +47,7 @@ type Entry = {
 };
 
 export class FuseBoxes {
-  readonly group = new THREE.Group();
+  readonly group = group("fuseBoxes");
   private readonly entries = new Map<string, Entry>();
 
   constructor(props: Prop[]) {
@@ -72,7 +65,7 @@ export class FuseBoxes {
     // room. The same yaw drives the world-space lever coords so the
     // interact-prompt range checks the side the levers actually render on.
     const yaw = p.yaw;
-    const root = new THREE.Group();
+    const root = group("fuseBox");
     root.position.set(p.x, 0, p.z);
     root.rotation.y = yaw;
     this.group.add(root);
@@ -80,15 +73,15 @@ export class FuseBoxes {
     // Hinged door covering the niche, flush with the frame front. The
     // hinge sits on one edge (x = -DOOR_W/2); opening swings the panel
     // out into the room.
-    const doorPivot = new THREE.Group();
+    const doorPivot = group("fuseDoorPivot");
     doorPivot.position.set(-DOOR_W / 2, DOOR_Y, -0.14);
-    const door = new THREE.Mesh(DOOR_GEOM, M(0xeeeee0));
+    const door = box(DOOR_W, DOOR_H, DOOR_T, M(0xeeeee0));
     door.position.set(DOOR_W / 2, 0, -DOOR_T / 2);
     doorPivot.add(door);
-    const label = new THREE.Mesh(DOOR_LABEL_GEOM, M(0xd03030));
+    const label = box(DOOR_W * 0.7, 0.05, DOOR_T * 1.5, M(0xd03030));
     label.position.set(DOOR_W / 2, 0.18, -DOOR_T - 0.001);
     doorPivot.add(label);
-    const handle = new THREE.Mesh(HANDLE_GEOM, M(0x303034));
+    const handle = box(0.06, 0.04, 0.025, M(0x303034));
     handle.position.set(DOOR_W - 0.08, 0, -DOOR_T - 0.014);
     doorPivot.add(handle);
     root.add(doorPivot);
@@ -106,16 +99,16 @@ export class FuseBoxes {
       for (let c = 0; c < LEVER_COLS; c++) {
         const lx = colX[c];
         const ly = rowY[r];
-        const base = new THREE.Mesh(LEVER_BASE_GEOM, M(0x141416));
+        const base = box(0.07, 0.10, 0.02, M(0x141416));
         base.position.set(lx, ly, -0.035);
         root.add(base);
-        const pivot = new THREE.Group();
+        const pivot = group("leverPivot");
         pivot.position.set(lx, ly + 0.04, -0.06);
         pivot.rotation.x = LEVER_DOWN;
-        const arm = new THREE.Mesh(LEVER_ARM_GEOM, M(0xb8b8c0));
+        const arm = box(0.025, 0.10, 0.025, M(0xb8b8c0));
         arm.position.set(0, -0.05, 0);
         pivot.add(arm);
-        const knob = new THREE.Mesh(LEVER_KNOB_GEOM, M(0xd03030));
+        const knob = box(0.04, 0.04, 0.035, M(0xd03030));
         knob.position.set(0, -0.11, 0);
         pivot.add(knob);
         root.add(pivot);

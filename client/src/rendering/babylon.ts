@@ -243,24 +243,42 @@ export function basicMaterial(
   return mat;
 }
 
-const LAMBERT_CACHE = new Map<number, StandardMaterial>();
+/** Caches are per scene: a Babylon material belongs to the scene it was
+ *  created in, and the tutorial item viewer builds the very same models in
+ *  its own throwaway scene. Sharing one cache across both would hand a
+ *  preview mesh a material from the game scene. */
+function sceneCache(
+  store: WeakMap<Scene, Map<number, StandardMaterial>>,
+): Map<number, StandardMaterial> {
+  const scene = activeScene();
+  let byColor = store.get(scene);
+  if (!byColor) {
+    byColor = new Map();
+    store.set(scene, byColor);
+  }
+  return byColor;
+}
+
+const LAMBERT_CACHE = new WeakMap<Scene, Map<number, StandardMaterial>>();
 
 export function M(color: number): StandardMaterial {
-  let mat = LAMBERT_CACHE.get(color);
+  const byColor = sceneCache(LAMBERT_CACHE);
+  let mat = byColor.get(color);
   if (!mat) {
     mat = lambertMaterial(color, `lambert_${color.toString(16)}`);
-    LAMBERT_CACHE.set(color, mat);
+    byColor.set(color, mat);
   }
   return mat;
 }
 
-const BASIC_CACHE = new Map<number, StandardMaterial>();
+const BASIC_CACHE = new WeakMap<Scene, Map<number, StandardMaterial>>();
 
 export function Basic(color: number): StandardMaterial {
-  let mat = BASIC_CACHE.get(color);
+  const byColor = sceneCache(BASIC_CACHE);
+  let mat = byColor.get(color);
   if (!mat) {
     mat = basicMaterial(color, `basic_${color.toString(16)}`);
-    BASIC_CACHE.set(color, mat);
+    byColor.set(color, mat);
   }
   return mat;
 }

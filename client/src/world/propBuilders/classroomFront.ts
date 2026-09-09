@@ -1,6 +1,5 @@
 /** Front-wall + teacher-desk decor: whiteboard, clock, swiss flag,
  *  projector, globe. Goes on the wall behind the teacher's desk. */
-import type { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { box, cylinder, group, lambertMaterial, sphere } from "../../rendering/babylon";
 import { materials } from "../../rendering/materials";
 import type { Builder } from "./_common";
@@ -21,7 +20,7 @@ const buildWhiteboard: Builder = (prop) => {
         const mat = lambertMaterial(0xffffff);
         mat.diffuseTexture = makeWhiteboardTexture(
           prop.x * 13.37 + prop.z * 7.7,
-        ) as unknown as Texture;
+        );
         return mat;
       })()
     : materials.whiteboardSurface;

@@ -2,10 +2,10 @@
  *  toggle. Server is authoritative — the client only animates and emits
  *  the toggle intent. Doors block movement when CLOSED; opening removes
  *  the panel collider. Geometry assembly lives in `doorBuilder.ts`. */
-import * as THREE from "three";
 import type { DoorInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import type { Rect } from "../world/colliders";
+import { Group, group } from "../rendering/babylon";
 import {
   CELL, DOOR_T, DOOR_W, FILLER_HALF_W, DOORWAY_X,
   buildFillers, buildFrameAndPanel,
@@ -17,7 +17,7 @@ const OPEN_SPEED = 5.0;                 // rad/s
 
 type Entry = {
   info: DoorInfo;
-  pivot: THREE.Group;
+  pivot: Group;
   isOpen: boolean;
   target: number;
   panelRect: Rect;
@@ -25,7 +25,7 @@ type Entry = {
 };
 
 export class Doors {
-  readonly group = new THREE.Group();
+  readonly group = group("doors");
   private readonly entries = new Map<string, Entry>();
   private readonly colliders: Rect[];
 
@@ -35,7 +35,7 @@ export class Doors {
   }
 
   private add(d: DoorInfo): void {
-    const root = new THREE.Group();
+    const root = group("door");
     root.position.set(d.x, 0, d.z);
     root.rotation.y = d.yaw;
 
