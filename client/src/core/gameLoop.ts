@@ -1,5 +1,5 @@
 import Stats from "stats.js";
-import { SEND_HZ } from "./constants";
+import { CATCH_ANTICIPATION_DISTANCE, SEND_HZ } from "./constants";
 import { getSettings, onSettingsChange } from "./settings";
 import type { createRenderContext, AmbientLights } from "../rendering/renderer";
 import type { Player } from "../gameplay/player";
@@ -80,6 +80,7 @@ export function runGameLoop(d: GameDeps): void {
   let last = performance.now();
   let lastRender = 0;
   let elapsed = 0;
+  let catchAnticipationArmed = false;
 
   const applyShowFps = (visible: boolean) => {
     d.stats.dom.style.display = visible ? "block" : "none";
@@ -162,6 +163,20 @@ export function runGameLoop(d: GameDeps): void {
     const nearest = d.state.extracted
       ? Infinity
       : d.teachers.nearestDistance(d.player.position.x, d.player.position.z);
+    const shouldArmCatchAnticipation = !d.state.extracted && nearest < CATCH_ANTICIPATION_DISTANCE;
+    const shouldReleaseCatchAnticipation = d.state.extracted
+      || nearest > CATCH_ANTICIPATION_DISTANCE + 0.6;
+    if (shouldArmCatchAnticipation && !catchAnticipationArmed) {
+      catchAnticipationArmed = true;
+      d.horrorAudio.armCatchAnticipation();
+      d.ctx.ambience.armCatchAnticipation();
+      d.player.freezeSway(true);
+    } else if (catchAnticipationArmed && shouldReleaseCatchAnticipation) {
+      catchAnticipationArmed = false;
+      d.horrorAudio.releaseCatchAnticipation();
+      d.ctx.ambience.releaseCatchAnticipation();
+      d.player.freezeSway(false);
+    }
     if (d.state.extracted) {
       d.heartbeat.stop();
     } else {

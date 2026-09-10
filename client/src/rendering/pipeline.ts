@@ -37,6 +37,7 @@ export class Ambience {
   private heartPhase = 0;
   private caughtState: "idle" | "flash" | "black" = "idle";
   private caughtTimer = 0;
+  private catchAnticipationArmed = false;
 
   constructor(engine: Engine, scene: Scene, canvas: HTMLCanvasElement) {
     this.engine = engine;
@@ -113,7 +114,9 @@ export class Ambience {
     }
 
     this.fogDensity = expLerp(this.fogDensity, fogTarget, fog.lerp, dt);
-    this.vignetteWeight = expLerp(this.vignetteWeight, vignetteTarget, lerpRate, dt);
+    this.vignetteWeight = this.catchAnticipationArmed
+      ? AMBIENCE.vignette.weight
+      : expLerp(this.vignetteWeight, vignetteTarget, lerpRate, dt);
     this.saturation = expLerp(this.saturation, saturationTarget, lerpRate, dt);
 
     this.scene.fogDensity = this.fogDensity;
@@ -155,7 +158,16 @@ export class Ambience {
     this.hidden = on;
   }
 
+  armCatchAnticipation(): void {
+    this.catchAnticipationArmed = true;
+  }
+
+  releaseCatchAnticipation(): void {
+    this.catchAnticipationArmed = false;
+  }
+
   flashAndCut(): void {
+    this.releaseCatchAnticipation();
     this.caughtState = "flash";
     this.caughtTimer = 0;
   }

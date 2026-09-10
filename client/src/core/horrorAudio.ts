@@ -26,6 +26,7 @@ const AUTO_FLICKER_THRESHOLD = 0.86;
 const AUTO_FLICKER_COOLDOWN_S = 1.5;
 const DRONE_RAMP_S = 0.8;
 const DRONE_EPSILON = 0.002;
+const CATCH_ANTICIPATION_RAMP_S = 0.08;
 const FAR_MIN_GAIN = 0.16;
 const FAR_MAX_GAIN = 0.26;
 const FAR_MIN_RATE = 0.75;
@@ -77,8 +78,29 @@ export class HorrorAudio {
   private farNextAt = 0;
   private farSound: PositionalSound | null = null;
 
+  private catchAnticipationArmed = false;
+
   constructor(listener: SpatialListener) {
     this.listener = listener;
+  }
+
+  armCatchAnticipation(): void {
+    this.catchAnticipationArmed = true;
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    if (this.humGain) {
+      this.humTarget = 0;
+      this.humGain.gain.setTargetAtTime(0, now, CATCH_ANTICIPATION_RAMP_S);
+    }
+    if (this.droneGain) {
+      this.droneTarget = 0;
+      this.droneGain.gain.setTargetAtTime(0, now, CATCH_ANTICIPATION_RAMP_S);
+    }
+  }
+
+  releaseCatchAnticipation(): void {
+    this.catchAnticipationArmed = false;
   }
 
   update(elapsed: number, threatDistance: number, px: number, pz: number): void {
@@ -153,6 +175,7 @@ export class HorrorAudio {
 
   private updateHumTarget(ctx: AudioContext, isSpectating: boolean, elapsed: number, px: number, pz: number): void {
     if (!this.humGain) return;
+    if (this.catchAnticipationArmed) return;
     const target = isSpectating ? 0 : AMBIENCE.audio.humGain;
     if (Math.abs(target - this.humTarget) > 0.0005) {
       this.humTarget = target;
@@ -195,6 +218,7 @@ export class HorrorAudio {
 
   private updateDrone(ctx: AudioContext, threatDistance: number): void {
     if (!this.droneGain) return;
+    if (this.catchAnticipationArmed) return;
     const { droneStartDistance, droneGain } = AMBIENCE.audio;
     const t = threatDistance < droneStartDistance
       ? clamp01(1 - threatDistance / droneStartDistance)

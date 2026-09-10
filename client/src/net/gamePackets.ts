@@ -38,6 +38,7 @@ import {
 import { jumpscare } from "../ui/jumpscare";
 import { setStatus } from "../core/playerStatus";
 import { shake } from "../gameplay/cameraShake";
+import { resolveTeacherImage, resolveTeacherName } from "../core/texturePacks";
 
 export type ReviveState = { active: boolean };
 
@@ -52,7 +53,7 @@ export type GamePacketDeps = {
   pings: Pings;
   laptops: Laptops;
   teachers: Teachers;
-  teacherById: Map<string, { image: string; name: string; subject: string }>;
+  teacherById: Map<string, { image: string; name: string; subject: string; ability: string }>;
   teacherEffects: TeacherEffects;
   chairs: Chairs;
   corpses: Corpses;
@@ -231,7 +232,11 @@ function handleKilled(
   if (p.id === d.init.selfId) {
     d.ambience.flashAndCut();
     const t = d.teacherById.get(p.by);
-    if (t) jumpscare(`/teachers/${t.image}`, t.name, t.subject);
+    if (t) {
+      const image = resolveTeacherImage(t.ability, -1, `/teachers/${t.image}`);
+      const name = resolveTeacherName(t.ability, -1, t.name);
+      jumpscare(image, name, t.subject);
+    }
     d.corpses.add(p.id, p.x, p.z, d.init.selfColor);
     d.state.extracted = true;
     d.spectator.activate();

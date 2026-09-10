@@ -203,3 +203,80 @@ onSettingsChange((s) => {
   if (musicGain) musicGain.gain.value = s.musicVolume;
   if (sfxGain) sfxGain.gain.value = s.sfxVolume;
 });
+
+function envAttackDecay(
+  gain: GainNode, c: AudioContext, peak: number, attackSec: number, decaySec: number,
+): void {
+  const now = c.currentTime;
+  const safePeak = Math.max(peak, 0.0001);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(safePeak, now + attackSec);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + attackSec + decaySec);
+}
+
+function spawnSubBassHit(c: AudioContext, dest: GainNode, volume: number): void {
+  const osc = c.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(55, c.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(28, c.currentTime + 0.9);
+  const lowpass = c.createBiquadFilter();
+  lowpass.type = "lowpass";
+  lowpass.frequency.value = 120;
+  const gain = c.createGain();
+  envAttackDecay(gain, c, 0.9 * volume, 0.008, 1.4);
+  osc.connect(lowpass);
+  lowpass.connect(gain);
+  gain.connect(dest);
+  osc.start();
+  osc.stop(c.currentTime + 1.45);
+  osc.addEventListener("ended", () => {
+    osc.disconnect();
+    lowpass.disconnect();
+    gain.disconnect();
+  });
+}
+
+function spawnNoiseBurst(c: AudioContext, dest: GainNode, volume: number): void {
+  const durationSec = 0.35;
+  const buffer = c.createBuffer(1, Math.ceil(c.sampleRate * durationSec), c.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  const bandpass = c.createBiquadFilter();
+  bandpass.type = "bandpass";
+  bandpass.frequency.value = 1800;
+  const gain = c.createGain();
+  envAttackDecay(gain, c, 0.55 * volume, 0.005, 0.3);
+  src.connect(bandpass);
+  bandpass.connect(gain);
+  gain.connect(dest);
+  src.start();
+  src.stop(c.currentTime + durationSec + 0.05);
+  src.addEventListener("ended", () => {
+    src.disconnect();
+    bandpass.disconnect();
+    gain.disconnect();
+  });
+}
+
+export function playJumpscareStinger(volume: number): void {
+  const c = ensureCtx();
+  if (!c || !sfxGain) return;
+  spawnSubBassHit(c, sfxGain, volume);
+  spawnNoiseBurst(c, sfxGain, volume);
+}
+
+export function duckMusicForJumpscare(): void {
+  const c = ensureCtx();
+  if (!c || !musicGain) return;
+  const target = getSettings().musicVolume;
+  const now = c.currentTime;
+  const current = musicGain.gain.value;
+  const duckedLevel = Math.max(current * 0.15, 0.0001);
+  musicGain.gain.cancelScheduledValues(now);
+  musicGain.gain.setValueAtTime(current, now);
+  musicGain.gain.linearRampToValueAtTime(duckedLevel, now + 0.06);
+  musicGain.gain.setValueAtTime(duckedLevel, now + 0.06 + 1.2);
+  musicGain.gain.linearRampToValueAtTime(target, now + 0.06 + 1.2 + 0.6);
+}

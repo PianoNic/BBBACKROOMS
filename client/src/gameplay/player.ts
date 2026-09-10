@@ -40,6 +40,7 @@ export class Player {
   private stepCooldown = 0;
   private swayPhase = 0;
   private breathPhase = 0;
+  private swayFrozen = false;
 
   constructor(
     private readonly camera: FreeCamera,
@@ -163,9 +164,17 @@ export class Player {
     return false;
   }
 
+  freezeSway(on: boolean): void {
+    this.swayFrozen = on;
+  }
+
   private syncCamera(): void {
-    const breathY = Math.sin(this.breathPhase) * AMBIENCE.cues.breathAmount;
-    const swayYaw = Math.sin(this.swayPhase) * AMBIENCE.cues.swayAmount;
+    const breathY = this.swayFrozen
+      ? 0
+      : Math.sin(this.breathPhase) * AMBIENCE.cues.breathAmount;
+    const swayYaw = this.swayFrozen
+      ? 0
+      : Math.sin(this.swayPhase) * AMBIENCE.cues.swayAmount;
     const shakeOffset = readShakeOffset();
     this.camera.position.set(
       this.position.x, this.position.y + this.bobY + breathY, this.position.z,

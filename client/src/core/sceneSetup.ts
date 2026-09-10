@@ -45,6 +45,7 @@ import { Heartbeat } from "./heartbeat";
 import { HorrorAudio } from "./horrorAudio";
 import { preloadJumpscareImages } from "../ui/jumpscare";
 import { preloadSfx } from "./audio";
+import { resolveTeacherImage } from "./texturePacks";
 import { showVictory, showGameOver } from "../ui/victory";
 import { InputState } from "./input";
 
@@ -118,7 +119,9 @@ export function buildScene(
   const teacherEffects = new TeacherEffects(
     ctx.scene, ctx.camera, init.selfId, (id) => teacherById.get(id) ?? null,
   );
-  preloadJumpscareImages((init.teachers ?? []).map((t) => `/teachers/${t.image}`));
+  preloadJumpscareImages((init.teachers ?? []).map(
+    (t) => resolveTeacherImage(t.ability, -1, `/teachers/${t.image}`),
+  ));
   preloadSfx("/sounds/jumpscare/scream.wav");
   for (const f of [
     "door-open", "door-close", "locker-open", "lever", "fusebox-door",
