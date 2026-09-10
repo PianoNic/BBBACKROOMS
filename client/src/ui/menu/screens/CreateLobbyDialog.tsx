@@ -73,7 +73,7 @@ export function CreateLobbyDialog() {
             id="create-lobby-max"
             type="number"
             min="1"
-            max="16"
+            max="100"
             value={maxPlayers}
             onInput={(e) => setMaxPlayers((e.target as HTMLInputElement).value)}
           />
