@@ -71,10 +71,11 @@ export function buildScene(
   const propColliders = buildPropColliders(init.props);
 
   let modelStage: ModelPropStage | null = null;
+  let modelsReady: Promise<void> = Promise.resolve();
   if (models) {
     modelStage = new ModelPropStage(ctx.scene, models);
     const { immediate, deferred } = bundlesFor(init.grid, init.props, init.spawn);
-    modelStage.place(init.props, immediate, deferred);
+    modelsReady = modelStage.place(init.props, immediate, deferred);
   }
   const ambientLights = new AmbientLights(ctx.scene);
 
@@ -173,5 +174,6 @@ export function buildScene(
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice,
     inference: world.inference, ambientLights, modelStage, scattered: world.scattered,
+    modelsReady,
   };
 }

@@ -2,7 +2,7 @@
  *  a specific subset, with a grid of clickable teacher tiles. */
 import type { NetClient } from "../net/client";
 import type { RosterEntry } from "../net/protocol";
-import { resolveTeacherImage, resolveTeacherName } from "../core/texturePacks";
+import { resolveTeacherName, resolveTeacherThumb } from "../core/texturePacks";
 import { el } from "./dom";
 
 export type TeacherRowState = {
@@ -60,7 +60,7 @@ function buildTile(
   const tile = el<HTMLButtonElement>("button", "teacher-tile");
   const img = el<HTMLImageElement>("img");
   const name = resolveTeacherName(t.ability, index, t.name);
-  img.src = resolveTeacherImage(t.ability, index, `/teachers/${t.image}`);
+  img.src = resolveTeacherThumb(t.ability, index, t.image);
   img.alt = name;
   tile.append(img, el<HTMLSpanElement>("span", undefined, name));
   if (selected.has(t.image)) tile.classList.add("active");

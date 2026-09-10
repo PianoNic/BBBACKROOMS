@@ -1,20 +1,14 @@
 /** Full-screen jumpscare: scaled+shaking face, red vignette, harsh screech. */
 import { playSfx } from "../core/audio";
 import { getSettings } from "../core/settings";
+import { imagePreloader } from "../core/imagePreload";
 
 const DURATION_MS = 2400;
 const SCREAM_URL = "/sounds/jumpscare/scream.wav";
 
-const preloaded = new Map<string, HTMLImageElement>();
-
 /** Preload the face images so the overlay doesn't stutter on first show. */
 export function preloadJumpscareImages(urls: string[]): void {
-  for (const url of urls) {
-    if (preloaded.has(url)) continue;
-    const img = new Image();
-    img.src = url;
-    preloaded.set(url, img);
-  }
+  imagePreloader.warm(urls);
 }
 
 let styleInjected = false;

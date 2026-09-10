@@ -2,8 +2,9 @@ import type { LobbyStatePkt, LobbyPlayer, ChatMessage } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import type { WebcamMesh } from "../gameplay/webcam";
 import {
-  activatePack, cacheRoster, deactivatePack, getActivePackId, listPacks,
+  activatePack, cacheRoster, deactivatePack, getActivePackId, listPacks, resolveTeacherThumb,
 } from "../core/texturePacks";
+import { imagePreloader } from "../core/imagePreload";
 import { el } from "./dom";
 import { icon, Volume2 } from "./icons";
 import { buildAdminPanel } from "./lobbyAdminPanel";
@@ -22,6 +23,7 @@ export function showLobbyRoom(
   webcam?: WebcamMesh,
 ): { dismount: () => void } {
   cacheRoster(initial.roster);
+  imagePreloader.warm(initial.roster.map((t, i) => resolveTeacherThumb(t.ability, i, t.image)));
 
   const state: State = {
     players: new Map(initial.players.map((p) => [p.id, p])),
