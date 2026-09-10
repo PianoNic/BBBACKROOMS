@@ -1,4 +1,5 @@
 @use "variables" as *;
+@forward "hud-root";
 @forward "gameplay-hud";
 
 // Full-screen overlays (loading, crosshair, interact prompt, banner,
