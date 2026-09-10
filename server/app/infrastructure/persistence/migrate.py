@@ -25,7 +25,7 @@ from app.infrastructure.persistence.engine import database_engine
 
 database = database_engine.database
 
-log = logging.getLogger("bbb.db")
+log = logging.getLogger("nachsitzen.db")
 
 MIGRATE_DIR = os.path.join(os.path.dirname(__file__), "migrations")
 

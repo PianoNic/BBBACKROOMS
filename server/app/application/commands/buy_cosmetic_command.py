@@ -9,7 +9,7 @@ from app.application.dtos.buy_cosmetic_result_dto import BuyCosmeticResultDto
 from app.domain.cosmetics.cosmetic_catalog import CosmeticCatalog
 from app.domain.cosmetics.cosmetic_repository import ICosmeticRepository
 
-log = logging.getLogger("bbb")
+log = logging.getLogger("nachsitzen")
 
 
 @dataclass

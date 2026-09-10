@@ -40,9 +40,9 @@ removes the account and all of it — see [accounts.md](accounts.md).
 | --- | --- | --- |
 | `DB_HOST` | `127.0.0.1` | `postgres` inside docker-compose. |
 | `DB_PORT` | `5432` | |
-| `DB_NAME` | `bbb` | |
-| `DB_USER` | `bbb` | |
-| `DB_PASSWORD` | `bbb` | Change for any real deployment. |
+| `DB_NAME` | `nachsitzen` | |
+| `DB_USER` | `nachsitzen` | |
+| `DB_PASSWORD` | `nachsitzen` | Change for any real deployment. |
 | `DB_POOL_MIN` / `DB_POOL_MAX` | `1` / `8` | psycopg3 pool size. |
 
 For local dev these are read from the repo-root `.env` (loaded by `run.ps1`).
@@ -54,12 +54,12 @@ docker-compose injects them and points the backend at the `postgres` service.
 ```powershell
 docker compose up -d        # starts postgres + backend + frontend
 ```
-The `postgres` service stores data in the `bbb-pgdata` volume and the backend
+The `postgres` service stores data in the `nachsitzen-pgdata` volume and the backend
 waits for its healthcheck before starting.
 
 **Option B — just a Postgres container, app from source:**
 ```powershell
-docker run -d --name bbb-postgres -e POSTGRES_USER=bbb -e POSTGRES_PASSWORD=bbb -e POSTGRES_DB=bbb -p 5432:5432 postgres:16-alpine
+docker run -d --name nachsitzen-postgres -e POSTGRES_USER=nachsitzen -e POSTGRES_PASSWORD=nachsitzen -e POSTGRES_DB=nachsitzen -p 5432:5432 postgres:16-alpine
 cd server
 .\run.ps1                   # applies migrations, then starts the server
 ```

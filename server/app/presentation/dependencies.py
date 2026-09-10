@@ -68,7 +68,7 @@ from app.infrastructure.security.hmac_token_service import token_service
 from app.version import VERSION
 from app.domain.world.teacher_roster import TEACHER_ROSTER
 
-_log = logging.getLogger("bbb.mediator")
+_log = logging.getLogger("nachsitzen.mediator")
 
 accounts = PeeweeAccountRepository(database_engine)
 cosmetics = PeeweeCosmeticRepository(database_engine, cosmetic_catalog)

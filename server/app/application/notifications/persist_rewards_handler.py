@@ -9,7 +9,7 @@ from app.application.notifications.round_ended_notification import RoundEndedNot
 from app.domain.accounts.profile_repository import IProfileRepository
 from app.domain.progression.level_calculator import LevelCalculator
 
-log = logging.getLogger("bbb")
+log = logging.getLogger("nachsitzen")
 
 
 class PersistRewardsHandler(INotificationHandler[RoundEndedNotification]):

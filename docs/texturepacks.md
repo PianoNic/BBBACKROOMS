@@ -9,7 +9,7 @@ local to one browser, and entirely optional.
 
 Options → **TEXTURE PACKS** → **IMPORT PACK**, then pick a `.bbpack` file. The
 pack is parsed, validated, hashed, and stored in this browser's IndexedDB
-(`bbb_texture_packs` database, `packs` store). Nothing is uploaded anywhere.
+(`nachsitzen_texture_packs` database, `packs` store). Nothing is uploaded anywhere.
 From the same panel you can switch the active pack (**USE** / **ACTIVE**) or
 remove one (**DELETE**).
 

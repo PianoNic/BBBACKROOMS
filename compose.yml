@@ -3,15 +3,15 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${DB_USER:-bbb}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-bbb}
-      - POSTGRES_DB=${DB_NAME:-bbb}
+      - POSTGRES_USER=${DB_USER:-nachsitzen}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-nachsitzen}
+      - POSTGRES_DB=${DB_NAME:-nachsitzen}
     volumes:
-      - bbb-pgdata:/var/lib/postgresql/data
+      - nachsitzen-pgdata:/var/lib/postgresql/data
     networks:
       - app
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bbb} -d ${DB_NAME:-bbb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nachsitzen} -d ${DB_NAME:-nachsitzen}"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -27,9 +27,9 @@ services:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-bbb}
-      - DB_USER=${DB_USER:-bbb}
-      - DB_PASSWORD=${DB_PASSWORD:-bbb}
+      - DB_NAME=${DB_NAME:-nachsitzen}
+      - DB_USER=${DB_USER:-nachsitzen}
+      - DB_PASSWORD=${DB_PASSWORD:-nachsitzen}
       # Accounts / OAuth (optional — leave provider creds empty to disable login).
       # Set OAUTH_REDIRECT_BASE + FRONTEND_URL to your public https URL in prod,
       # and SESSION_COOKIE_SECURE=true once you're served over HTTPS.
@@ -60,4 +60,4 @@ networks:
     driver: bridge
 
 volumes:
-  bbb-pgdata:
+  nachsitzen-pgdata:

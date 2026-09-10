@@ -32,7 +32,7 @@ Full guide, including the migration workflow: **[persistence.md](persistence.md)
 
 ```powershell
 # quickest: a throwaway Postgres in Docker
-docker run -d --name bbb-postgres -e POSTGRES_USER=bbb -e POSTGRES_PASSWORD=bbb -e POSTGRES_DB=bbb -p 5432:5432 postgres:16-alpine
+docker run -d --name nachsitzen-postgres -e POSTGRES_USER=nachsitzen -e POSTGRES_PASSWORD=nachsitzen -e POSTGRES_DB=nachsitzen -p 5432:5432 postgres:16-alpine
 cd server; .\run.ps1     # migrations run automatically on start
 ```
 
@@ -49,15 +49,15 @@ bun run preview    # serves dist/
 ```
 
 ### Debugging the 3D scene
-The dev build exposes `window.bbbDev` once a round has started. It carries the
-`WORLD_INIT` payload, the local `Player` (`bbbDev.player.spawn(x, z, yaw)` teleports)
+The dev build exposes `window.nachsitzenDev` once a round has started. It carries the
+`WORLD_INIT` payload, the local `Player` (`nachsitzenDev.player.spawn(x, z, yaw)` teleports)
 and an inspector toggle:
 ```js
-bbbDev.inspector(true)    // opens the Babylon.js Inspector (scene.debugLayer.show())
-bbbDev.inspector(false)   // closes it again
+nachsitzenDev.inspector(true)    // opens the Babylon.js Inspector (scene.debugLayer.show())
+nachsitzenDev.inspector(false)   // closes it again
 ```
 The inspector bundle is fetched on demand, so it costs nothing in a production build,
-and `window.bbbDev` is stripped from production builds entirely.
+and `window.nachsitzenDev` is stripped from production builds entirely.
 
 ## Tests
 Service-level tests for the server live in `server/tests`. They build `Lobby`
@@ -90,7 +90,7 @@ Copy `.env.example` → `.env`:
 | `TURN_TOKEN_ID` | Cloudflare Realtime TURN token ID. Required for webcam through restrictive NATs. |
 | `CLOUDFLARE_API_TOKEN` | Paired Cloudflare API token. If either is missing → STUN-only fallback. |
 | `DB_HOST` / `DB_PORT` | PostgreSQL host/port (default `127.0.0.1` / `5432`; `postgres` in compose). |
-| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database name/user/password (default `bbb`/`bbb`/`bbb`). |
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database name/user/password (default `nachsitzen`/`nachsitzen`/`nachsitzen`). |
 
 DB vars are optional — omit them to run without persistence. See [persistence.md](persistence.md).
 
@@ -104,7 +104,7 @@ docker compose up -d
   built client. FastAPI serves the SPA itself (`app.frontend()` in
   `presentation/app_factory.py`), so there is no separate web server and no
   way to deploy a client and a server that disagree about the wire protocol.
-- Starts a `postgres:18-alpine` service (data in the `bbb-pgdata` volume); the
+- Starts a `postgres:18-alpine` service (data in the `nachsitzen-pgdata` volume); the
   app waits for its healthcheck and runs migrations on start.
 - Listens on `$PORT` (default `5367`), with a `/healthz` healthcheck (30s interval).
 - Stop: `docker compose down` (add `-v` to also drop the database volume).
@@ -116,6 +116,6 @@ docker compose up -d
 - Never inspect WebRTC payloads on the server — the server is a dumb pipe.
 
 ## Common issues
-- **"Couldn't join" loop** → `sessionStorage.bbb_lobby_resume` points at a dead lobby. It's cleared automatically on failure; to reproduce manually, clear DevTools → Application → Session Storage.
+- **"Couldn't join" loop** → `sessionStorage.nachsitzen_lobby_resume` points at a dead lobby. It's cleared automatically on failure; to reproduce manually, clear DevTools → Application → Session Storage.
 - **Webcam tile stays black behind NAT** → TURN credentials missing in `.env`.
 - **`bun install` writes `package-lock.json`** → you accidentally used npm. Delete the lock, keep `bun.lock`.

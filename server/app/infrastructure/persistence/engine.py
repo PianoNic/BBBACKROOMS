@@ -7,7 +7,7 @@ import peewee_async
 from app.application.abstractions.database_availability import IDatabaseAvailability
 from app.infrastructure.configuration.settings import Settings, settings
 
-log = logging.getLogger("bbb.db")
+log = logging.getLogger("nachsitzen.db")
 
 
 class DatabaseEngine(IDatabaseAvailability):
