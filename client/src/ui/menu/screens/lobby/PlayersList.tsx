@@ -2,9 +2,8 @@ import { useState } from "preact/hooks";
 import type { LobbyPlayer } from "../../../../net/protocol";
 import type { LobbyMediaControls } from "../../../lobbyMediaControls";
 import { icon, Volume2 } from "../../../icons";
-import { Scroll } from "../../components/layout";
 import {
-  lobbyAdminId, lobbyMaxPlayers, lobbyPlayers, lobbyRemoteStreams, lobbySelfId, lobbyWebcam,
+  lobbyAdminId, lobbyPlayers, lobbyRemoteStreams, lobbySelfId, lobbyWebcam,
 } from "../../state/lobby";
 
 function SpeakerIcon() {
@@ -99,16 +98,8 @@ export function PlayersList(props: { media: LobbyMediaControls }) {
   const players = [...lobbyPlayers.value.values()];
 
   return (
-    <div class="col players-col">
-      <div class="col-header">
-        <span>PLAYERS</span>
-        <span class="count">{`${players.length}/${lobbyMaxPlayers.value}`}</span>
-      </div>
-      <Scroll>
-        <ul class="players-list">
-          {players.map((p) => <PlayerRow key={p.id} player={p} media={props.media} />)}
-        </ul>
-      </Scroll>
-    </div>
+    <ul class="players-list">
+      {players.map((p) => <PlayerRow key={p.id} player={p} media={props.media} />)}
+    </ul>
   );
 }
