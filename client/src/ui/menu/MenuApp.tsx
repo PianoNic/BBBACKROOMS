@@ -9,6 +9,9 @@ import { OptionsScreen } from "./screens/OptionsScreen";
 import { ShopScreen } from "./screens/ShopScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { LobbyRoom } from "./screens/LobbyRoom";
+import { PauseMenu } from "./screens/PauseMenu";
+import { EndgameOverlay } from "./screens/EndgameOverlay";
+import { endgame, pauseMenu } from "./state/overlays";
 
 function titleScreenFor(name: string): ComponentChildren {
   switch (name) {
@@ -43,6 +46,8 @@ export function MenuApp() {
         </ScreenStage>
       ) : null}
       {infoOpen.value ? <InfoOverlay /> : null}
+      {pauseMenu.value ? <PauseMenu options={pauseMenu.value} /> : null}
+      {endgame.value ? <EndgameOverlay state={endgame.value} /> : null}
     </>
   );
 }
