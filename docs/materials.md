@@ -94,7 +94,7 @@ Texture path convention: `/textures/pbr/<category>/albedo-512.webp`, where
 `<category>` is the archetype-specific directory name from the tuning table
 (e.g. `wall_plaster_plain`, `floor_lino`).
 
-<!--SHEEN-->Some tile floors (`toilet`, `cafeteria`, `chemistry_lab`) get a very
+Some tile floors (`toilet`, `cafeteria`, `chemistry_lab`) get a very
 cheap sheen on top of the flat albedo: a tiny procedural cube texture is used
 as `reflectionTexture` together with a Fresnel term, so wet-looking tile and
 stone floors pick up a faint reflective highlight instead of looking
