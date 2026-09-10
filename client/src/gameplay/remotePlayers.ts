@@ -263,7 +263,6 @@ export class RemotePlayers {
     this.remove(id);
   }
 
-  /** The stashed look of a downed player, for the corpse to keep. */
   lastLook(id: string): RetiredLook | null {
     return this.retiredLooks.get(id) ?? null;
   }

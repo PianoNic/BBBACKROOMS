@@ -28,9 +28,6 @@ export class NameTags {
   readonly group = group("nameTags");
   private readonly tags = new Map<string, Tag>();
 
-  /** `owner` is the player's voxel mesh (with any hat already attached) —
-   *  its hierarchy bounding box tells us how high above it the tag must
-   *  float to clear whatever is currently on the player's head. */
   set(id: string, name: string, equipped: EquippedCosmetics, owner: Mesh): void {
     let tag = this.tags.get(id);
     if (!tag) tag = this.create(id);
@@ -103,10 +100,6 @@ export class NameTags {
     return tag;
   }
 
-  /** World-space height of the owner's bounding box (mesh + attached hat)
-   *  above its own anchor, plus a fixed clearance and the tag's own half
-   *  height, so the tag's bottom edge floats just clear of the tallest
-   *  thing on the player's head — bare head or wizard cone alike. */
   private refreshOffset(tag: Tag, owner: Mesh): void {
     let top = 0;
     try {
