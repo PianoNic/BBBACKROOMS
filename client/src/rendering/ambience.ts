@@ -20,7 +20,7 @@ export type TierFeatures = {
 };
 
 export const TIERS: Record<GraphicsTier, TierFeatures> = {
-  niedrig: { shadowLights: 0, shadowMapSize: 256,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: false, bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: false, pbrModels: false, maxLights: 3 },
+  niedrig: { shadowLights: 0, shadowMapSize: 256,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: false, bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: true,  pbrModels: false, maxLights: 3 },
   mittel:  { shadowLights: 0, shadowMapSize: 512,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 32, fxaa: false, particleScale: 0.5, glow: false, glowRatio: 0.5, pbrSurfaces: true,  pbrModels: false, maxLights: 4 },
   hoch:    { shadowLights: 1, shadowMapSize: 1024, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true,  pbrModels: false, maxLights: 6 },
   realistisch: { shadowLights: 1, shadowMapSize: 1024, ssao: true, ssaoRatio: 0.5, volumetric: true, bloom: true, bloomKernel: 64, fxaa: true, particleScale: 2, glow: true, glowRatio: 1, pbrSurfaces: true, pbrModels: true, maxLights: 6 },

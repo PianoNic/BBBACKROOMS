@@ -75,7 +75,7 @@ async function main(): Promise<void> {
   const ctx = createRenderContext(mount);
   const audioListener = new SpatialListener();
   await ensureCatalog();  // so equipped cosmetics resolve when seeding players
-  const useModels = getSettings().graphicsTier !== "niedrig";
+  const useModels = true;
   let models: ModelLibrary | null = null;
   if (useModels) {
     models = new ModelLibrary(ctx.scene);
