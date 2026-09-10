@@ -32,7 +32,7 @@ async function mockAnnouncements(page: Page, list: AnnouncementFixture[]): Promi
 }
 
 async function skipIntro(page: Page): Promise<void> {
-  await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
+  await page.addInitScript(() => sessionStorage.setItem("nachsitzen-intro-seen", "1"));
 }
 
 async function primeSeen(page: Page, version: string, ids: string[]): Promise<void> {
