@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.persistence.engine import database_engine
+from app.presentation.controllers.announcements_controller import router as announcements_router
 from app.presentation.controllers.auth_controller import router as auth_router
 from app.presentation.controllers.health_controller import router as health_router
 from app.presentation.controllers.lobbies_controller import router as lobbies_router
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
 
     app.include_router(lobbies_router)
     app.include_router(roster_router)
+    app.include_router(announcements_router)
     app.include_router(turn_router)
     app.include_router(auth_router)
     app.include_router(shop_router)
