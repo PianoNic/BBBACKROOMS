@@ -3,6 +3,7 @@ import { StaminaBar } from "./StaminaBar";
 import { ReviveBar } from "./ReviveBar";
 import { TaskBoard } from "./TaskBoard";
 import { TaskCounter } from "./TaskCounter";
+import { InventoryHud } from "./InventoryHud";
 import { hudActive } from "./state";
 
 export function HudApp() {
@@ -15,6 +16,7 @@ export function HudApp() {
           <TaskCounter />
           <StaminaBar />
           <ReviveBar />
+          <InventoryHud />
         </>
       ) : null}
     </>
