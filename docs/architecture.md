@@ -55,7 +55,8 @@ for the full rationale.
 client/src/
   main.ts        entry: title → connect → lobby → world → loop
   core/          gameLoop, input, audio, sceneSetup, settings, heartbeat
-  rendering/     Babylon.js engine, materials, lights, post-processing
+  rendering/     Babylon.js engine, materials, lights, ambience (fog,
+                 vignette, exposure via imageProcessingConfiguration)
   net/           WS client, packet router, protocol types, gamePackets
   world/         build world from server grid, props, colliders
   gameplay/      player, remotePlayers, teachers, doors, lockers, chairs,

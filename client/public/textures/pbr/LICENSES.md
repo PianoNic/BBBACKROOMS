@@ -1,6 +1,6 @@
 # Texture Licenses
 
-Every texture and HDRI in this directory is CC0 1.0 / public domain and requires no attribution to use, modify or redistribute; the table below is provided for traceability only.
+Every texture in this directory is CC0 1.0 / public domain and requires no attribution to use, modify or redistribute; the table below is provided for traceability only.
 
 | Category | Asset | Source URL | Source | License | Fetched |
 |---|---|---|---|---|---|
@@ -19,13 +19,10 @@ Every texture and HDRI in this directory is CC0 1.0 / public domain and requires
 | `ceiling_tile` | Tiles020 | https://ambientcg.com/view?id=Tiles020 | ambientCG | CC0 1.0 | 2026-09-09 |
 | `ceiling_plaster` | Plaster003 | https://ambientcg.com/view?id=Plaster003 | ambientCG | CC0 1.0 | 2026-09-09 |
 | `decal_leak` | Leaking005 | https://ambientcg.com/view?id=Leaking005 | ambientCG | CC0 1.0 | 2026-09-09 |
-| `hdri` | creepy_bathroom | https://polyhaven.com/a/creepy_bathroom | Poly Haven | CC0 1.0 | 2026-09-09 |
 
 ## File layout
 
-Each category directory holds `albedo-1k.webp`, `normal-1k.webp` and `orm-1k.webp`, plus matching `-512` variants at half resolution. `decal_leak` ships only `albedo-1k.webp` / `albedo-512.webp` (RGBA, alpha from the source Opacity map) and `normal-1k.webp` / `normal-512.webp`, with no ORM map.
-
-ORM channel packing is occlusion in R, roughness in G, metallic in B. Normal maps use the OpenGL convention (green channel pointing up). Ambient occlusion is additionally pre-baked into the albedo maps at 0.6 strength.
+Each category directory holds a single `albedo-512.webp` (RGBA for `decal_leak`, alpha from the source Opacity map; RGB for the rest), with ambient occlusion pre-baked into it at 0.6 strength.
 
 The following categories have their albedo desaturated before the client's tint multiply, because the source asset's hue does not match the intended surface and the client supplies the final hue itself: `ceiling_tile` (0.9).
 

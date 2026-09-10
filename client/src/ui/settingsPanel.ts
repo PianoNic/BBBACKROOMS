@@ -1,6 +1,5 @@
-import { getSettings, isGraphicsTierAutoSelected, resetSettings, updateSetting } from "../core/settings";
+import { getSettings, resetSettings, updateSetting } from "../core/settings";
 import type { Settings } from "../core/settings";
-import { isIntegratedGpu } from "../core/gpuTier";
 import { el } from "./dom";
 import {
   cameraDeviceRow, camPreviewRow, micDeviceRow, micMeterRow,
@@ -90,17 +89,6 @@ export function buildSettingsList(): SettingsList {
 
   root.appendChild(el("div", "set-section", "DISPLAY"));
   root.appendChild(rangeRow("Field of view", "fov", 60, 110, 1, (v) => `${v}°`));
-  root.appendChild(rangeRow("Pixelation", "pixelation", 1, 8, 1, (v) => `${v}x`));
-  root.appendChild(selectRow("Graphics", "graphicsTier", [
-    { label: "Niedrig",     value: "niedrig" },
-    { label: "Mittel",      value: "mittel" },
-    { label: "Hoch",        value: "hoch" },
-    { label: "Realistisch", value: "realistisch" },
-  ]));
-  root.appendChild(el("div", "set-note", "Surface materials update on the next round."));
-  if (isGraphicsTierAutoSelected() && isIntegratedGpu()) {
-    root.appendChild(el("div", "set-note", "Niedrig was auto-selected because this machine looks like it has an integrated GPU."));
-  }
   root.appendChild(selectRow("FPS cap", "fpsCap", [
     { label: "30",   value: 30 },
     { label: "60",   value: 60 },

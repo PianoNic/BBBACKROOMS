@@ -9,7 +9,6 @@ import type { InteractTarget } from "../ui/interactPrompt";
 import { playSfx } from "../core/audio";
 import type { StandardMaterial } from "../rendering/babylon";
 import { Group, box, color3, group, lambertMaterial } from "../rendering/babylon";
-import { registerGlowMesh } from "../rendering/pipeline";
 import { M } from "../world/propBuilders/_common";
 
 let knobMat: StandardMaterial | null = null;
@@ -123,7 +122,6 @@ export class FuseBoxes {
         const knob = box(0.04, 0.04, 0.035, fuseKnobMaterial());
         knob.position.set(0, -0.11, 0);
         pivot.add(knob);
-        registerGlowMesh(knob);
         root.add(pivot);
         // World-space xz for this lever (used by interact-prompt range).
         const wx = p.x + lx * cosY;

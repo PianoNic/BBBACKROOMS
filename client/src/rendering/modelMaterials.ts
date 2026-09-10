@@ -2,9 +2,8 @@ import type { IMaterialCompilationOptions, Material } from "@babylonjs/core/Mate
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { onSettingsChange } from "../core/settings";
 import { AMBIENCE } from "./ambience";
-import { color3, maxLights } from "./babylon";
+import { color3 } from "./babylon";
 
 export function freezeWhenCompiled(
   material: Material,
@@ -17,15 +16,9 @@ export function freezeWhenCompiled(
     .catch(() => {});
 }
 
-type CompileTarget = { mesh: Mesh; options?: Partial<IMaterialCompilationOptions> };
-
 export class ModelMaterialFactory {
   private readonly cache = new WeakMap<PBRMaterial, StandardMaterial>();
-  private readonly compileTargets = new Map<StandardMaterial, CompileTarget>();
-
-  constructor() {
-    onSettingsChange(() => this.retune());
-  }
+  private readonly scheduled = new WeakSet<StandardMaterial>();
 
   standardFor(source: PBRMaterial): StandardMaterial {
     const cached = this.cache.get(source);
@@ -41,7 +34,7 @@ export class ModelMaterialFactory {
     mat.alpha = source.alpha;
     mat.specularColor = color3(AMBIENCE.surfaces.propSpecularColor);
     mat.specularPower = AMBIENCE.surfaces.propSpecularPower;
-    mat.maxSimultaneousLights = maxLights();
+    mat.maxSimultaneousLights = 1;
 
     if (source.needAlphaBlending()) {
       mat.transparencyMode = StandardMaterial.MATERIAL_ALPHABLEND;
@@ -59,15 +52,8 @@ export class ModelMaterialFactory {
     mesh: Mesh,
     options?: Partial<IMaterialCompilationOptions>,
   ): void {
-    if (this.compileTargets.has(material)) return;
-    this.compileTargets.set(material, { mesh, options });
+    if (this.scheduled.has(material)) return;
+    this.scheduled.add(material);
     freezeWhenCompiled(material, mesh, options);
-  }
-
-  private retune(): void {
-    for (const [material, target] of this.compileTargets) {
-      material.unfreeze();
-      freezeWhenCompiled(material, target.mesh, target.options);
-    }
   }
 }

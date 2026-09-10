@@ -26,7 +26,6 @@ import type { TaskCompass } from "../ui/compass";
 import type { ReviveBar } from "../ui/reviveBar";
 import type { WebcamMesh } from "../gameplay/webcam";
 import type { ProximityVoice } from "../gameplay/proximityVoice";
-import type { AmbienceParticles } from "../rendering/particles";
 import type { Ambience } from "../rendering/pipeline";
 import { AMBIENCE } from "../rendering/ambience";
 import { playSfx, playSfxNear } from "../core/audio";
@@ -47,7 +46,6 @@ export type GamePacketDeps = {
   net: NetClient;
   webcam: WebcamMesh;
   proximityVoice: ProximityVoice;
-  particles: AmbienceParticles;
   ambience: Ambience;
   remotes: RemotePlayers;
   quests: Quests;
@@ -174,7 +172,6 @@ export function makeGamePacketHandler(d: GamePacketDeps): (pkt: ServerPacket) =>
     },
     chair_hit: (p) => {
       d.chairs.applyHit(p);
-      d.particles.puffAt(p.x, 0.1, p.z);
       playSfxNear(`${SND}/chair-impact.ogg`, distTo(d, p.x, p.z), 0.9);
       shakeFalloff(d, p.x, p.z, AMBIENCE.cues.shakeChair);
     },

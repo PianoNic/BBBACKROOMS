@@ -16,8 +16,8 @@ import type { Material } from "@babylonjs/core/Materials/material";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TargetCamera } from "@babylonjs/core/Cameras/targetCamera";
-import { AMBIENCE, tierFeatures } from "./ambience";
-import { getSettings } from "../core/settings";
+import { AMBIENCE } from "./ambience";
+import { invalidateActiveMeshes } from "./activeMeshes";
 
 declare module "@babylonjs/core/Meshes/transformNode" {
   interface TransformNode {
@@ -56,7 +56,11 @@ TransformNode.prototype.traverse = function traverse(
 Object.defineProperty(TransformNode.prototype, "visible", {
   configurable: true,
   get(this: TransformNode): boolean { return this.isEnabled(false); },
-  set(this: TransformNode, v: boolean) { this.setEnabled(v); },
+  set(this: TransformNode, v: boolean) {
+    if (this.isEnabled(false) === v) return;
+    this.setEnabled(v);
+    invalidateActiveMeshes();
+  },
 });
 
 let current: Scene | null = null;
@@ -220,15 +224,6 @@ export function color3(hex: number): Color3 {
   );
 }
 
-/** Hemispheric ambient plus the pooled flicker lights from
- *  `rendering/lights.ts` that reach a given mesh; Babylon defaults to four
- *  and silently drops the rest, so every lit material has to raise the cap.
- *  The budget is tier-scaled: Niedrig never carries more than 2 pooled
- *  tubes on a mesh, Hoch up to 6, each plus its one hemispheric light. */
-export function maxLights(): number {
-  return tierFeatures(getSettings().graphicsTier).maxLights;
-}
-
 export function lambertMaterial(
   color: Color3 | number, name = "lambert", scene: Scene = activeScene(),
 ): StandardMaterial {
@@ -236,7 +231,7 @@ export function lambertMaterial(
   mat.diffuseColor = typeof color === "number" ? color3(color) : color;
   mat.specularColor = color3(AMBIENCE.surfaces.propSpecularColor);
   mat.specularPower = AMBIENCE.surfaces.propSpecularPower;
-  mat.maxSimultaneousLights = maxLights();
+  mat.maxSimultaneousLights = 1;
   return mat;
 }
 

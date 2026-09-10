@@ -48,7 +48,7 @@
   }
 }
 
-/// In-game settings overlay (sliders for FOV / pixelation / FPS / volume).
+/// In-game settings overlay (field of view, FPS cap, VSync, show-FPS).
 #settings-overlay {
   @include overlay(50);
 

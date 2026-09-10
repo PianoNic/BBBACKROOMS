@@ -2,10 +2,9 @@
 
 The world used to render with one flat texture each for floors, walls, and
 ceilings, no matter what kind of room a player was standing in. This
-overhauls that into a per-room-archetype PBR material set — a classroom
-looks, and shades, differently from a toilet block or a server room — while
-staying data-driven and tier-gated so low-end hardware still gets the
-original flat look for free.
+overhauls that into a per-room-archetype material set — a classroom looks
+different from a toilet block or a server room — while staying data-driven,
+so retuning a room's look is a config edit, not a code change.
 
 ## Why archetypes are inferred, not sent
 
@@ -68,8 +67,7 @@ edge case the inference is unsure about.
 | server_room | bare concrete | lino | plaster | no |
 | teacher_room | plaster, warm tint | carpet | acoustic tile | no |
 
-The full tuning table (exact tints, roughness, dado height, UV repeats,
-per-surface environment intensity) lives in
+The full tuning table (exact tints, dado height, UV repeats) lives in
 [`client/src/rendering/ambience.ts`](../client/src/rendering/ambience.ts)
 under `AMBIENCE.materials` — nothing archetype-specific is hardcoded in the
 material-building code itself, so retuning a room's look is a config edit,
@@ -78,25 +76,29 @@ band up to `dadoHeight` (1.0 m) plus a thin wooden rail sitting on top of it,
 built as two extra thin-instanced meshes over the same wall cells — the
 underlying wall cube itself is untouched.
 
-## Tier behaviour
+## One material set, one render profile
 
-Graphics tier is `getSettings().graphicsTier` (`niedrig` / `mittel` /
-`hoch`, see [`client/src/rendering/ambience.ts`](../client/src/rendering/ambience.ts)
-`TIERS`):
+Every archetype surface — wall, floor, ceiling, and where present dado/rail —
+is a single `StandardMaterial` built from one `512`px albedo WebP
+(`/textures/pbr/<category>/albedo-512.webp`); there is no normal map, no
+ORM/roughness/metalness map, and no HDRI environment texture. The archetype's
+tint from the tuning table multiplies the albedo (`diffuseColor`), and
+`maxSimultaneousLights = 1` on every material, matching the single
+`HemisphericLight` that lights the whole scene (see [Architecture](architecture.md)).
+Static world materials are frozen (`material.freeze()`) once their shader has
+compiled, and `scene.freezeActiveMeshes()` runs once the world and any
+lazily-loaded props are placed — dynamic meshes (players, doors, chairs, …)
+opt out via `alwaysSelectAsActiveMesh = true` so they keep updating.
 
-- **Niedrig** — nothing changes from before this work. Every archetype
-  renders with the same flat `StandardMaterial` set (`/textures/floor.png`,
-  `/textures/wall.png`, `/textures/ceiling.png`), no PBR maps, no dado/rail
-  meshes, no decals, no environment texture.
-- **Mittel** — PBR is on, textures load at `512` resolution, sampling is
-  `NEAREST` with wrap addressing to keep the existing pixel look.
-- **Hoch** — PBR at `1k` resolution, `TRILINEAR` sampling with 8×
-  anisotropic filtering.
-
-Texture path convention: `/textures/pbr/<category>/<map>-<res>.webp`, where
+Texture path convention: `/textures/pbr/<category>/albedo-512.webp`, where
 `<category>` is the archetype-specific directory name from the tuning table
-(e.g. `wall_plaster_plain`, `floor_lino`), `<map>` is `albedo` | `normal` |
-`orm`, and `<res>` is `1k` or `512`.
+(e.g. `wall_plaster_plain`, `floor_lino`).
+
+Some tile floors (`toilet`, `cafeteria`, `chemistry_lab`) get a very
+cheap sheen on top of the flat albedo: a tiny procedural cube texture is used
+as `reflectionTexture` together with a Fresnel term, so wet-looking tile and
+stone floors pick up a faint reflective highlight instead of looking
+completely matte, without the cost of a real environment texture.
 
 ### Lazy per-archetype loading
 
@@ -111,38 +113,8 @@ scales with the map's room mix, not with the full archetype list.
 
 `materials.floor` / `materials.wall` / `materials.ceiling` keep working
 exactly as before — other modules (`client/src/gameplay/doorBuilder.ts`,
-for instance) still read them directly. When PBR is on they now point at
-the `hallway` material set.
-
-## ORM channel packing and the normal map convention
-
-The `orm` texture packs occlusion in red, roughness in green, metalness in
-blue (`useRoughnessFromMetallicTextureGreen = true`,
-`useMetallnessFromMetallicTextureBlue = true`). The red (AO) channel is
-**not** wired up (`useAmbientOcclusionFromMetallicTextureRed` stays off) —
-AO is already baked into the albedo by the fetch script, and the
-procedural grime `DynamicTexture` from the horror-ambience pass already
-owns `ambientTexture` on every surface material. The `roughness` /
-`metallic` scalars from the tuning table still multiply the map, so a
-config edit can push a surface glossier or duller without touching a
-texture.
-
-Normal maps are OpenGL convention (Babylon's default), so
-`invertNormalMapX` / `invertNormalMapY` are left `false`. Bump strength is
-intentionally modest (`bumpTexture.level` ≈ 0.6) — the renderer runs a hard
-pixelation pass, and strong normal maps band under that kind of
-downsampling.
-
-## Environment texture
-
-On any tier with `pbrSurfaces` on, one `HDRCubeTexture`
-(`/textures/pbr/hdri/creepy_bathroom_1k.hdr`, 128px) is loaded and assigned
-to `scene.environmentTexture`. It's wrapped in a try/catch with an error
-callback that falls back to no environment texture — a missing or failed
-HDR download degrades the look, it doesn't break the game. Environment
-intensity is low everywhere by default; damp floors (`toilet`, `cafeteria`)
-get a higher `floorEnvironment` multiplier so wet lino/stone picks up a
-faint sheen instead of looking flat-matte.
+for instance) still read them directly, and point at the `hallway` material
+set.
 
 ## Decals
 
@@ -151,8 +123,7 @@ using that room's deterministic seed — a few per room, half on the ceiling
 (random cell, random spin, random uniform scale) and half on a wall cell
 next to the room's floor (positioned on the wall face, oriented toward the
 room). All decal instances across the whole map share one thin-instanced
-mesh and one material, built once via `getDecalMaterial()`. Decals are
-skipped entirely on `niedrig`.
+mesh and one material, built once via `getDecalMaterial()`.
 
 ## Running the texture fetch script
 

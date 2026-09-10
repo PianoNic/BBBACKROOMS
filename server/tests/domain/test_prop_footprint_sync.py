@@ -120,7 +120,7 @@ def test_no_material_uses_khr_texture_transform(model_path):
         assert "KHR_texture_transform" not in base_color.get("extensions", {}), (
             f"{model_path.name}: material {material.get('name', '?')} has a "
             "KHR_texture_transform on baseColorTexture — this renders as a black "
-            "silhouette through the StandardMaterial path used below Realistisch"
+            "silhouette through the StandardMaterial path every model is converted to"
         )
 
 

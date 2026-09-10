@@ -3,11 +3,9 @@
  *  Each prop type has a per-theme builder registered in `propsExtra.ts`.
  *  This file is just the dispatcher: look up the type, position it,
  *  collect the lot into one merged mesh per material per room region. */
-import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Prop, PropType } from "../net/protocol";
 import { mergeStaticMeshes } from "../rendering/staticMerge";
-import { Basic, group, type Group } from "../rendering/babylon";
-import { registerGlowMesh } from "../rendering/pipeline";
+import { group, type Group } from "../rendering/babylon";
 import { EXTRA_BUILDERS } from "./propsExtra";
 import type { Builder } from "./propBuilders/_common";
 
@@ -22,7 +20,7 @@ export function buildProps(
   props: Prop[],
   regionOf: (prop: Prop) => number,
   skip: ReadonlySet<PropType>,
-): { group: Group; regionMeshes: Map<number, Mesh[]> } {
+): Group {
   const byRegion = new Map<number, Prop[]>();
   for (const p of props) {
     if (skip.has(p.type)) continue;
@@ -33,9 +31,6 @@ export function buildProps(
   }
 
   const root = group("propsRoot");
-  const regionMeshes = new Map<number, Mesh[]>();
-  const exitFace = Basic(0x2bd14a);
-  const exitArrow = Basic(0xf6f6f4);
 
   for (const [regionId, regionProps] of byRegion) {
     const stage = group(`propStage_r${regionId}`);
@@ -52,12 +47,7 @@ export function buildProps(
     // per frame. See `rendering/staticMerge.ts`.
     const merged = mergeStaticMeshes(stage);
     root.add(merged);
-    const children = merged.getChildMeshes() as Mesh[];
-    regionMeshes.set(regionId, children);
-    for (const m of children) {
-      if (m.material === exitFace || m.material === exitArrow) registerGlowMesh(m);
-    }
   }
 
-  return { group: root, regionMeshes };
+  return root;
 }
