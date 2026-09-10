@@ -1,12 +1,12 @@
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
+import { RawCubeTexture } from "@babylonjs/core/Materials/Textures/rawCubeTexture";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
+import { FresnelParameters } from "@babylonjs/core/Materials/fresnelParameters";
+import { Constants } from "@babylonjs/core/Engines/constants";
 import type { Material } from "@babylonjs/core/Materials/material";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { activeScene, basicMaterial, color3, lambertMaterial } from "./babylon";
 import { AMBIENCE } from "./ambience";
-import { mulberry32 } from "../world/propBuilders/_common";
 import type { RoomArchetype } from "../world/rooms";
 
 function loadPainting(url: string): Texture {
@@ -16,113 +16,72 @@ function loadPainting(url: string): Texture {
   return tex;
 }
 
-const GRIME_SIZE = 256;
-const GRIME_SEED = 90125;
-const GRIME_SCALE = 3.5;
-const GRIME_STRENGTH = 0.3;
-const DIRECT_INTENSITY = Math.PI;
-
-function drawGrime(c: HTMLCanvasElement): void {
-  const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, c.width, c.height);
-  const rand = mulberry32(GRIME_SEED);
-  for (let i = 0; i < 30; i++) {
-    const x = rand() * c.width;
-    const y = rand() * c.height;
-    const r = 14 + rand() * 50;
-    const v = 70 + Math.floor(rand() * 60);
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0, `rgba(${v},${v + 12},${v},${0.3 + rand() * 0.35})`);
-    grad.addColorStop(1, `rgba(${v},${v + 12},${v},0)`);
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.strokeStyle = "rgba(60,70,58,0.28)";
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 10; i++) {
-    const x0 = rand() * c.width;
-    ctx.beginPath();
-    ctx.moveTo(x0, 0);
-    let x = x0;
-    for (let s = 0; s < 8; s++) {
-      x += (rand() - 0.5) * 20;
-      ctx.lineTo(x, ((s + 1) / 8) * c.height);
-    }
-    ctx.stroke();
-  }
+function pbrTexturePath(category: string): string {
+  return `/textures/pbr/${category}/albedo-512.webp`;
 }
 
-function buildGrimeTexture(): DynamicTexture {
+export const FLOOR_SHEEN_ENABLED = true;
+
+const SHEEN_SIZE = 32;
+const SHEEN_TOP_CENTER = "#2a3028";
+const SHEEN_DARK = "#050605";
+
+function sheenFace(top: boolean): Uint8Array {
   const c = document.createElement("canvas");
-  c.width = GRIME_SIZE; c.height = GRIME_SIZE;
-  drawGrime(c);
-  const tex = new DynamicTexture(
-    "grime", { width: c.width, height: c.height },
-    activeScene(), true, Texture.NEAREST_SAMPLINGMODE,
+  c.width = SHEEN_SIZE;
+  c.height = SHEEN_SIZE;
+  const ctx = c.getContext("2d")!;
+  if (top) {
+    const grad = ctx.createRadialGradient(
+      SHEEN_SIZE / 2, SHEEN_SIZE / 2, 0, SHEEN_SIZE / 2, SHEEN_SIZE / 2, SHEEN_SIZE / 2,
+    );
+    grad.addColorStop(0, SHEEN_TOP_CENTER);
+    grad.addColorStop(1, SHEEN_DARK);
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = SHEEN_DARK;
+  }
+  ctx.fillRect(0, 0, SHEEN_SIZE, SHEEN_SIZE);
+  return Uint8Array.from(ctx.getImageData(0, 0, SHEEN_SIZE, SHEEN_SIZE).data);
+}
+
+let sheenCubeTexture: RawCubeTexture | null = null;
+
+function getSheenCubeTexture(): RawCubeTexture {
+  if (sheenCubeTexture) return sheenCubeTexture;
+  const top = sheenFace(true);
+  const dark = sheenFace(false);
+  const tex = new RawCubeTexture(
+    activeScene(), [dark, top, dark, dark, dark, dark], SHEEN_SIZE,
+    Constants.TEXTUREFORMAT_RGBA, Constants.TEXTURETYPE_UNSIGNED_BYTE,
+    false, false, Texture.BILINEAR_SAMPLINGMODE,
   );
-  tex.getContext().drawImage(c, 0, 0);
-  tex.update(false);
-  tex.wrapU = Texture.WRAP_ADDRESSMODE;
-  tex.wrapV = Texture.WRAP_ADDRESSMODE;
-  tex.uScale = GRIME_SCALE;
-  tex.vScale = GRIME_SCALE;
+  tex.coordinatesMode = Texture.CUBIC_MODE;
+  tex.level = 0.16;
+  sheenCubeTexture = tex;
   return tex;
 }
 
-let grimeTex: DynamicTexture | null = null;
-
-function getGrimeTexture(): DynamicTexture {
-  if (!grimeTex) grimeTex = buildGrimeTexture();
-  return grimeTex;
-}
-
-function pbrTexturePath(
-  category: string, map: "albedo" | "normal" | "orm",
-): string {
-  return `/textures/pbr/${category}/${map}-512.webp`;
-}
-
-function loadPbrTexture(
-  url: string, gammaSpace: boolean, repeat: [number, number],
-): Texture {
-  const tex = new Texture(url, activeScene(), false, true, Texture.TRILINEAR_SAMPLINGMODE);
+function buildSurface(
+  name: string, category: string, tint: number, repeat: [number, number], sheen?: boolean,
+): StandardMaterial {
+  const mat = new StandardMaterial(name, activeScene());
+  const tex = new Texture(
+    pbrTexturePath(category), activeScene(), false, true, Texture.TRILINEAR_SAMPLINGMODE,
+  );
   tex.wrapU = Texture.WRAP_ADDRESSMODE;
   tex.wrapV = Texture.WRAP_ADDRESSMODE;
   tex.uScale = repeat[0];
   tex.vScale = repeat[1];
-  tex.gammaSpace = gammaSpace;
-  return tex;
-}
-
-const NORMAL_STRENGTH = 0.35;
-
-function buildPbrSurface(
-  name: string, category: string, tint: number, roughness: number, metallic: number,
-  repeat: [number, number], grime: DynamicTexture,
-): PBRMaterial {
-  const mat = new PBRMaterial(name, activeScene());
-  mat.albedoTexture = loadPbrTexture(pbrTexturePath(category, "albedo"), true, repeat);
-  mat.albedoColor = color3(tint);
-  const normal = loadPbrTexture(pbrTexturePath(category, "normal"), false, repeat);
-  normal.level = NORMAL_STRENGTH;
-  mat.bumpTexture = normal;
-  mat.invertNormalMapX = false;
-  mat.invertNormalMapY = false;
-  mat.metallicTexture = loadPbrTexture(pbrTexturePath(category, "orm"), false, repeat);
-  mat.useRoughnessFromMetallicTextureAlpha = false;
-  mat.useRoughnessFromMetallicTextureGreen = true;
-  mat.useMetallnessFromMetallicTextureBlue = true;
-  mat.roughness = roughness;
-  mat.metallic = metallic;
-  mat.directIntensity = DIRECT_INTENSITY;
-  mat.environmentIntensity = 0;
+  mat.diffuseTexture = tex;
+  mat.diffuseColor = color3(tint);
+  mat.specularColor = Color3.Black();
   mat.maxSimultaneousLights = 1;
-  mat.usePhysicalLightFalloff = false;
-  mat.ambientTexture = grime;
-  mat.ambientTextureStrength = GRIME_STRENGTH;
+  if (sheen && FLOOR_SHEEN_ENABLED) {
+    mat.reflectionTexture = getSheenCubeTexture();
+    mat.useReflectionFresnelFromSpecular = false;
+    mat.reflectionFresnelParameters = new FresnelParameters({ bias: 0.2, power: 2 });
+  }
   return mat;
 }
 
@@ -136,30 +95,22 @@ export type ArchetypeMaterialSet = {
 
 function buildArchetypeMaterials(archetype: RoomArchetype): ArchetypeMaterialSet {
   const config = AMBIENCE.materials.rooms[archetype];
-  const grime = getGrimeTexture();
-  const wall = buildPbrSurface(
-    `wall_${archetype}`, config.wall, config.wallTint, config.wallRoughness, config.wallMetallic,
-    [config.wallRepeatU, config.wallRepeatV], grime,
+  const wall = buildSurface(
+    `wall_${archetype}`, config.wall, config.wallTint, [config.wallRepeatU, config.wallRepeatV],
   );
-  const floor = buildPbrSurface(
-    `floor_${archetype}`, config.floor, config.floorTint, config.floorRoughness,
-    config.floorMetallic, [config.floorRepeatU, config.floorRepeatV], grime,
+  const floor = buildSurface(
+    `floor_${archetype}`, config.floor, config.floorTint,
+    [config.floorRepeatU, config.floorRepeatV], config.floorSheen,
   );
-  const ceiling = buildPbrSurface(
-    `ceiling_${archetype}`, config.ceiling, config.ceilingTint, config.ceilingRoughness,
-    config.ceilingMetallic, [config.ceilingRepeatU, config.ceilingRepeatV], grime,
+  const ceiling = buildSurface(
+    `ceiling_${archetype}`, config.ceiling, config.ceilingTint,
+    [config.ceilingRepeatU, config.ceilingRepeatV],
   );
   const out: ArchetypeMaterialSet = { wall, floor, ceiling };
   if (config.dado) {
-    out.dado = buildPbrSurface(
-      `dado_${archetype}`, config.dado.category, config.dado.tint, config.dado.roughness, 0,
-      [1, 1], grime,
-    );
+    out.dado = buildSurface(`dado_${archetype}`, config.dado.category, config.dado.tint, [1, 1]);
     const rail = AMBIENCE.materials.dadoRail;
-    out.rail = buildPbrSurface(
-      `rail_${archetype}`, rail.category, rail.tint, rail.roughness, 0,
-      [1, 1], grime,
-    );
+    out.rail = buildSurface(`rail_${archetype}`, rail.category, rail.tint, [1, 1]);
   }
   return out;
 }
