@@ -1,6 +1,7 @@
 import type { RosterEntry } from "../net/protocol";
 import { fetchRoster } from "../net/roster";
 import { decodeBbpack } from "./bbpack";
+import { migrateLegacyTexturePackDb } from "./legacyStorage";
 
 export type PackTeacherEntry = { image: string; name?: string };
 
@@ -21,10 +22,10 @@ export type PackSummary = {
   teacherCount: number;
 };
 
-const DB_NAME = "bbb_texture_packs";
+const DB_NAME = "nachsitzen_texture_packs";
 const STORE_NAME = "packs";
 const DB_VERSION = 1;
-const ACTIVE_PACK_KEY = "bbb_active_pack";
+const ACTIVE_PACK_KEY = "nachsitzen_active_pack";
 
 export const PACK_ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const MAX_STRING_LEN = 64;
@@ -33,7 +34,8 @@ const MAX_IMAGE_DIM = 1024;
 export const MAX_TEACHER_ENTRIES = 256;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-function openDb(): Promise<IDBDatabase> {
+async function openDb(): Promise<IDBDatabase> {
+  await migrateLegacyTexturePackDb();
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {

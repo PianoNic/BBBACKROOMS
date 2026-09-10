@@ -28,7 +28,7 @@ const BIG_ROSTER = Array.from({ length: 122 }, (_, i) => ({
 test("a pack with an entry per roster teacher imports", async ({ page }) => {
   test.setTimeout(180_000);
 
-  await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
+  await page.addInitScript(() => sessionStorage.setItem("nachsitzen-intro-seen", "1"));
 
   await mockBackend(page);
   await page.route("**/roster", (route) =>

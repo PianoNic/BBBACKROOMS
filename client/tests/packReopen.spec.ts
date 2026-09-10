@@ -67,7 +67,7 @@ const PNG_BLUE = makeSolidPng(20, 20, 220);
 test("reopening an installed pack lets you replace a slot and reinstall", async ({ page }) => {
   test.setTimeout(120_000);
 
-  await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
+  await page.addInitScript(() => sessionStorage.setItem("nachsitzen-intro-seen", "1"));
 
   await mockBackend(page);
   await page.route("**/roster", (route) =>
