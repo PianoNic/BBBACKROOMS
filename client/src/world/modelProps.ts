@@ -24,9 +24,16 @@ type Footprint = {
   scale: number;
   scaleY?: number;
   scaleZ?: number;
+  yawOffset?: number;
   hinge?: ModelHingeSpec;
 };
-type PickupFootprint = { model: string; scale: number; scaleY?: number; scaleZ?: number };
+type PickupFootprint = {
+  model: string;
+  scale: number;
+  scaleY?: number;
+  scaleZ?: number;
+  yawOffset?: number;
+};
 type FootprintFile = {
   props: Record<string, Footprint>;
   pickups: Record<PickupKind, PickupFootprint>;
@@ -41,7 +48,7 @@ function spec(type: PropType, anchor: ModelAnchor, y: number): ModelPropSpec {
     scale: fp.scale,
     scaleY: fp.scaleY ?? fp.scale,
     scaleZ: fp.scaleZ ?? fp.scale,
-    yawOffset: 0,
+    yawOffset: fp.yawOffset ?? 0,
     anchor,
     y,
     hinge: fp.hinge,
@@ -55,7 +62,7 @@ function pickupSpec(kind: PickupKind): ModelPropSpec {
     scale: fp.scale,
     scaleY: fp.scaleY ?? fp.scale,
     scaleZ: fp.scaleZ ?? fp.scale,
-    yawOffset: 0,
+    yawOffset: fp.yawOffset ?? 0,
     anchor: "floor",
     y: 0,
   };
@@ -103,6 +110,36 @@ export const MANAGER_OWNED_TYPES: ReadonlySet<PropType> = new Set<PropType>(
 export const MODEL_PROP_TYPES: ReadonlySet<PropType> = new Set(
   Object.keys(MODEL_PROPS) as PropType[],
 );
+
+export type ModelFrontAxis = "plusZ" | "minusZ" | "symmetric";
+
+export const MODEL_NATIVE_FRONT: Record<string, ModelFrontAxis> = {
+  bench: "plusZ",
+  bookshelf: "plusZ",
+  books_pile: "symmetric",
+  bunsen_burner: "symmetric",
+  cafeteria_table: "symmetric",
+  chair: "plusZ",
+  clock: "plusZ",
+  cupboard: "plusZ",
+  desk: "minusZ",
+  fire_extinguisher: "plusZ",
+  laptop: "plusZ",
+  locker: "plusZ",
+  microscope: "plusZ",
+  microwave: "plusZ",
+  mop_bucket: "symmetric",
+  papers: "symmetric",
+  plant: "symmetric",
+  pylon: "symmetric",
+  recycle_bin: "symmetric",
+  side_table: "symmetric",
+  sofa: "plusZ",
+  student_desk: "symmetric",
+  trash_can: "symmetric",
+};
+
+export const SITTER_FACING_TYPES: ReadonlySet<PropType> = new Set<PropType>(["chair"]);
 
 export const COMMON_BUNDLE: readonly PropType[] = [
   "chair", "laptop", "locker", "trash_can", "recycle_bin", "pylon", "papers",

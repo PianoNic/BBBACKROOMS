@@ -67,9 +67,11 @@ def place_paired(
 ) -> tuple[Prop, Prop | None] | None:
     """Teacher's desk anchored centrally against the BACK wall (opposite
     the door, where the whiteboard sits), facing the students. The chair
-    sits between the desk and the back wall so the teacher faces forward.
-    Falls back to a free-form centre placement if there's no room
-    against the back wall (very narrow rooms)."""
+    sits between the desk and the back wall so the teacher faces forward,
+    never in front of the desk. Falls back to a free-form centre
+    placement if there's no room against the back wall (very narrow
+    rooms), and to no chair at all if the room is too shallow to fit one
+    behind the desk."""
     primary = _place_back_centred(grid, primary_type, primary_spec)
     if primary is None:
         primary = place_center(
@@ -91,39 +93,36 @@ def place_paired(
                    max(0, (grid.w_cells - pa_along) // 2))
     margin_d = min(CENTER_MARGIN_SUBCELLS,
                    max(0, (grid.d_cells - pa_out) // 2))
-    # Preferred: chair behind desk (between desk and back wall, large d).
-    # Fallback: chair in front of desk (towards the students) for rooms
-    # too shallow to fit one behind.
-    for w, d in [(centre_w, pd + psd), (centre_w, pd - pa_out)]:
-        if w < margin_w or w + pa_along > grid.w_cells - margin_w:
-            continue
-        if d < 0 or d + pa_out > grid.d_cells:
-            continue
-        # Allow the chair to sit in the back-wall margin band (it's part
-        # of the desk grouping, not a free-floating prop).
-        if d < margin_d and d + pa_out <= margin_d:
-            continue
-        # The chair is drawn on the DESK's w-centre so it stays dead-centre
-        # behind the desk even when desk and chair footprints have different
-        # parities. That shifts it up to half a sub-cell off its own cell, so
-        # reserve every sub-cell it actually covers — otherwise floor clutter
-        # lands in the overhang and clips through it.
-        start = pw + psw / 2 - pa_along / 2
-        res_w = math.floor(start)
-        res_along = math.ceil(start + pa_along) - res_w
-        if res_w < 0 or res_w + res_along > grid.w_cells:
-            continue
-        if not grid.is_free("floor", res_w, d, res_along, pa_out):
-            continue
-        grid.mark("floor", res_w, d, res_along, pa_out)
-        grid.reservations.append(
-            (partner_type, res_w, d, res_along, pa_out, "floor"),
-        )
-        cx, cz = grid.to_world(
-            pw + psw / 2 - 0.5, d + pa_out / 2 - 0.5,
-        )
-        return primary, Prop(type=partner_type, x=cx, z=cz, yaw=chair_yaw)
-    return primary, None
+    # Chair behind desk (between desk and back wall, large d).
+    w, d = centre_w, pd + psd
+    if w < margin_w or w + pa_along > grid.w_cells - margin_w:
+        return primary, None
+    if d < 0 or d + pa_out > grid.d_cells:
+        return primary, None
+    # Allow the chair to sit in the back-wall margin band (it's part
+    # of the desk grouping, not a free-floating prop).
+    if d < margin_d and d + pa_out <= margin_d:
+        return primary, None
+    # The chair is drawn on the DESK's w-centre so it stays dead-centre
+    # behind the desk even when desk and chair footprints have different
+    # parities. That shifts it up to half a sub-cell off its own cell, so
+    # reserve every sub-cell it actually covers — otherwise floor clutter
+    # lands in the overhang and clips through it.
+    start = pw + psw / 2 - pa_along / 2
+    res_w = math.floor(start)
+    res_along = math.ceil(start + pa_along) - res_w
+    if res_w < 0 or res_w + res_along > grid.w_cells:
+        return primary, None
+    if not grid.is_free("floor", res_w, d, res_along, pa_out):
+        return primary, None
+    grid.mark("floor", res_w, d, res_along, pa_out)
+    grid.reservations.append(
+        (partner_type, res_w, d, res_along, pa_out, "floor"),
+    )
+    cx, cz = grid.to_world(
+        pw + psw / 2 - 0.5, d + pa_out / 2 - 0.5,
+    )
+    return primary, Prop(type=partner_type, x=cx, z=cz, yaw=chair_yaw)
 
 
 def _place_back_centred(

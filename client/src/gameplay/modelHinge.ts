@@ -40,11 +40,9 @@ export class ModelHinge {
   }
 
   private readonly pivotNode: Group;
-  private readonly sign: number;
   private readonly openRad: number;
 
   constructor(hinge: ModelHingeSpec, split: HingeSplit, parent: TransformNode) {
-    this.sign = hinge.side === "left" ? 1 : -1;
     this.openRad = hinge.openRad;
     this.pivotNode = group("modelHingePivot");
     this.pivotNode.parent = parent;
@@ -57,6 +55,6 @@ export class ModelHinge {
 
   setOpenFraction(fraction: number): void {
     const clamped = Math.max(0, Math.min(1, fraction));
-    this.pivotNode.rotation.y = this.sign * this.openRad * clamped;
+    this.pivotNode.rotation.y = this.openRad * clamped;
   }
 }

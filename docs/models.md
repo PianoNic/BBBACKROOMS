@@ -238,6 +238,50 @@ the previous pass):
 existing `(1, 1)` `PROP_SPECS` reservation (0.5 x 0.5m): the packed model
 measures 0.498 x 0.401m, comfortably inside without needing a spec change.
 
+## Orientation: which way is the front?
+
+The procedural prop builders that the glTF models replaced all share one
+convention, and the server placement code depends on it: **a prop's
+room-facing front is at local -Z, and the wall it stands against is at
+local +Z**. `server/app/domain/world/frame.py` spells it out — `wall_yaw`
+rotates a prop so that its local -Z points into the room. The single
+documented exception is `chair`: its backrest is at -Z and the *sitter*
+faces +Z, which is what `place_paired` in
+`server/app/domain/world/room_patterns.py` composes with when it tucks the
+teacher's chair behind the desk.
+
+The Poly Haven / ambientCG models are authored the other way round: their
+visible front faces +Z. That is what `yawOffset` is for. It lives in
+`tools/fetch_models.py`'s `MANIFEST` as `yaw_offset`, is written into
+`footprints.json`, and is a half turn (`math.pi`) for every model whose
+authored front points the wrong way: `bench`, `bookshelf`, `clock`,
+`cupboard`, `fire_extinguisher`, `laptop`, `locker`, `microscope`,
+`microwave`, `sofa`. `desk` and `chair` need no turn (the desk's modesty
+slab is already the face it shows the room, with the kneehole at +Z where
+the paired chair sits), and everything else is symmetric enough that a turn
+would be invisible. A half turn does not swap `along`/`out`, so the
+measured footprints are unaffected.
+
+`normalizeModelTemplate()` in `client/src/world/modelPropStage.ts` bakes
+the offset into the template's vertices *before* it measures the bounding
+box, so the wall-anchored "push the back onto the wall plane" offset is
+computed on the corrected geometry, and every consumer of the template —
+the thin-instanced `ModelPropStage`, plus the hand-placed chairs, lockers,
+laptops and pickups under `client/src/gameplay/` — inherits the correct
+orientation without applying anything itself.
+
+Baking a half turn mirrors X, so the locker's door hinge moves from the
+model's minimum-X edge to its maximum-X edge; the hinge spec therefore
+records `side: "right"`, and `ModelHinge` treats `side` purely as "which
+edge is the pivot" while `openRad` alone carries the swing direction.
+
+`MODEL_NATIVE_FRONT` in `client/src/world/modelProps.ts` records the
+authored front axis measured for every model, and
+`client/src/world/modelProps.test.ts` asserts that combining it with the
+`yawOffset` really does land every prop's front on -Z (and the chair's
+sitter on +Z) — so a future model swap that changes the authored front
+fails the build instead of silently turning the furniture around.
+
 ## Archetype bundles and lazy loading
 
 `client/src/world/modelProps.ts` doesn't load every model up front. Each

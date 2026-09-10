@@ -57,15 +57,15 @@ edge case the inference is unsure about.
 
 | archetype | wall | floor | ceiling | dado |
 |---|---|---|---|---|
-| classroom | plaster, warm plaster tint | lino | acoustic tile | yes |
-| hallway | plaster, institutional green | terrazzo | acoustic tile | yes |
+| classroom | cream plaster, warm tint | lino | acoustic tile | yes |
+| hallway | cream plaster, warm tint | terrazzo | acoustic tile | yes |
 | toilet | white tile | lino, low sheen | plaster | yes |
 | cafeteria | plaster | stone tile | acoustic tile | no |
 | chemistry_lab | hex tile | dark terrazzo | acoustic tile | no |
 | gym | plaster | wood | plaster | no |
 | janitor_room | bare concrete | bare concrete | plaster | no |
 | server_room | bare concrete | lino | plaster | no |
-| teacher_room | plaster, warm tint | carpet | acoustic tile | no |
+| teacher_room | cream plaster, warm tint | carpet | acoustic tile | no |
 
 The full tuning table (exact tints, dado height, UV repeats) lives in
 [`client/src/rendering/ambience.ts`](../client/src/rendering/ambience.ts)
@@ -92,7 +92,17 @@ opt out via `alwaysSelectAsActiveMesh = true` so they keep updating.
 
 Texture path convention: `/textures/pbr/<category>/albedo-512.webp`, where
 `<category>` is the archetype-specific directory name from the tuning table
-(e.g. `wall_plaster_plain`, `floor_lino`).
+(e.g. `wall_plaster_cream`, `floor_lino`).
+
+`classroom`, `hallway` and `teacher_room` all use `wall_plaster_cream`
+(ambientCG `PaintedPlaster017`), a neutral cream/beige painted plaster that
+reads as institutional school wall paint once the client's warm tint is
+multiplied over it — each archetype keeps its own tint and its own green
+`dado_tile_green` band with the wooden dado rail on top, so the three
+archetypes still look distinct even though the base wall texture is shared.
+`hallway` previously used a separate green-tinted plaster (`wall_plaster_green`);
+that category has been removed from `tools/fetch_textures.py` since nothing
+references it any more.
 
 Some tile floors (`toilet`, `cafeteria`, `chemistry_lab`) get a very
 cheap sheen on top of the flat albedo: a tiny procedural cube texture is used
