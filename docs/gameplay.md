@@ -41,6 +41,9 @@ Vollständige Liste: [items.md](items.md).
 ## Grafik
 Es gibt nur noch ein einziges Render-Profil — keine Qualitätsstufen unter Optionen → Grafik. Die interne Auflösung ist fest auf ein Viertel der Fensterauflösung herunterskaliert (grobpixeliger Retro-Look), das ist nicht einstellbar und passt sich auch nicht automatisch an die Framerate an.
 
+## Namensschilder
+Über Mitspielern schwebt ein Namensschild mit ihrem Namen und, falls ausgerüstet, ihrem gekauften Titel — farblich passend zu dessen Seltenheit (häufig, selten, episch, legendär). Das Schild ist nur bis ~12m Entfernung sichtbar und wird von Wänden verdeckt — es lässt sich also nicht durch Wände hindurch aufspüren. Wird ein Spieler niedergeschlagen, behält die liegende Figur die Körperfarbe und den Hut des ausgerüsteten Loadouts.
+
 ## Tips
 - Bleibt zusammen — Wiederbeleben ist zuverlässiger als Soloplay.
 - Proximity-Chat nutzen: Lehrer-Schritte sind hörbar, bevor man sie sieht.
