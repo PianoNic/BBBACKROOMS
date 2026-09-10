@@ -16,3 +16,50 @@ $extract: #6ed8ff;
 $font-display: "Rubik Glitch", monospace;
 $font-mono: "VT323", "IBM Plex Mono", monospace;
 $font-sys: "Segoe UI", system-ui, sans-serif;
+
+:root {
+  --bb-accent: #{$accent};
+  --bb-accent-bright: #{$accent-bright};
+  --bb-dim: #{$dim};
+  --bb-ink: #{$ink};
+  --bb-bg: #{$bg};
+  --bb-bg-deep: #{$bg-deep};
+  --bb-panel-bg: #{$panel-bg};
+  --bb-panel-bg-overlay: #{$panel-bg-overlay};
+  --bb-panel-bg-modal: #{$panel-bg-modal};
+  --bb-red-rec: #{$red-rec};
+  --bb-danger: #{$danger};
+  --bb-extract: #{$extract};
+
+  --bb-line: rgba(106, 98, 88, 0.45);
+  --bb-line-soft: rgba(106, 98, 88, 0.22);
+  --bb-accent-line: rgba(200, 162, 90, 0.35);
+  --bb-accent-wash: rgba(200, 162, 90, 0.08);
+  --bb-accent-wash-strong: rgba(200, 162, 90, 0.18);
+
+  --bb-space-1: 4px;
+  --bb-space-2: 8px;
+  --bb-space-3: 12px;
+  --bb-space-4: 18px;
+  --bb-space-5: 26px;
+  --bb-space-6: 40px;
+
+  --bb-gutter: clamp(12px, 4vw, 48px);
+  --bb-block: clamp(12px, 3vh, 40px);
+
+  --bb-fs-xs: clamp(0.7rem, 0.65rem + 0.2vw, 0.8rem);
+  --bb-fs-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.95rem);
+  --bb-fs-md: clamp(0.95rem, 0.88rem + 0.35vw, 1.15rem);
+  --bb-fs-lg: clamp(1.15rem, 1rem + 0.6vw, 1.5rem);
+  --bb-fs-xl: clamp(1.4rem, 1.1rem + 1.2vw, 2.2rem);
+  --bb-fs-2xl: clamp(1.8rem, 1.3rem + 2vw, 3.2rem);
+  --bb-fs-3xl: clamp(2.2rem, 1.4rem + 4vw, 6rem);
+
+  --bb-tap: 44px;
+  --bb-track: 1px;
+
+  --bb-safe-t: env(safe-area-inset-top, 0px);
+  --bb-safe-r: env(safe-area-inset-right, 0px);
+  --bb-safe-b: env(safe-area-inset-bottom, 0px);
+  --bb-safe-l: env(safe-area-inset-left, 0px);
+}
