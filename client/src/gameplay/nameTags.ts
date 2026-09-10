@@ -81,13 +81,15 @@ export class NameTags {
       "nameTag", { width: TEX_W, height: TEX_H }, activeScene(), true,
     );
     tex.hasAlpha = true;
+    tex.vScale = -1;
+    tex.vOffset = 1;
     const material = new StandardMaterial(`nameTagMat_${id}`, activeScene());
     material.diffuseTexture = tex;
     material.useAlphaFromDiffuseTexture = true;
     material.emissiveTexture = tex;
     material.disableLighting = true;
     material.backFaceCulling = false;
-    const mesh = plane(PLANE_W, PLANE_H, material, true, `nameTag_${id}`);
+    const mesh = plane(PLANE_W, PLANE_H, material, false, `nameTag_${id}`);
     mesh.billboardMode = Mesh.BILLBOARDMODE_ALL;
     mesh.isPickable = false;
     mesh.setEnabled(false);
@@ -142,12 +144,15 @@ function drawNameTag(
 
   if (title) {
     const titleY = TEX_H * 0.74;
-    ctx.font = "italic bold 38px sans-serif";
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = accent;
+    ctx.font = "italic bold 42px sans-serif";
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "rgba(0,0,0,0.85)";
     ctx.strokeText(title.text, TEX_W / 2, titleY);
     ctx.fillStyle = title.color;
     ctx.fillText(title.text, TEX_W / 2, titleY);
+    const half = ctx.measureText(title.text).width / 2;
+    ctx.fillStyle = accent;
+    ctx.fillRect(TEX_W / 2 - half, titleY + 26, half * 2, 4);
   }
 
   tex.update(false);
