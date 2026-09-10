@@ -127,6 +127,7 @@ export type RemotePlayer = {
   yaw: number;
   avatar?: string | null;
   equipped?: EquippedCosmetics;
+  name?: string;
 };
 
 export type TeacherInfo = {

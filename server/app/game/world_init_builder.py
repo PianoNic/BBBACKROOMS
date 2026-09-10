@@ -28,7 +28,7 @@ class WorldInitBuilder:
         init_payload["players"] = [
             {
                 "id": p.id, "color": p.color, "x": p.x, "z": p.z, "yaw": p.yaw,
-                "avatar": p.avatar, "equipped": p.equipped_cosmetics,
+                "avatar": p.avatar, "equipped": p.equipped_cosmetics, "name": p.name,
             }
             for p in lobby.conns.values() if p.id != me.id
         ]
