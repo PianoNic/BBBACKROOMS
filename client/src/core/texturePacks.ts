@@ -4,7 +4,7 @@ import { decodeBbpack } from "./bbpack";
 import { migrateLegacyTexturePackDb } from "./legacyStorage";
 import { MUSIC_DEFINITIONS, SOUND_DEFINITIONS } from "./soundRegistry";
 
-export type PackTeacherEntry = { image: string; name?: string; sound?: string };
+export type PackTeacherEntry = { image?: string; name?: string; sound?: string };
 
 export type StoredPack = {
   id: string;
@@ -223,21 +223,28 @@ export async function importPackFromFile(file: File): Promise<StoredPack> {
     if (!entryRaw || typeof entryRaw !== "object") {
       throw new Error(`pack.json teacher entry "${key}" must be an object`);
     }
-    const imageName = validateString(entryRaw.image, `teachers.${key}.image`, 256);
-    const asset = assetsByName.get(imageName);
-    if (!asset) {
-      throw new Error(`pack.json teacher entry "${key}" references missing asset "${imageName}"`);
+    if (entryRaw.image === undefined && entryRaw.sound === undefined) {
+      throw new Error(`pack.json teacher entry "${key}" must include an image or a sound`);
     }
-    if (!ALLOWED_MIME.has(asset.mime)) {
-      throw new Error(`image "${imageName}" must be JPEG, PNG or WebP`);
-    }
-    if (asset.bytes.byteLength > MAX_IMAGE_BYTES) {
-      throw new Error(`image "${imageName}" exceeds ${MAX_IMAGE_BYTES} bytes`);
-    }
-    const blob = new Blob([asset.bytes], { type: asset.mime });
-    await checkImageDimensions(blob);
 
-    const entry: PackTeacherEntry = { image: imageName };
+    const entry: PackTeacherEntry = {};
+    if (entryRaw.image !== undefined) {
+      const imageName = validateString(entryRaw.image, `teachers.${key}.image`, 256);
+      const asset = assetsByName.get(imageName);
+      if (!asset) {
+        throw new Error(`pack.json teacher entry "${key}" references missing asset "${imageName}"`);
+      }
+      if (!ALLOWED_MIME.has(asset.mime)) {
+        throw new Error(`image "${imageName}" must be JPEG, PNG or WebP`);
+      }
+      if (asset.bytes.byteLength > MAX_IMAGE_BYTES) {
+        throw new Error(`image "${imageName}" exceeds ${MAX_IMAGE_BYTES} bytes`);
+      }
+      const blob = new Blob([asset.bytes], { type: asset.mime });
+      await checkImageDimensions(blob);
+      entry.image = imageName;
+      images[imageName] = blob;
+    }
     if (entryRaw.name !== undefined) {
       entry.name = validateString(entryRaw.name, `teachers.${key}.name`);
     }
@@ -248,7 +255,6 @@ export async function importPackFromFile(file: File): Promise<StoredPack> {
       audio[soundName] = soundBlob;
     }
     teachers[key] = entry;
-    images[imageName] = blob;
   }
 
   const stored: StoredPack = { id, name, version, hash, teachers, images, sounds, music, audio };
@@ -470,7 +476,7 @@ export function resolveTeacherImage(
   abilityId: string | undefined, rosterIndex: number, defaultUrl: string,
 ): string {
   const entry = resolvePackEntry(abilityId, rosterIndex, defaultUrl);
-  if (!entry || !active) return defaultUrl;
+  if (!entry || !active || !entry.image) return defaultUrl;
   const url = active.urls.get(entry.image);
   return url ?? defaultUrl;
 }
@@ -485,7 +491,7 @@ export function resolveTeacherThumb(
 ): string {
   const defaultUrl = `/teachers/${imageFile}`;
   const entry = resolvePackEntry(abilityId, rosterIndex, defaultUrl);
-  if (!entry || !active) return teacherThumbUrl(imageFile);
+  if (!entry || !active || !entry.image) return teacherThumbUrl(imageFile);
   const url = active.urls.get(entry.image);
   return url ?? teacherThumbUrl(imageFile);
 }
