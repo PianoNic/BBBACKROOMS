@@ -27,17 +27,12 @@ const WALL_FACE_MARGIN = 0.01;
 
 const frozenMaterials = new WeakSet<Material>();
 
-function bake(mesh: Mesh, matrices: Float32Array, cullable: boolean): void {
+function bake(mesh: Mesh, matrices: Float32Array): void {
   mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
   mesh.isPickable = false;
-  if (cullable) {
-    mesh.alwaysSelectAsActiveMesh = false;
-    mesh.doNotSyncBoundingInfo = false;
-    mesh.thinInstanceRefreshBoundingInfo(true);
-  } else {
-    mesh.alwaysSelectAsActiveMesh = true;
-    mesh.doNotSyncBoundingInfo = true;
-  }
+  mesh.alwaysSelectAsActiveMesh = false;
+  mesh.doNotSyncBoundingInfo = false;
+  mesh.thinInstanceRefreshBoundingInfo(true);
   mesh.freezeWorldMatrix();
 
   const mat = mesh.material;
@@ -143,8 +138,8 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       tmp.copyToArray(ceilMatrices, i * 16);
     });
     stage.add(floorMesh, ceilMesh);
-    bake(floorMesh, floorMatrices, true);
-    bake(ceilMesh, ceilMatrices, true);
+    bake(floorMesh, floorMatrices);
+    bake(ceilMesh, ceilMatrices);
   }
 
   for (const [regionId, coords] of wallByRegion) {
@@ -160,7 +155,7 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       tmp.copyToArray(wallMatrices, i * 16);
     });
     stage.add(wallMesh);
-    bake(wallMesh, wallMatrices, true);
+    bake(wallMesh, wallMatrices);
 
     const config = AMBIENCE.materials.rooms[archetype];
     if (config.dado && matSet.dado && matSet.rail) {
@@ -183,8 +178,8 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
         tmp2.copyToArray(railMatrices, i * 16);
       });
       stage.add(dadoMesh, railMesh);
-      bake(dadoMesh, dadoMatrices, true);
-      bake(railMesh, railMatrices, true);
+      bake(dadoMesh, dadoMatrices);
+      bake(railMesh, railMatrices);
     }
   }
 
@@ -250,7 +245,7 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       const decalMatrices = new Float32Array(composed.length * 16);
       composed.forEach((m, i) => m.copyToArray(decalMatrices, i * 16));
       stage.add(decalMesh);
-      bake(decalMesh, decalMatrices, true);
+      bake(decalMesh, decalMatrices);
     }
   }
 

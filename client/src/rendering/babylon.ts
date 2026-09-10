@@ -17,7 +17,6 @@ import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TargetCamera } from "@babylonjs/core/Cameras/targetCamera";
 import { AMBIENCE } from "./ambience";
-import { invalidateActiveMeshes } from "./activeMeshes";
 
 declare module "@babylonjs/core/Meshes/transformNode" {
   interface TransformNode {
@@ -59,7 +58,6 @@ Object.defineProperty(TransformNode.prototype, "visible", {
   set(this: TransformNode, v: boolean) {
     if (this.isEnabled(false) === v) return;
     this.setEnabled(v);
-    invalidateActiveMeshes();
   },
 });
 

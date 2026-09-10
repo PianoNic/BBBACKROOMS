@@ -65,10 +65,7 @@ export class ExtractionPortal {
 
     this.group.position.set(x, 0, z);
     // Group stays in the scene; only the visible meshes are hidden initially.
-    for (const v of this.visuals) {
-      v.visible = false;
-      (v as Mesh).alwaysSelectAsActiveMesh = true;
-    }
+    for (const v of this.visuals) v.visible = false;
   }
 
   show(): void {

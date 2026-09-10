@@ -29,7 +29,6 @@ function buildModelLaptopBody(): Group | null {
     const clone = mesh.clone(mesh.name, null);
     clone.setEnabled(true);
     clone.isPickable = false;
-    clone.alwaysSelectAsActiveMesh = true;
     g.add(clone);
   }
   return g;
@@ -45,19 +44,16 @@ export function buildLaptopNode(initialColor: number): {
   if (!modelBody) {
     const base = box(0.36, 0.025, 0.26, laptopBodyMat());
     base.position.y = 0.75 + 0.012;
-    base.alwaysSelectAsActiveMesh = true;
     node.add(base);
     const screen = box(0.36, 0.24, 0.015, laptopBodyMat());
     screen.position.set(0, 0.75 + 0.135, -0.125);
     screen.rotation.x = -0.18;
-    screen.alwaysSelectAsActiveMesh = true;
     node.add(screen);
   }
   const faceMat = basicMaterial(initialColor);
   const face = plane(0.32, 0.20, faceMat);
   face.position.set(0, 0.75 + 0.135, -0.117);
   face.rotation.x = -0.18;
-  face.alwaysSelectAsActiveMesh = true;
   node.add(face);
   return { node, faceMat };
 }

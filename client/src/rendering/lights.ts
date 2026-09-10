@@ -1,17 +1,19 @@
+import "@babylonjs/core/Meshes/thinInstanceMesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Light } from "../net/protocol";
 import { WALL_HEIGHT } from "../world/builder";
 import { AMBIENCE } from "./ambience";
 import { mulberry32, seedFromPos } from "../world/propBuilders/_common";
 import { basicMaterial, box, color3, group, lambertMaterial } from "./babylon";
+import { freezeWhenCompiled } from "./modelMaterials";
 
 type Pattern = "stable" | "buzzing" | "dying" | "strobing";
 
 type Fixture = {
   x: number;
   z: number;
-  material: StandardMaterial;
   pattern: Pattern;
   phase: number;
   rate: number;
@@ -53,43 +55,56 @@ export class FlickerLights {
   readonly group = group("lights");
   private readonly fixtures: Fixture[] = [];
   private readonly tubeColor: Color3;
+  private readonly colors: Float32Array;
+  private readonly glowMeshes: readonly Mesh[];
   private activeBlackout: { x: number; z: number; endTime: number } | null = null;
 
   constructor(positions: Light[]) {
     const ceilY = WALL_HEIGHT - 0.04;
     const frameMat = lambertMaterial(0x2a2a2e, "lightFrame");
     this.tubeColor = color3(AMBIENCE.tube.color);
+    const glowMat = basicMaterial(this.tubeColor.clone(), "lightFixtureGlow");
 
-    for (const p of positions) {
-      const fixture = group("fixture");
-      const frame = box(1.6, 0.08, 0.52, frameMat);
-      frame.position.y = ceilY;
-      fixture.add(frame);
-      const capL = box(0.06, 0.09, 0.5, frameMat);
-      capL.position.set(-0.77, ceilY - 0.01, 0);
-      const capR = box(0.06, 0.09, 0.5, frameMat);
-      capR.position.set(0.77, ceilY - 0.01, 0);
-      fixture.add(capL, capR);
+    const frame = box(1.6, 0.08, 0.52, frameMat, "lightFrame");
+    frame.position.set(0, ceilY, 0);
+    frame.bakeCurrentTransformIntoVertices();
 
-      const fixtureMat = basicMaterial(this.tubeColor.clone(), "lightFixtureGlow");
-      const tube1 = box(1.4, 0.025, 0.05, fixtureMat);
-      tube1.position.set(0, ceilY - 0.045, -0.1);
-      const tube2 = box(1.4, 0.025, 0.05, fixtureMat);
-      tube2.position.set(0, ceilY - 0.045, 0.1);
-      fixture.add(tube1, tube2);
-      const panel = box(1.5, 0.04, 0.44, fixtureMat);
-      panel.position.set(0, ceilY - 0.07, 0);
-      fixture.add(panel);
+    const capL = box(0.06, 0.09, 0.5, frameMat, "lightCapL");
+    capL.position.set(-0.77, ceilY - 0.01, 0);
+    capL.bakeCurrentTransformIntoVertices();
 
-      fixture.position.set(p.x, 0, p.z);
-      fixture.rotation.y = p.yaw;
-      this.group.add(fixture);
-      fixture.computeWorldMatrix(true);
-      fixture.freezeWorldMatrix();
-      for (const m of [frame, capL, capR, tube1, tube2, panel]) {
-        m.computeWorldMatrix(true);
-        m.freezeWorldMatrix();
-      }
+    const capR = box(0.06, 0.09, 0.5, frameMat, "lightCapR");
+    capR.position.set(0.77, ceilY - 0.01, 0);
+    capR.bakeCurrentTransformIntoVertices();
+
+    const tube1 = box(1.4, 0.025, 0.05, glowMat, "lightTube1");
+    tube1.position.set(0, ceilY - 0.045, -0.1);
+    tube1.bakeCurrentTransformIntoVertices();
+
+    const tube2 = box(1.4, 0.025, 0.05, glowMat, "lightTube2");
+    tube2.position.set(0, ceilY - 0.045, 0.1);
+    tube2.bakeCurrentTransformIntoVertices();
+
+    const panel = box(1.5, 0.04, 0.44, glowMat, "lightPanel");
+    panel.position.set(0, ceilY - 0.07, 0);
+    panel.bakeCurrentTransformIntoVertices();
+
+    this.group.add(frame, capL, capR, tube1, tube2, panel);
+
+    const matrices = new Float32Array(positions.length * 16);
+    const colors = new Float32Array(positions.length * 4);
+
+    positions.forEach((p, i) => {
+      Matrix.Compose(
+        Vector3.One(),
+        Quaternion.RotationYawPitchRoll(p.yaw, 0, 0),
+        new Vector3(p.x, 0, p.z),
+      ).copyToArray(matrices, i * 16);
+
+      colors[i * 4] = this.tubeColor.r;
+      colors[i * 4 + 1] = this.tubeColor.g;
+      colors[i * 4 + 2] = this.tubeColor.b;
+      colors[i * 4 + 3] = 1;
 
       const seed = seedFromPos(p.x, p.z, 37.1, 61.7);
       const rng = mulberry32(seed);
@@ -105,10 +120,29 @@ export class FlickerLights {
       else cycleLen = 4 + rng() * 5;
 
       this.fixtures.push({
-        x: p.x, z: p.z, material: fixtureMat,
-        pattern, phase, rate, cycleLen, seed, intensity: 1,
+        x: p.x, z: p.z, pattern, phase, rate, cycleLen, seed, intensity: 1,
       });
+    });
+
+    for (const mesh of [frame, capL, capR, tube1, tube2, panel]) {
+      mesh.thinInstanceSetBuffer("matrix", matrices, 16, false);
     }
+    for (const mesh of [tube1, tube2, panel]) {
+      mesh.thinInstanceSetBuffer("color", colors, 4, false);
+      mesh.hasVertexAlpha = false;
+    }
+    for (const mesh of [frame, capL, capR, tube1, tube2, panel]) {
+      mesh.isPickable = false;
+      mesh.alwaysSelectAsActiveMesh = true;
+      mesh.doNotSyncBoundingInfo = true;
+      mesh.freezeWorldMatrix();
+    }
+
+    this.colors = colors;
+    this.glowMeshes = [tube1, tube2, panel];
+
+    freezeWhenCompiled(frameMat, frame, { useInstances: true });
+    freezeWhenCompiled(glowMat, tube1, { useInstances: true });
   }
 
   update(dt: number, elapsed: number): void {
@@ -126,7 +160,7 @@ export class FlickerLights {
     const radius2 = AMBIENCE.tube.blackoutRadius * AMBIENCE.tube.blackoutRadius;
     const floor = AMBIENCE.tube.emissiveFloor;
 
-    for (const f of this.fixtures) {
+    this.fixtures.forEach((f, i) => {
       const raw = flickerFactor(f, elapsed);
       let shown = raw < floor ? floor : raw;
       if (blackout) {
@@ -135,10 +169,13 @@ export class FlickerLights {
         if (dx * dx + dz * dz <= radius2) shown = 0;
       }
       f.intensity = shown;
-      f.material.emissiveColor.set(
-        this.tubeColor.r * shown, this.tubeColor.g * shown, this.tubeColor.b * shown,
-      );
-    }
+      this.colors[i * 4] = this.tubeColor.r * shown;
+      this.colors[i * 4 + 1] = this.tubeColor.g * shown;
+      this.colors[i * 4 + 2] = this.tubeColor.b * shown;
+      this.colors[i * 4 + 3] = 1;
+    });
+
+    for (const mesh of this.glowMeshes) mesh.thinInstanceBufferUpdated("color");
   }
 
   averageIntensityNear(x: number, z: number): number {
