@@ -59,6 +59,10 @@ jobs:
           git commit -m "Release version $VERSION [skip ci]"
           git push origin HEAD:main
 
+      - name: Get build date
+        id: build_date
+        run: echo "BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -93,5 +97,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_DATE=${{ steps.build_date.outputs.BUILD_DATE }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
