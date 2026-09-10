@@ -1,6 +1,8 @@
 import { Crosshair } from "./Crosshair";
 import { StaminaBar } from "./StaminaBar";
 import { ReviveBar } from "./ReviveBar";
+import { TaskBoard } from "./TaskBoard";
+import { TaskCounter } from "./TaskCounter";
 import { hudActive } from "./state";
 
 export function HudApp() {
@@ -9,6 +11,8 @@ export function HudApp() {
       <Crosshair />
       {hudActive.value ? (
         <>
+          <TaskBoard />
+          <TaskCounter />
           <StaminaBar />
           <ReviveBar />
         </>
