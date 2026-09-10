@@ -9,6 +9,7 @@ const JSON_ROUTES: Record<string, unknown> = {
   "**/shop/me": { signedIn: false, balance: 0, owned: [], equipped: {} },
   "**/lobbies": [],
   "**/turn-credentials": { iceServers: [] },
+  "**/announcements": [],
 };
 
 export async function mockBackend(page: Page): Promise<void> {

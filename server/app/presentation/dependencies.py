@@ -20,6 +20,7 @@ from app.application.commands.start_oauth_login_command import StartOAuthLoginCo
 from app.application.notifications.persist_rewards_handler import PersistRewardsHandler
 from app.application.notifications.round_ended_notification import RoundEndedNotification
 from app.application.notifications.unlock_achievements_handler import UnlockAchievementsHandler
+from app.application.queries.get_announcements_query import GetAnnouncementsHandler, GetAnnouncementsQuery
 from app.application.queries.get_cosmetic_catalog_query import (
     GetCosmeticCatalogHandler,
     GetCosmeticCatalogQuery,
@@ -54,6 +55,7 @@ from app.domain.world.teachers import spawn_teachers
 from app.game.broadcaster import broadcaster
 from app.game.game_core import GameCore
 from app.game.lobby_registry import lobby_registry
+from app.infrastructure.announcements.json_file_announcement_source import JsonFileAnnouncementSource
 from app.infrastructure.configuration.settings import settings
 from app.infrastructure.oauth.oauth_provider_factory import OAuthProviderFactory
 from app.infrastructure.persistence.engine import database_engine
@@ -72,6 +74,7 @@ _log = logging.getLogger("nachsitzen.mediator")
 
 accounts = PeeweeAccountRepository(database_engine)
 cosmetics = PeeweeCosmeticRepository(database_engine, cosmetic_catalog)
+announcements = JsonFileAnnouncementSource(settings.announcements_file)
 game_core = GameCore(broadcaster, lobby_registry, cosmetics, cosmetic_catalog, database_engine)
 
 
@@ -133,6 +136,7 @@ def build_mediator() -> Mediator:
         lambda: CreateLobbyHandler(token_service, accounts, blocked_subject_policy, database_engine, lobby_registry),
     )
     resolver.add_factory(GetTeacherRosterHandler, lambda: GetTeacherRosterHandler(TEACHER_ROSTER))
+    resolver.add_factory(GetAnnouncementsHandler, lambda: GetAnnouncementsHandler(announcements))
     resolver.add_factory(GetIceServersHandler, lambda: GetIceServersHandler(ice_server_provider))
     resolver.add_factory(
         StartGameHandler,
@@ -169,6 +173,7 @@ def build_mediator() -> Mediator:
     mediator.register(ListLobbiesQuery, ListLobbiesHandler)
     mediator.register(CreateLobbyCommand, CreateLobbyHandler)
     mediator.register(GetTeacherRosterQuery, GetTeacherRosterHandler)
+    mediator.register(GetAnnouncementsQuery, GetAnnouncementsHandler)
     mediator.register(GetIceServersQuery, GetIceServersHandler)
     mediator.register(StartGameCommand, StartGameHandler)
     mediator.register(EndRoundCommand, EndRoundHandler)

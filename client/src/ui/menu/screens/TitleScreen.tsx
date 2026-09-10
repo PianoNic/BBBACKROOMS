@@ -2,11 +2,13 @@ import { useEffect } from "preact/hooks";
 import { playSfx, unlockAudio } from "../../../core/audio";
 import { loginUrl } from "../../../net/auth";
 import { account, accountLoaded, loginStatus, providers, refreshAccount, signOut } from "../state/account";
+import { hasUnread, loadNews } from "../state/news";
 import { MenuButton } from "../components/controls";
 import { navigate } from "../routes";
 
 export function TitleScreen() {
   useEffect(() => { void refreshAccount(); }, []);
+  useEffect(() => { void loadNews(); }, []);
 
   const acc = account.value;
   const provs = providers.value;
@@ -18,6 +20,10 @@ export function TitleScreen() {
         <MenuButton onClick={() => navigate("shop")}>SHOP</MenuButton>
         <MenuButton onClick={() => navigate("options")}>OPTIONS</MenuButton>
         <MenuButton onClick={() => navigate("tutorial")}>TUTORIAL</MenuButton>
+        <MenuButton onClick={() => navigate("news")}>
+          NEWS
+          {hasUnread.value ? <span class="news-dot" aria-label="Neu" /> : null}
+        </MenuButton>
       </nav>
       <div class="title-aside">
         <div class="account-widget">

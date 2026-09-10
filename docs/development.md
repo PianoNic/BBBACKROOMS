@@ -91,10 +91,37 @@ Copy `.env.example` → `.env`:
 | `CLOUDFLARE_API_TOKEN` | Paired Cloudflare API token. If either is missing → STUN-only fallback. |
 | `DB_HOST` / `DB_PORT` | PostgreSQL host/port (default `127.0.0.1` / `5432`; `postgres` in compose). |
 | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database name/user/password (default `nachsitzen`/`nachsitzen`/`nachsitzen`). |
+| `ANNOUNCEMENTS_FILE` | Path to a JSON file of operator announcements for the client's NEWS screen (default empty → none). |
 
 DB vars are optional — omit them to run without persistence. See [persistence.md](persistence.md).
 
 Get TURN credentials at *Cloudflare dashboard → Realtime → TURN Server → create app*.
+
+### Announcements
+
+`GET /announcements` reads the file at `ANNOUNCEMENTS_FILE` and returns its
+entries (cached in memory for 60 seconds), or an empty list when the variable
+is unset, the file is missing, or its content is invalid. The file is a JSON
+array of objects:
+
+```json
+[
+  {
+    "id": "2026-09-maintenance",
+    "date": "2026-09-10",
+    "title": "Wartungsfenster",
+    "body": "Der Server ist am Freitag von 22:00 bis 23:00 Uhr offline.\n\n- Grund: Datenbank-Update\n- Kontakt: [kontakt@backrooms-baden.ch](mailto:kontakt@backrooms-baden.ch)",
+    "pinned": true,
+    "level": "important"
+  }
+]
+```
+
+`id`, `date`, `title` and `body` are required strings; `pinned` (default
+`false`) and `level` (`"info"` or `"important"`, default `"info"`) are
+optional. `body` is a markdown subset — paragraphs, `- ` bullet lists and
+`[text](url)` links — rendered by the client without raw HTML. Pinned entries
+sort first, then newest `date` first.
 
 ## Docker
 ```powershell

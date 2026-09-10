@@ -31,6 +31,7 @@ export default defineConfig({
       "/shop": { target: DEV_BACKEND, changeOrigin: true },
       "/turn-credentials": { target: DEV_BACKEND, changeOrigin: true },
       "/roster": { target: DEV_BACKEND, changeOrigin: true },
+      "/announcements": { target: DEV_BACKEND, changeOrigin: true },
     },
   },
 });

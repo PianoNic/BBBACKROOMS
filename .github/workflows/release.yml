@@ -48,14 +48,55 @@ jobs:
           echo "--- client/package.json ---"
           grep '"version"' client/package.json | head -1
 
+      - name: Update the changelog
+        env:
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          BUILD_DATE="$(date -u +%Y-%m-%d)"
+          HEADING="## v$VERSION — $BUILD_DATE"
+
+          if grep -qF "$HEADING" CHANGELOG.md; then
+            echo "CHANGELOG.md already has $HEADING, skipping"
+            exit 0
+          fi
+
+          BODY_FILE="$(mktemp)"
+          printf '%s' "$RELEASE_BODY" > "$BODY_FILE"
+          sed -i 's/\r$//' "$BODY_FILE"
+
+          INSERT_FILE="$(mktemp)"
+          {
+            echo "$HEADING"
+            echo
+            cat "$BODY_FILE"
+            echo
+          } > "$INSERT_FILE"
+
+          FIRST_HEADING_LINE="$(grep -n '^## v' CHANGELOG.md | head -1 | cut -d: -f1)"
+          if [ -z "$FIRST_HEADING_LINE" ]; then
+            FIRST_HEADING_LINE="$(($(wc -l < CHANGELOG.md) + 1))"
+          fi
+
+          HEAD_FILE="$(mktemp)"
+          TAIL_FILE="$(mktemp)"
+          head -n "$((FIRST_HEADING_LINE - 1))" CHANGELOG.md > "$HEAD_FILE"
+          tail -n "+$FIRST_HEADING_LINE" CHANGELOG.md > "$TAIL_FILE"
+
+          cat "$HEAD_FILE" "$INSERT_FILE" "$TAIL_FILE" > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
+          echo "--- CHANGELOG.md head ---"
+          head -n 20 CHANGELOG.md
+
       - name: Commit the version bump
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          if git diff --quiet server/app/version.py client/package.json; then
+          if git diff --quiet server/app/version.py client/package.json CHANGELOG.md; then
             echo "Already at $VERSION, nothing to commit"
             exit 0
           fi
-          git add server/app/version.py client/package.json
+          git add server/app/version.py client/package.json CHANGELOG.md
           git commit -m "Release version $VERSION [skip ci]"
           git push origin HEAD:main
 

@@ -50,6 +50,8 @@ class Settings(BaseSettings):
 
     blocked_subjects: str = ""
 
+    announcements_file: str = ""
+
     def google_enabled(self) -> bool:
         return bool(self.google_client_id and self.google_client_secret)
 

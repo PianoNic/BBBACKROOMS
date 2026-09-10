@@ -21,6 +21,7 @@ COPY client/package.json client/bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY client/ ./
+COPY CHANGELOG.md /CHANGELOG.md
 RUN bun run build
 
 # ---------- stage 2: runtime ----------

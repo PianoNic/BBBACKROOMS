@@ -90,5 +90,12 @@ for (const viewport of VIEWPORTS) {
 
     await tutorialBackButton.click();
     await expect(playButton).toBeVisible();
+
+    await menu.getByRole("button", { name: "NEWS" }).click();
+    const newsBackButton = page.getByRole("button", { name: "← BACK" });
+    await assertScreen(page, viewport, "news", newsBackButton);
+
+    await newsBackButton.click();
+    await expect(playButton).toBeVisible();
   });
 }
