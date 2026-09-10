@@ -1,35 +1,5 @@
 import type { RoomArchetype } from "../world/rooms";
 
-export type GraphicsTier = "niedrig" | "mittel" | "hoch" | "realistisch";
-
-export type TierFeatures = {
-  shadowLights: number;
-  shadowMapSize: number;
-  ssao: boolean;
-  ssaoRatio: number;
-  volumetric: boolean;
-  bloom: boolean;
-  bloomKernel: number;
-  fxaa: boolean;
-  particleScale: number;
-  glow: boolean;
-  glowRatio: number;
-  pbrSurfaces: boolean;
-  pbrModels: boolean;
-  maxLights: number;
-};
-
-export const TIERS: Record<GraphicsTier, TierFeatures> = {
-  niedrig: { shadowLights: 0, shadowMapSize: 256,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: false, bloomKernel: 24, fxaa: false, particleScale: 0,   glow: false, glowRatio: 0.5, pbrSurfaces: true,  pbrModels: false, maxLights: 3 },
-  mittel:  { shadowLights: 0, shadowMapSize: 512,  ssao: false, ssaoRatio: 0.25, volumetric: false, bloom: true,  bloomKernel: 32, fxaa: false, particleScale: 0.5, glow: false, glowRatio: 0.5, pbrSurfaces: true,  pbrModels: false, maxLights: 4 },
-  hoch:    { shadowLights: 1, shadowMapSize: 1024, ssao: true,  ssaoRatio: 0.5,  volumetric: true,  bloom: true,  bloomKernel: 64, fxaa: true,  particleScale: 2,   glow: true,  glowRatio: 1,   pbrSurfaces: true,  pbrModels: false, maxLights: 6 },
-  realistisch: { shadowLights: 1, shadowMapSize: 1024, ssao: true, ssaoRatio: 0.5, volumetric: true, bloom: true, bloomKernel: 64, fxaa: true, particleScale: 2, glow: true, glowRatio: 1, pbrSurfaces: true, pbrModels: true, maxLights: 6 },
-};
-
-export function tierFeatures(tier: GraphicsTier): TierFeatures {
-  return TIERS[tier] ?? TIERS.mittel;
-}
-
 export const AMBIENCE = {
   tone: {
     exposure: 0.78,
@@ -42,11 +12,6 @@ export const AMBIENCE = {
     highlightsHue: 195,
     highlightsDensity: 16,
   },
-  bloom: {
-    threshold: 0.55,
-    weight: 0.42,
-    scale: 0.5,
-  },
   vignette: {
     weight: 2.8,
     stretch: 0.35,
@@ -54,13 +19,6 @@ export const AMBIENCE = {
     breathHz: 0.08,
     breathAmount: 0.5,
     chaseWeight: 5.2,
-  },
-  aberration: {
-    idle: 5,
-    chase: 24,
-  },
-  grain: {
-    intensity: 24,
   },
   fog: {
     color: 0x11150e,
@@ -73,62 +31,23 @@ export const AMBIENCE = {
   ambientLight: {
     skyColor: 0xb7b3a0,
     groundColor: 0x55544b,
-    intensity: 0.42,
+    intensity: 1.0,
+    minFactor: 0.14,
+    radius: 12,
+    lerp: 5,
   },
   clearColor: 0x090b08,
   chase: {
     radius: 16,
     exitRadius: 22,
   },
-  autoDrop: {
-    frameTimeMs: 33,
-    windowFrames: 60,
-    sustainedWindows: 2,
-    hitchMs: 250,
-    sceneChangeGraceSeconds: 3,
-    cooldownSeconds: 30,
-  },
   tube: {
     color: 0xfff2cf,
-    baseIntensity: 1.7,
-    range: 10,
-    poolSize: 4,
-    spotAngle: 2.6,
-    spotExponent: 0.05,
-    shadowDarkness: 0.4,
-    shadowBlurKernel: 12,
-    shadowMinZ: 0.15,
-    shadowMaxZ: 10,
-    shadowBias: 0.00005,
-    shadowNormalBias: 0.02,
     emissiveFloor: 0.05,
     blackoutChancePerSecond: 0.01,
     blackoutMinS: 1.0,
     blackoutMaxS: 3.0,
     blackoutRadius: 14,
-  },
-  glow: {
-    intensity: 0.65,
-    blurKernelSize: 24,
-  },
-  ssao: {
-    radius: 1.3,
-    totalStrength: 0.9,
-    base: 0.25,
-    samples: 8,
-    maxZ: 28,
-    minZAspect: 0.3,
-  },
-  particles: {
-    dustCount: 240,
-    dustRadius: 8,
-    dustMinSize: 0.012,
-    dustMaxSize: 0.038,
-    dustSpeed: 0.11,
-    dustColor: 0xc4c8b4,
-    dustAlpha: 0.16,
-    puffCount: 40,
-    dripCount: 12,
   },
   surfaces: {
     wallRoughness: 0.88,
@@ -137,11 +56,6 @@ export const AMBIENCE = {
     floorMetallic: 0,
     ceilingRoughness: 0.95,
     ceilingMetallic: 0,
-    grimeScale: 3.5,
-    grimeStrength: 0.3,
-    directIntensity: Math.PI,
-    environmentIntensity: 0.35,
-    bathroomFloorRoughness: 0.18,
     propSpecularColor: 0x0a0a0a,
     propSpecularPower: 16,
   },
@@ -164,14 +78,6 @@ export const AMBIENCE = {
     breathAmount: 0.004,
     breathHz: 0.22,
   },
-  volumetric: {
-    exposure: 0.16,
-    decay: 0.964,
-    weight: 0.42,
-    density: 0.92,
-    samples: 40,
-    ratio: 0.4,
-  },
   audio: {
     humHz: 118,
     humDetuneHz: 0.6,
@@ -186,11 +92,6 @@ export const AMBIENCE = {
     farMaxDistance: 30,
   },
   materials: {
-    environment: {
-      url: "/textures/pbr/hdri/creepy_bathroom_1k.hdr",
-      size: 128,
-      intensity: 0,
-    },
     dadoRail: {
       category: "floor_wood",
       tint: 0x4f3a24,

@@ -4,12 +4,10 @@ import { getSettings, onSettingsChange } from "./settings";
 import type { createRenderContext, AmbientLights } from "../rendering/renderer";
 import type { Player } from "../gameplay/player";
 import type { FlickerLights } from "../rendering/lights";
-import type { AmbienceParticles } from "../rendering/particles";
 import type { RemotePlayers } from "../gameplay/remotePlayers";
 import type { Minimap } from "../ui/minimap";
 import type { NetClient } from "../net/client";
 import { music } from "./music";
-import { AutoQuality } from "./autoQuality";
 import type { Hideouts } from "../gameplay/hideouts";
 import type { Pings } from "../gameplay/pings";
 import type { Quests } from "../gameplay/quests";
@@ -42,7 +40,6 @@ export type GameDeps = {
   player: Player;
   lights: FlickerLights;
   ambientLights: AmbientLights;
-  particles: AmbienceParticles;
   remotes: RemotePlayers;
   minimap: Minimap;
   net: NetClient;
@@ -81,7 +78,6 @@ export function runGameLoop(d: GameDeps): void {
   let last = performance.now();
   let lastRender = 0;
   let elapsed = 0;
-  const autoQuality = new AutoQuality();
 
   const applyShowFps = (visible: boolean) => {
     d.stats.dom.style.display = visible ? "block" : "none";
@@ -105,13 +101,11 @@ export function runGameLoop(d: GameDeps): void {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     elapsed += dt;
-    autoQuality.sample(dt);
 
     setCarryingChair(d.chairs.isHoldingChair());
     if (!d.state.extracted && !d.state.hidden) d.player.update(dt);
-    d.lights.update(dt, elapsed, d.player.position.x, d.player.position.z);
-    d.ambientLights.update(d.ctx.scene);
-    d.particles.update(d.player.position.x, d.player.position.y, d.player.position.z);
+    d.lights.update(dt, elapsed);
+    d.ambientLights.update(dt, d.lights.averageIntensityNear(d.player.position.x, d.player.position.z));
     d.remotes.update(dt);
     d.quests.update(elapsed);
     d.pings.update(elapsed);

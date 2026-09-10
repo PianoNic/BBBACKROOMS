@@ -1,6 +1,5 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Group, StandardMaterial, box, group, M, basicMaterial, plane } from "../rendering/babylon";
-import { registerGlowMesh } from "../rendering/pipeline";
 import { activeModelLibrary } from "../rendering/modelLoader";
 import { normalizeModelTemplate } from "../world/modelPropStage";
 import { MODEL_PROPS } from "../world/modelProps";
@@ -56,6 +55,5 @@ export function buildLaptopNode(initialColor: number): {
   face.position.set(0, 0.75 + 0.135, -0.117);
   face.rotation.x = -0.18;
   node.add(face);
-  registerGlowMesh(face);
   return { node, faceMat };
 }

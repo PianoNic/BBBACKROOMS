@@ -1,24 +1,13 @@
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
-import { HDRCubeTexture } from "@babylonjs/core/Materials/Textures/hdrCubeTexture";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import type { Material } from "@babylonjs/core/Materials/material";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { activeScene, basicMaterial, color3, lambertMaterial, maxLights } from "./babylon";
-import { AMBIENCE, tierFeatures, type GraphicsTier } from "./ambience";
-import { getSettings } from "../core/settings";
+import { activeScene, basicMaterial, color3, lambertMaterial } from "./babylon";
+import { AMBIENCE } from "./ambience";
 import { mulberry32 } from "../world/propBuilders/_common";
 import type { RoomArchetype } from "../world/rooms";
-
-function loadTiled(url: string, repeat: [number, number]): Texture {
-  const tex = new Texture(url, activeScene(), true, true, Texture.NEAREST_SAMPLINGMODE);
-  tex.wrapU = Texture.WRAP_ADDRESSMODE;
-  tex.wrapV = Texture.WRAP_ADDRESSMODE;
-  tex.uScale = repeat[0];
-  tex.vScale = repeat[1];
-  return tex;
-}
 
 function loadPainting(url: string): Texture {
   const tex = new Texture(url, activeScene(), true, true, Texture.NEAREST_SAMPLINGMODE);
@@ -27,17 +16,11 @@ function loadPainting(url: string): Texture {
   return tex;
 }
 
-function textured(url: string, repeat: [number, number], name: string): StandardMaterial {
-  const mat = new StandardMaterial(name, activeScene());
-  mat.diffuseColor = Color3.White();
-  mat.specularColor = Color3.Black();
-  mat.maxSimultaneousLights = maxLights();
-  mat.diffuseTexture = loadTiled(url, repeat);
-  return mat;
-}
-
 const GRIME_SIZE = 256;
 const GRIME_SEED = 90125;
+const GRIME_SCALE = 3.5;
+const GRIME_STRENGTH = 0.3;
+const DIRECT_INTENSITY = Math.PI;
 
 function drawGrime(c: HTMLCanvasElement): void {
   const ctx = c.getContext("2d")!;
@@ -84,8 +67,8 @@ function buildGrimeTexture(): DynamicTexture {
   tex.update(false);
   tex.wrapU = Texture.WRAP_ADDRESSMODE;
   tex.wrapV = Texture.WRAP_ADDRESSMODE;
-  tex.uScale = AMBIENCE.surfaces.grimeScale;
-  tex.vScale = AMBIENCE.surfaces.grimeScale;
+  tex.uScale = GRIME_SCALE;
+  tex.vScale = GRIME_SCALE;
   return tex;
 }
 
@@ -96,46 +79,21 @@ function getGrimeTexture(): DynamicTexture {
   return grimeTex;
 }
 
-let environmentApplied = false;
-
-function ensureEnvironmentTexture(): void {
-  if (environmentApplied) return;
-  environmentApplied = true;
-  const scene = activeScene();
-  if (AMBIENCE.materials.environment.intensity <= 0) {
-    scene.environmentTexture = null;
-    return;
-  }
-  try {
-    const hdr = new HDRCubeTexture(
-      AMBIENCE.materials.environment.url, scene, AMBIENCE.materials.environment.size,
-      false, true, false, false, null,
-      () => { scene.environmentTexture = null; },
-    );
-    scene.environmentTexture = hdr;
-  } catch {
-    scene.environmentTexture = null;
-  }
-}
-
 function pbrTexturePath(
-  category: string, map: "albedo" | "normal" | "orm", tier: GraphicsTier,
+  category: string, map: "albedo" | "normal" | "orm",
 ): string {
-  const res = tier === "hoch" ? "1k" : "512";
-  return `/textures/pbr/${category}/${map}-${res}.webp`;
+  return `/textures/pbr/${category}/${map}-512.webp`;
 }
 
 function loadPbrTexture(
-  url: string, gammaSpace: boolean, tier: GraphicsTier, repeat: [number, number],
+  url: string, gammaSpace: boolean, repeat: [number, number],
 ): Texture {
-  const hoch = tier === "hoch";
   const tex = new Texture(url, activeScene(), false, true, Texture.TRILINEAR_SAMPLINGMODE);
   tex.wrapU = Texture.WRAP_ADDRESSMODE;
   tex.wrapV = Texture.WRAP_ADDRESSMODE;
   tex.uScale = repeat[0];
   tex.vScale = repeat[1];
   tex.gammaSpace = gammaSpace;
-  if (hoch) tex.anisotropicFilteringLevel = 8;
   return tex;
 }
 
@@ -143,29 +101,28 @@ const NORMAL_STRENGTH = 0.35;
 
 function buildPbrSurface(
   name: string, category: string, tint: number, roughness: number, metallic: number,
-  repeat: [number, number], tier: GraphicsTier, environmentIntensity: number,
-  grime: DynamicTexture,
+  repeat: [number, number], grime: DynamicTexture,
 ): PBRMaterial {
   const mat = new PBRMaterial(name, activeScene());
-  mat.albedoTexture = loadPbrTexture(pbrTexturePath(category, "albedo", tier), true, tier, repeat);
+  mat.albedoTexture = loadPbrTexture(pbrTexturePath(category, "albedo"), true, repeat);
   mat.albedoColor = color3(tint);
-  const normal = loadPbrTexture(pbrTexturePath(category, "normal", tier), false, tier, repeat);
+  const normal = loadPbrTexture(pbrTexturePath(category, "normal"), false, repeat);
   normal.level = NORMAL_STRENGTH;
   mat.bumpTexture = normal;
   mat.invertNormalMapX = false;
   mat.invertNormalMapY = false;
-  mat.metallicTexture = loadPbrTexture(pbrTexturePath(category, "orm", tier), false, tier, repeat);
+  mat.metallicTexture = loadPbrTexture(pbrTexturePath(category, "orm"), false, repeat);
   mat.useRoughnessFromMetallicTextureAlpha = false;
   mat.useRoughnessFromMetallicTextureGreen = true;
   mat.useMetallnessFromMetallicTextureBlue = true;
   mat.roughness = roughness;
   mat.metallic = metallic;
-  mat.directIntensity = AMBIENCE.surfaces.directIntensity;
-  mat.environmentIntensity = AMBIENCE.materials.environment.intensity <= 0 ? 0 : environmentIntensity;
-  mat.maxSimultaneousLights = maxLights();
+  mat.directIntensity = DIRECT_INTENSITY;
+  mat.environmentIntensity = 0;
+  mat.maxSimultaneousLights = 1;
   mat.usePhysicalLightFalloff = false;
   mat.ambientTexture = grime;
-  mat.ambientTextureStrength = AMBIENCE.surfaces.grimeStrength;
+  mat.ambientTextureStrength = GRIME_STRENGTH;
   return mat;
 }
 
@@ -177,50 +134,31 @@ export type ArchetypeMaterialSet = {
   rail?: Material;
 };
 
-let flatSet: ArchetypeMaterialSet | null = null;
-
-function getFlatMaterials(): ArchetypeMaterialSet {
-  if (!flatSet) {
-    flatSet = {
-      floor: textured("/textures/floor.png", [1, 1], "floor"),
-      wall: textured("/textures/wall.png", [1, 1.5], "wall"),
-      ceiling: textured("/textures/ceiling.png", [1, 1], "ceiling"),
-    };
-  }
-  return flatSet;
-}
-
 function buildArchetypeMaterials(archetype: RoomArchetype): ArchetypeMaterialSet {
-  const tier = getSettings().graphicsTier;
-  if (!tierFeatures(tier).pbrSurfaces) return getFlatMaterials();
-  ensureEnvironmentTexture();
   const config = AMBIENCE.materials.rooms[archetype];
   const grime = getGrimeTexture();
-  const envDefault = AMBIENCE.materials.environment.intensity;
   const wall = buildPbrSurface(
     `wall_${archetype}`, config.wall, config.wallTint, config.wallRoughness, config.wallMetallic,
-    [config.wallRepeatU, config.wallRepeatV], tier, envDefault, grime,
+    [config.wallRepeatU, config.wallRepeatV], grime,
   );
   const floor = buildPbrSurface(
     `floor_${archetype}`, config.floor, config.floorTint, config.floorRoughness,
-    config.floorMetallic, [config.floorRepeatU, config.floorRepeatV], tier,
-    config.floorEnvironment, grime,
+    config.floorMetallic, [config.floorRepeatU, config.floorRepeatV], grime,
   );
   const ceiling = buildPbrSurface(
     `ceiling_${archetype}`, config.ceiling, config.ceilingTint, config.ceilingRoughness,
-    config.ceilingMetallic, [config.ceilingRepeatU, config.ceilingRepeatV], tier,
-    envDefault, grime,
+    config.ceilingMetallic, [config.ceilingRepeatU, config.ceilingRepeatV], grime,
   );
   const out: ArchetypeMaterialSet = { wall, floor, ceiling };
   if (config.dado) {
     out.dado = buildPbrSurface(
       `dado_${archetype}`, config.dado.category, config.dado.tint, config.dado.roughness, 0,
-      [1, 1], tier, envDefault, grime,
+      [1, 1], grime,
     );
     const rail = AMBIENCE.materials.dadoRail;
     out.rail = buildPbrSurface(
       `rail_${archetype}`, rail.category, rail.tint, rail.roughness, 0,
-      [1, 1], tier, envDefault, grime,
+      [1, 1], grime,
     );
   }
   return out;
@@ -242,11 +180,9 @@ let decalMaterial: StandardMaterial | null = null;
 
 export function getDecalMaterial(): Material {
   if (decalMaterial) return decalMaterial;
-  const tier = getSettings().graphicsTier;
-  const res = tier === "hoch" ? "1k" : "512";
   const mat = new StandardMaterial("decal_leak", activeScene());
   const tex = new Texture(
-    `/textures/pbr/${AMBIENCE.materials.decal.category}/albedo-${res}.webp`,
+    `/textures/pbr/${AMBIENCE.materials.decal.category}/albedo-512.webp`,
     activeScene(), true, true, Texture.NEAREST_SAMPLINGMODE,
   );
   tex.hasAlpha = true;
@@ -257,7 +193,7 @@ export function getDecalMaterial(): Material {
   mat.backFaceCulling = true;
   mat.alpha = AMBIENCE.materials.decal.alpha;
   mat.zOffset = DECAL_Z_OFFSET;
-  mat.maxSimultaneousLights = maxLights();
+  mat.maxSimultaneousLights = 1;
   decalMaterial = mat;
   return mat;
 }
@@ -329,30 +265,16 @@ export type Materials =
 let cached: Record<string, unknown> | null = null;
 
 function build(): Record<string, unknown> {
-  const pbr = tierFeatures(getSettings().graphicsTier).pbrSurfaces;
-  let floorMat: Material;
-  let wallMat: Material;
-  let ceilingMat: Material;
-  if (pbr) {
-    const hallway = getRoomMaterials("hallway");
-    floorMat = hallway.floor;
-    wallMat = hallway.wall;
-    ceilingMat = hallway.ceiling;
-  } else {
-    const flat = getFlatMaterials();
-    floorMat = flat.floor;
-    wallMat = flat.wall;
-    ceilingMat = flat.ceiling;
-  }
+  const hallway = getRoomMaterials("hallway");
   const out: Record<string, unknown> = {
-    floor: floorMat,
-    wall: wallMat,
-    ceiling: ceilingMat,
+    floor: hallway.floor,
+    wall: hallway.wall,
+    ceiling: hallway.ceiling,
     paintings: PAINTING_FILES.map((f, i) => {
       const mat = new StandardMaterial(`painting${i}`, activeScene());
       mat.diffuseColor = Color3.White();
       mat.specularColor = Color3.Black();
-      mat.maxSimultaneousLights = maxLights();
+      mat.maxSimultaneousLights = 1;
       mat.diffuseTexture = loadPainting(`/textures/paintings/${f}`);
       return mat;
     }),

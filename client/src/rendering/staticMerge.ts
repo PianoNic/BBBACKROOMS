@@ -56,7 +56,6 @@ export function mergeStaticMeshes(stage: TransformNode): Group {
     merged.parent = out;
     merged.computeWorldMatrix(true);
     merged.freezeWorldMatrix();
-    merged.receiveShadows = true;
   }
 
   // Textured / transparent meshes keep their own draw call. `setParent`
@@ -66,7 +65,6 @@ export function mergeStaticMeshes(stage: TransformNode): Group {
     mesh.isPickable = false;
     mesh.computeWorldMatrix(true);
     mesh.freezeWorldMatrix();
-    mesh.receiveShadows = true;
   }
 
   for (const node of stage.getDescendants(false)) {

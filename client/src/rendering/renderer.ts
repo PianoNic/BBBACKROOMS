@@ -2,7 +2,6 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
-import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 
@@ -11,10 +10,20 @@ import { setActiveScene, color3 } from "./babylon";
 import { AMBIENCE } from "./ambience";
 import { Ambience } from "./pipeline";
 
+function clamp01(v: number): number {
+  if (v < 0) return 0;
+  if (v > 1) return 1;
+  return v;
+}
+
+function expLerp(current: number, target: number, rate: number, dt: number): number {
+  const a = 1 - Math.exp(-rate * dt);
+  return current + (target - current) * a;
+}
+
 export class AmbientLights {
   readonly ambient: HemisphericLight;
-  readonly ambientPbr: HemisphericLight;
-  private lastMeshCount = -1;
+  private current: number;
 
   constructor(scene: Scene) {
     const up = new Vector3(0, 1, 0);
@@ -25,21 +34,15 @@ export class AmbientLights {
     this.ambient.diffuse = sky.clone();
     this.ambient.groundColor = ground.clone();
     this.ambient.specular = Color3.Black();
-    this.ambient.intensity = AMBIENCE.ambientLight.intensity;
-
-    this.ambientPbr = new HemisphericLight("ambientPbr", up, scene);
-    this.ambientPbr.diffuse = sky.clone();
-    this.ambientPbr.groundColor = ground.clone();
-    this.ambientPbr.specular = Color3.Black();
-    this.ambientPbr.intensity = AMBIENCE.ambientLight.intensity / Math.PI;
+    this.current = AMBIENCE.ambientLight.intensity;
+    this.ambient.intensity = this.current;
   }
 
-  update(scene: Scene): void {
-    if (scene.meshes.length === this.lastMeshCount) return;
-    this.lastMeshCount = scene.meshes.length;
-    const pbrMeshes = scene.meshes.filter((m) => m.material instanceof PBRMaterial);
-    this.ambient.excludedMeshes = pbrMeshes;
-    this.ambientPbr.includedOnlyMeshes = pbrMeshes;
+  update(dt: number, flickerFactor: number): void {
+    const cfg = AMBIENCE.ambientLight;
+    const target = cfg.intensity * (cfg.minFactor + (1 - cfg.minFactor) * clamp01(flickerFactor));
+    this.current = expLerp(this.current, target, cfg.lerp, dt);
+    this.ambient.intensity = this.current;
   }
 }
 
@@ -84,7 +87,7 @@ export function createRenderContext(mount: HTMLElement): RenderContext {
   camera.inputs.clear();
   scene.activeCamera = camera;
 
-  const ambience = new Ambience(engine, scene, camera, canvas);
+  const ambience = new Ambience(engine, scene, canvas);
 
   onSettingsChange((s) => {
     const rad = (s.fov * Math.PI) / 180;

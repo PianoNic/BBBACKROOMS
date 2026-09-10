@@ -100,7 +100,7 @@ async function main(): Promise<void> {
     pickups: s.pickups, lockers: s.lockers, doors: s.doors, inventory: s.inventory,
     compass: s.compass, reviveBar: s.reviveBar, laptop: s.laptop,
     portal: s.portal, spectator: s.spectator, player: s.player,
-    state: s.state, reviveState, gogglesState, particles: s.particles,
+    state: s.state, reviveState, gogglesState,
     ambience: ctx.ambience,
   }));
   // Voice state: the settings `voiceMode` decides the default ("open" =
@@ -209,7 +209,7 @@ async function main(): Promise<void> {
   ctx.canvas.focus();
   runGameLoop({
     ctx, net, stats,
-    player: s.player, lights: s.lights, ambientLights: s.ambientLights, particles: s.particles,
+    player: s.player, lights: s.lights, ambientLights: s.ambientLights,
     remotes: s.remotes, minimap: s.minimap,
     quests: s.quests, pings: s.pings, hideouts: s.hideouts, stamina: s.stamina, interactPrompt: s.interactPrompt,
     portal: s.portal, spectator: s.spectator, state: s.state,

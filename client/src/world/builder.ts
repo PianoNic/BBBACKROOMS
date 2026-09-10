@@ -3,8 +3,7 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Grid, Prop } from "../net/protocol";
 import { getDecalMaterial, getRoomMaterials } from "../rendering/materials";
-import { AMBIENCE, tierFeatures } from "../rendering/ambience";
-import { getSettings } from "../core/settings";
+import { AMBIENCE } from "../rendering/ambience";
 import { RoomInference } from "./rooms";
 import { mulberry32 } from "./propBuilders/_common";
 import { box, group, plane, type Group } from "../rendering/babylon";
@@ -15,8 +14,6 @@ export type World = {
   group: Group;
   grid: Grid;
   isWall: (cellX: number, cellY: number) => boolean;
-  shadowCasters: Mesh[];
-  regionMeshes: Map<number, Mesh[]>;
   inference: RoomInference;
 };
 
@@ -40,17 +37,9 @@ function bake(mesh: Mesh, matrices: Float32Array, cullable: boolean): void {
   mesh.freezeWorldMatrix();
 }
 
-function addRegionMesh(regionMeshes: Map<number, Mesh[]>, regionId: number, mesh: Mesh): void {
-  const list = regionMeshes.get(regionId);
-  if (list) list.push(mesh);
-  else regionMeshes.set(regionId, [mesh]);
-}
-
 export function buildWorld(grid: Grid, props: Prop[]): World {
   const { width, height, cellSize, cells } = grid;
   const stage = group("world");
-  const tier = getSettings().graphicsTier;
-  const pbr = tierFeatures(tier).pbrSurfaces;
 
   const isFloor = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === FLOOR;
@@ -95,8 +84,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     return 0;
   }
 
-  const shadowCasters: Mesh[] = [];
-  const regionMeshes = new Map<number, Mesh[]>();
   const floorByRegion = new Map<number, number[]>();
   const wallByRegion = new Map<number, [number, number][]>();
 
@@ -148,10 +135,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     stage.add(floorMesh, ceilMesh);
     bake(floorMesh, floorMatrices, true);
     bake(ceilMesh, ceilMatrices, true);
-    floorMesh.receiveShadows = true;
-    shadowCasters.push(floorMesh, ceilMesh);
-    addRegionMesh(regionMeshes, regionId, floorMesh);
-    addRegionMesh(regionMeshes, regionId, ceilMesh);
   }
 
   for (const [regionId, coords] of wallByRegion) {
@@ -168,42 +151,34 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     });
     stage.add(wallMesh);
     bake(wallMesh, wallMatrices, true);
-    wallMesh.receiveShadows = true;
-    shadowCasters.push(wallMesh);
-    addRegionMesh(regionMeshes, regionId, wallMesh);
 
-    if (pbr) {
-      const config = AMBIENCE.materials.rooms[archetype];
-      if (config.dado && matSet.dado && matSet.rail) {
-        const dadoHeight = config.dadoHeight ?? 1.0;
-        const dadoMesh = box(
-          cellSize + 0.02, dadoHeight, cellSize + 0.02, matSet.dado, `dado_r${regionId}`,
-        );
-        const railMesh = box(
-          cellSize + 0.05, DADO_RAIL_HEIGHT, cellSize + 0.05, matSet.rail, `rail_r${regionId}`,
-        );
-        const dadoMatrices = new Float32Array(coords.length * 16);
-        const railMatrices = new Float32Array(coords.length * 16);
-        const tmp2 = Matrix.Identity();
-        coords.forEach(([x, y], i) => {
-          const cx = (x + 0.5) * cellSize;
-          const cz = (y + 0.5) * cellSize;
-          Matrix.TranslationToRef(cx, dadoHeight / 2, cz, tmp2);
-          tmp2.copyToArray(dadoMatrices, i * 16);
-          Matrix.TranslationToRef(cx, dadoHeight, cz, tmp2);
-          tmp2.copyToArray(railMatrices, i * 16);
-        });
-        stage.add(dadoMesh, railMesh);
-        bake(dadoMesh, dadoMatrices, true);
-        bake(railMesh, railMatrices, true);
-        shadowCasters.push(dadoMesh, railMesh);
-        addRegionMesh(regionMeshes, regionId, dadoMesh);
-        addRegionMesh(regionMeshes, regionId, railMesh);
-      }
+    const config = AMBIENCE.materials.rooms[archetype];
+    if (config.dado && matSet.dado && matSet.rail) {
+      const dadoHeight = config.dadoHeight ?? 1.0;
+      const dadoMesh = box(
+        cellSize + 0.02, dadoHeight, cellSize + 0.02, matSet.dado, `dado_r${regionId}`,
+      );
+      const railMesh = box(
+        cellSize + 0.05, DADO_RAIL_HEIGHT, cellSize + 0.05, matSet.rail, `rail_r${regionId}`,
+      );
+      const dadoMatrices = new Float32Array(coords.length * 16);
+      const railMatrices = new Float32Array(coords.length * 16);
+      const tmp2 = Matrix.Identity();
+      coords.forEach(([x, y], i) => {
+        const cx = (x + 0.5) * cellSize;
+        const cz = (y + 0.5) * cellSize;
+        Matrix.TranslationToRef(cx, dadoHeight / 2, cz, tmp2);
+        tmp2.copyToArray(dadoMatrices, i * 16);
+        Matrix.TranslationToRef(cx, dadoHeight, cz, tmp2);
+        tmp2.copyToArray(railMatrices, i * 16);
+      });
+      stage.add(dadoMesh, railMesh);
+      bake(dadoMesh, dadoMatrices, true);
+      bake(railMesh, railMatrices, true);
     }
   }
 
-  if (pbr && inference.rooms.length > 0) {
+  if (inference.rooms.length > 0) {
     const decalCfg = AMBIENCE.materials.decal;
     const decalMat = getDecalMaterial();
     const composedByRegion = new Map<number, Matrix[]>();
@@ -262,12 +237,10 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
 
     for (const [regionId, composed] of composedByRegion) {
       const decalMesh = plane(1, 1, decalMat, false, `decals_r${regionId}`);
-      decalMesh.receiveShadows = false;
       const decalMatrices = new Float32Array(composed.length * 16);
       composed.forEach((m, i) => m.copyToArray(decalMatrices, i * 16));
       stage.add(decalMesh);
       bake(decalMesh, decalMatrices, true);
-      addRegionMesh(regionMeshes, regionId, decalMesh);
     }
   }
 
@@ -275,8 +248,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     group: stage,
     grid,
     isWall: (cx, cy) => !isFloor(cx, cy),
-    shadowCasters,
-    regionMeshes,
     inference,
   };
 }

@@ -1,11 +1,9 @@
 /** Persistent player settings. Single store, subscribers apply on change. */
 
-import type { GraphicsTier } from "../rendering/ambience";
-import { defaultGraphicsTierForHardware, gpuRendererString, isSoftwareRenderer } from "./gpuTier";
+import { gpuRendererString } from "./gpuTier";
 
 export type Settings = {
   fov: number;          // 60..110
-  pixelation: number;   // 1..8 (RenderPixelatedPass pixelSize)
   fpsCap: number;       // 0 = uncapped, else 30/60/120/144
   vsync: boolean;       // informational — browser handles vsync
   musicVolume: number;  // 0..1
@@ -28,21 +26,12 @@ export type Settings = {
   /** "off" blocks the camera from being enabled at all (pause-menu CAM
    *  button becomes a no-op + any active webcam track is stopped). */
   cameraMode: "off" | "on";
-  graphicsTier: GraphicsTier;
 };
 
 const KEY = "bbb_settings";
 
-let detectedGraphicsTier: GraphicsTier = "mittel";
-try {
-  detectedGraphicsTier = defaultGraphicsTierForHardware();
-} catch {
-  detectedGraphicsTier = "mittel";
-}
-
 export const DEFAULTS: Settings = {
   fov: 75,
-  pixelation: 2,
   fpsCap: 0,
   vsync: true,
   musicVolume: 0.4,
@@ -58,36 +47,30 @@ export const DEFAULTS: Settings = {
   noiseGateThresholdDb: -45,
   voiceMode: "ptt",
   cameraMode: "on",
-  graphicsTier: detectedGraphicsTier,
 };
 
-let graphicsTierWasAutoSelected = false;
 let current: Settings = load();
 const listeners = new Set<(s: Settings) => void>();
 try {
   const renderer = gpuRendererString();
-  if (renderer) console.info(`[gpu] ${renderer} → tier ${current.graphicsTier}`);
-  if (isSoftwareRenderer()) console.warn("[gpu] software WebGL renderer detected; hardware acceleration is off in this browser");
+  if (renderer) console.info(`[gpu] ${renderer}`);
 } catch {}
 
 function load(): Settings {
+  const merged: Settings = { ...DEFAULTS };
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) {
-      graphicsTierWasAutoSelected = true;
-      return { ...DEFAULTS };
-    }
-    const parsed = JSON.parse(raw);
-    graphicsTierWasAutoSelected = !("graphicsTier" in parsed);
-    const merged = { ...DEFAULTS, ...parsed };
-    if (isSoftwareRenderer()) {
-      merged.graphicsTier = "niedrig";
-      merged.pixelation = Math.max(merged.pixelation, 3);
+    if (!raw) return merged;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    for (const key of Object.keys(DEFAULTS) as (keyof Settings)[]) {
+      const value = parsed[key];
+      if (value !== undefined && typeof value === typeof DEFAULTS[key]) {
+        (merged as Record<keyof Settings, unknown>)[key] = value;
+      }
     }
     return merged;
   } catch {
-    graphicsTierWasAutoSelected = true;
-    return { ...DEFAULTS };
+    return merged;
   }
 }
 
@@ -102,7 +85,6 @@ export function getSettings(): Settings {
 }
 
 export function updateSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
-  if (key === "graphicsTier") graphicsTierWasAutoSelected = false;
   current = { ...current, [key]: value };
   persist();
   for (const l of listeners) l(current);
@@ -114,12 +96,7 @@ export function onSettingsChange(fn: (s: Settings) => void): () => void {
 }
 
 export function resetSettings(): void {
-  graphicsTierWasAutoSelected = true;
   current = { ...DEFAULTS };
   persist();
   for (const l of listeners) l(current);
-}
-
-export function isGraphicsTierAutoSelected(): boolean {
-  return graphicsTierWasAutoSelected;
 }

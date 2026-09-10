@@ -3,7 +3,6 @@
  *  Pulled out of `main.ts` so the bootstrap stays a short, readable wiring
  *  sequence. This module owns no state — it constructs and returns the
  *  managers, then the caller wires them into the packet handler and loop. */
-import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { SpatialListener } from "./spatialAudio";
 import type { Prop, PropType, WorldInit } from "../net/protocol";
 import type { NetClient } from "../net/client";
@@ -16,7 +15,7 @@ import { buildPropColliders } from "../world/colliders";
 import { MODEL_PROP_TYPES, bundlesFor } from "../world/modelProps";
 import { ModelPropStage } from "../world/modelPropStage";
 import { FlickerLights } from "../rendering/lights";
-import { AmbienceParticles } from "../rendering/particles";
+import { ActiveMeshFreezer, setActiveMeshFreezer } from "../rendering/activeMeshes";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
 import { Hideouts } from "../gameplay/hideouts";
@@ -66,31 +65,22 @@ export function buildScene(
     Math.floor(z / init.grid.cellSize),
     init.grid.width,
   );
-  const lights = new FlickerLights(init.lights, regionOfXY);
-  const particles = new AmbienceParticles(ctx.scene);
+  const lights = new FlickerLights(init.lights);
   const regionOf = (prop: Prop): number => regionOfXY(prop.x, prop.z);
   const modelSkip: ReadonlySet<PropType> = models ? MODEL_PROP_TYPES : new Set<PropType>();
-  const { group: propsGroup, regionMeshes: propRegionMeshes } =
-    buildProps(init.props, regionOf, modelSkip);
-  lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.shadowCasters]);
+  buildProps(init.props, regionOf, modelSkip);
   const propColliders = buildPropColliders(init.props);
-
-  const regionMeshes = new Map<number, Mesh[]>();
-  for (const [id, meshes] of world.regionMeshes) regionMeshes.set(id, [...meshes]);
-  for (const [id, meshes] of propRegionMeshes) {
-    const list = regionMeshes.get(id);
-    if (list) list.push(...meshes);
-    else regionMeshes.set(id, [...meshes]);
-  }
-  lights.setRegionMeshes(regionMeshes);
 
   let modelStage: ModelPropStage | null = null;
   if (models) {
-    modelStage = new ModelPropStage(ctx.scene, models, lights, regionOf);
+    modelStage = new ModelPropStage(ctx.scene, models);
     const { immediate, deferred } = bundlesFor(init.grid, init.props, init.spawn);
     modelStage.place(init.props, immediate, deferred);
   }
   const ambientLights = new AmbientLights(ctx.scene);
+
+  const activeMeshes = new ActiveMeshFreezer(ctx.scene);
+  setActiveMeshFreezer(activeMeshes);
 
   const remotes = new RemotePlayers();
   remotes.attachAudio(audioListener);
@@ -181,13 +171,13 @@ export function buildScene(
   webcam.onRemoteAudio((id, stream) => proximityVoice.setStream(id, stream));
   webcam.setPeers(init.players.map((p) => p.id));
 
-  ambientLights.update(ctx.scene);
+  activeMeshes.freeze();
 
   return {
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
-    inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice, particles,
-    regionMeshes, inference: world.inference, ambientLights, modelStage,
+    inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice,
+    inference: world.inference, ambientLights, modelStage, activeMeshes,
   };
 }

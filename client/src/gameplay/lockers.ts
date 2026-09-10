@@ -65,7 +65,6 @@ export class Lockers {
       const clone = mesh.clone(mesh.name, null);
       clone.setEnabled(true);
       clone.isPickable = false;
-      clone.receiveShadows = true;
       return clone;
     });
 
