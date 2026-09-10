@@ -35,14 +35,12 @@ export function buildFrameAndPanel(root: Group): Group {
   pivot.position.set(-DOOR_W / 2, 0, 0);
   const panel = box(DOOR_W, DOOR_H, DOOR_T, M(0xc09060));
   panel.position.set(DOOR_W / 2, DOOR_H / 2, 0);
-  panel.alwaysSelectAsActiveMesh = true;
   pivot.add(panel);
   // Inset detail (two recessed rectangles for a school-door look)
   const inset = M(0xa07040);
   for (let i = 0; i < 2; i++) {
     const r = box(DOOR_W * 0.7, DOOR_H * 0.35, DOOR_T * 0.4, inset);
     r.position.set(DOOR_W / 2, DOOR_H * 0.30 + i * DOOR_H * 0.40, DOOR_T * 0.55);
-    r.alwaysSelectAsActiveMesh = true;
     pivot.add(r);
   }
   // Frosted glass window upper third
@@ -50,12 +48,10 @@ export function buildFrameAndPanel(root: Group): Group {
   frostedMat.alpha = 0.35;
   const glass = plane(DOOR_W * 0.55, DOOR_H * 0.20, frostedMat);
   glass.position.set(DOOR_W / 2, DOOR_H * 0.78, DOOR_T * 0.55);
-  glass.alwaysSelectAsActiveMesh = true;
   pivot.add(glass);
   // Handle
   const handle = box(0.04, 0.04, 0.18, M(0xb8b8c0));
   handle.position.set(DOOR_W - 0.15, DOOR_H / 2, DOOR_T * 0.7);
-  handle.alwaysSelectAsActiveMesh = true;
   pivot.add(handle);
 
   root.add(pivot);

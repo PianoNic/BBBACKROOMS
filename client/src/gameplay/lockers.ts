@@ -9,6 +9,7 @@ import type { LockerInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { Group, box, group } from "../rendering/babylon";
 import { materials } from "../rendering/materials";
+import { mergeChildMeshes } from "../rendering/staticMerge";
 import { activeModelLibrary } from "../rendering/modelLoader";
 import { normalizeModelTemplate } from "../world/modelPropStage";
 import { MODEL_PROPS } from "../world/modelProps";
@@ -74,8 +75,6 @@ export class Lockers {
       mesh.parent = root;
       mesh.isPickable = false;
     }
-    for (const mesh of split.leaf) mesh.alwaysSelectAsActiveMesh = true;
-
     return { maxAngle: spec.hinge.openRad, drive: (f) => hinge.setOpenFraction(f) };
   }
 
@@ -86,6 +85,7 @@ export class Lockers {
 
     const modelLocker = this.buildModelLocker(root);
     if (modelLocker) {
+      mergeChildMeshes(root);
       this.group.add(root);
       const opened = lk.opened;
       this.entries.set(lk.id, {
@@ -132,21 +132,19 @@ export class Lockers {
     doorPivot.position.set(-W / 2, H / 2, -D);
     const door = box(W, H - 2 * T, T, materials.lockerDoor);
     door.position.set(W / 2, 0, -T / 2);
-    door.alwaysSelectAsActiveMesh = true;
     doorPivot.add(door);
     // Four horizontal ventilation slats across the upper portion of the door.
     for (let i = 0; i < 4; i++) {
       const slat = box(0.28, 0.012, 0.005, materials.lampPole);
       slat.position.set(W / 2, 0.5 + i * 0.06, -T - 0.003);
-      slat.alwaysSelectAsActiveMesh = true;
       doorPivot.add(slat);
     }
     const handle = box(0.05, 0.12, 0.025, materials.lampPole);
     handle.position.set(W - 0.07, -0.1, -T - 0.013);
-    handle.alwaysSelectAsActiveMesh = true;
     doorPivot.add(handle);
     root.add(doorPivot);
 
+    mergeChildMeshes(root);
     this.group.add(root);
     const opened = lk.opened;
     this.entries.set(lk.id, {

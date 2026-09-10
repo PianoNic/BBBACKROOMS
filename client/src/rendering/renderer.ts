@@ -28,11 +28,10 @@ export class AmbientLights {
   constructor(scene: Scene) {
     const up = new Vector3(0, 1, 0);
     const sky = color3(AMBIENCE.ambientLight.skyColor);
-    const ground = color3(AMBIENCE.ambientLight.groundColor);
 
     this.ambient = new HemisphericLight("ambient", up, scene);
     this.ambient.diffuse = sky.clone();
-    this.ambient.groundColor = ground.clone();
+    this.ambient.groundColor = sky.clone();
     this.ambient.specular = Color3.Black();
     this.current = AMBIENCE.ambientLight.intensity;
     this.ambient.intensity = this.current;

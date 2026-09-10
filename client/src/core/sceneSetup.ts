@@ -15,7 +15,6 @@ import { buildPropColliders } from "../world/colliders";
 import { MODEL_PROP_TYPES, bundlesFor } from "../world/modelProps";
 import { ModelPropStage } from "../world/modelPropStage";
 import { FlickerLights } from "../rendering/lights";
-import { ActiveMeshFreezer, setActiveMeshFreezer } from "../rendering/activeMeshes";
 import { Player } from "../gameplay/player";
 import { RemotePlayers } from "../gameplay/remotePlayers";
 import { Hideouts } from "../gameplay/hideouts";
@@ -59,7 +58,7 @@ export function buildScene(
   webcam: WebcamMesh,
   models: ModelLibrary | null,
 ) {
-  const world = buildWorld(init.grid, init.props);
+  const world = buildWorld(init.grid, init.props, init.lights);
   const regionOfXY = (x: number, z: number): number => world.inference.regionAtXY(
     Math.floor(x / init.grid.cellSize),
     Math.floor(z / init.grid.cellSize),
@@ -78,9 +77,6 @@ export function buildScene(
     modelStage.place(init.props, immediate, deferred);
   }
   const ambientLights = new AmbientLights(ctx.scene);
-
-  const activeMeshes = new ActiveMeshFreezer(ctx.scene);
-  setActiveMeshFreezer(activeMeshes);
 
   const remotes = new RemotePlayers();
   remotes.attachAudio(audioListener);
@@ -171,13 +167,11 @@ export function buildScene(
   webcam.onRemoteAudio((id, stream) => proximityVoice.setStream(id, stream));
   webcam.setPeers(init.players.map((p) => p.id));
 
-  activeMeshes.freeze();
-
   return {
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice,
-    inference: world.inference, ambientLights, modelStage, activeMeshes,
+    inference: world.inference, ambientLights, modelStage, scattered: world.scattered,
   };
 }

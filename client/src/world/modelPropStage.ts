@@ -8,7 +8,6 @@ import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Prop, PropType } from "../net/protocol";
 import type { ModelLibrary } from "../rendering/modelLoader";
 import { group, type Group } from "../rendering/babylon";
-import { invalidateActiveMeshes } from "../rendering/activeMeshes";
 import { ModelMaterialFactory } from "../rendering/modelMaterials";
 import { MANAGER_OWNED_TYPES, MODEL_PROPS, type ModelPropSpec } from "./modelProps";
 
@@ -104,7 +103,6 @@ export class ModelPropStage {
       if (!list || list.length === 0) continue;
       void this.library.load(type).then((container) => {
         if (container) this.renderType(type, container, list);
-        invalidateActiveMeshes();
       });
     }
   }
