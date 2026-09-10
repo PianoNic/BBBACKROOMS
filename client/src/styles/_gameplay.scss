@@ -1,6 +1,7 @@
 @use "variables" as *;
 @forward "hud-root";
 @forward "gameplay-hud";
+@forward "teacher-slots";
 
 // Full-screen overlays (loading, crosshair, interact prompt, banner,
 // victory/defeat). HUD widgets live in `_gameplay-hud.scss`.

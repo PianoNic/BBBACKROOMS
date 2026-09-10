@@ -12,6 +12,7 @@ import { Toast } from "./Toast";
 import { Loading } from "./Loading";
 import { IntroSplash } from "./IntroSplash";
 import { HideOverlay } from "./HideOverlay";
+import { TeacherSlots } from "./TeacherSlots";
 import { hudActive } from "./state";
 
 export function HudApp() {
@@ -21,6 +22,7 @@ export function HudApp() {
       <InteractPrompt />
       <Loading />
       <IntroSplash />
+      <TeacherSlots />
       {hudActive.value ? (
         <>
           <TaskBoard />

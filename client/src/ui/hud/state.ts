@@ -56,6 +56,6 @@ export type ReelView = {
 export type TeacherSlotsView = {
   reels: ReelView[];
   descriptions: { text: string; show: boolean }[];
-  countdownText: string | null;
+  countdown: number | null;
 } | null;
 export const teacherSlotsView = signal<TeacherSlotsView>(null);
