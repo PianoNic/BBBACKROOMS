@@ -1,9 +1,0 @@
-@use "variables" as *;
-
-// Options screen — scroll-container inside its panel.
-#title {
-  .options-panel .settings-list {
-    flex: 1 1 auto; min-height: 0; overflow-y: auto;
-    padding-right: 8px; // breathing room so slider thumbs don't clip
-  }
-}
