@@ -34,10 +34,20 @@ function readSeenIds(): Set<string> {
   }
 }
 
+function versionChanged(): boolean {
+  const seen = readSeenVersion();
+  return seen !== null && seen !== currentVersion();
+}
+
 function computeUnread(list: Announcement[]): boolean {
-  const seenVersion = readSeenVersion();
+  if (versionChanged()) return true;
   const seenIds = readSeenIds();
-  if (seenVersion !== currentVersion()) return true;
+  return list.some((entry) => !seenIds.has(entry.id));
+}
+
+function shouldAutoOpen(list: Announcement[]): boolean {
+  if (versionChanged()) return true;
+  const seenIds = readSeenIds();
   return list.some((entry) => entry.level === "important" && !seenIds.has(entry.id));
 }
 
@@ -51,7 +61,7 @@ export async function loadNews(): Promise<void> {
   newsLoaded.value = true;
   hasUnread.value = computeUnread(result.announcements);
 
-  if (!autoOpened && hasUnread.value && route.value === "title") {
+  if (!autoOpened && shouldAutoOpen(result.announcements) && route.value === "title") {
     autoOpened = true;
     navigate("news");
   }
