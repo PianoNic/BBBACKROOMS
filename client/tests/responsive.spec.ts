@@ -59,7 +59,8 @@ for (const viewport of VIEWPORTS) {
 
     await page.goto("/");
 
-    const playButton = page.getByRole("button", { name: "PLAY" });
+    const menu = page.locator("nav.menu");
+    const playButton = menu.getByRole("button", { name: "PLAY" });
     await assertScreen(page, viewport, "title", playButton);
 
     await playButton.click();
@@ -69,21 +70,21 @@ for (const viewport of VIEWPORTS) {
     await page.getByRole("button", { name: "← BACK" }).click();
     await expect(playButton).toBeVisible();
 
-    await page.getByRole("button", { name: "OPTIONS" }).click();
+    await menu.getByRole("button", { name: "OPTIONS" }).click();
     const optionsBackButton = page.getByRole("button", { name: "← BACK" });
     await assertScreen(page, viewport, "options", optionsBackButton);
 
     await optionsBackButton.click();
     await expect(playButton).toBeVisible();
 
-    await page.getByRole("button", { name: "SHOP" }).click();
+    await menu.getByRole("button", { name: "SHOP" }).click();
     const shopBackButton = page.getByRole("button", { name: "← BACK" });
     await assertScreen(page, viewport, "shop", shopBackButton);
 
     await shopBackButton.click();
     await expect(playButton).toBeVisible();
 
-    await page.getByRole("button", { name: "TUTORIAL" }).click();
+    await menu.getByRole("button", { name: "TUTORIAL" }).click();
     const tutorialBackButton = page.getByRole("button", { name: "← BACK" });
     await assertScreen(page, viewport, "tutorial", tutorialBackButton);
 

@@ -182,11 +182,20 @@
   cursor: pointer;
 
   &:hover { color: var(--bb-accent); }
+
+  @media (min-width: 720px) { display: none; }
 }
 
-.p-volume-row {
-  grid-column: 1 / -1;
-  padding-bottom: var(--bb-space-1);
+.p-volume-cell {
+  grid-column: 5;
+
+  @media (max-width: 719.98px) {
+    display: none;
+    grid-column: 1 / -1;
+    padding-bottom: var(--bb-space-1);
+
+    &.is-open { display: block; }
+  }
 }
 
 .chat-toggle {

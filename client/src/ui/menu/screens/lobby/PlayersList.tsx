@@ -33,7 +33,7 @@ function AvatarTile(props: { player: LobbyPlayer; media: LobbyMediaControls }) {
       ) : player.avatar ? (
         <img class="p-avatar-img" src={player.avatar} alt="" />
       ) : (
-        <div class="p-avatar-fill" style={{ background: player.color }} />
+        <div class="p-avatar-img" style={{ background: player.color }} />
       )}
     </div>
   );
