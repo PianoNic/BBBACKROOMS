@@ -1,13 +1,12 @@
-import { useEffect, useState } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 import type { ItemType, PickupKind } from "../../../net/protocol";
 import { buildChairMesh } from "../../../gameplay/chairs";
 import { buildItemModel } from "../../../gameplay/itemModels";
 import { buildPickupModel } from "../../../gameplay/pickups";
-import { createItemViewer } from "../../itemViewer";
+import { ItemViewer } from "../../itemViewer";
 import { Button } from "../components/controls";
 import { Heading, Panel, Scroll } from "../components/layout";
 import { Accordion } from "../components/Accordion";
-import { DomNode } from "../components/DomNode";
 import { useMediaQuery } from "../components/useMediaQuery";
 import { navigate } from "../routes";
 
@@ -118,19 +117,11 @@ function buildShowcaseModel(entry: ShowcaseEntry) {
 }
 
 function ShowcaseTile(props: { entry: ShowcaseEntry }) {
-  const [viewer] = useState(() => {
-    const v = createItemViewer(() => buildShowcaseModel(props.entry));
-    v.canvas.style.width = "100%";
-    v.canvas.style.height = "auto";
-    v.canvas.style.aspectRatio = "1";
-    return v;
-  });
-
-  useEffect(() => () => viewer.dispose(), [viewer]);
+  const build = useCallback(() => buildShowcaseModel(props.entry), [props.entry]);
 
   return (
     <div class="tut-item">
-      <DomNode node={viewer.canvas} class="tut-item-canvas" />
+      <ItemViewer class="tut-item-canvas" build={build} />
       <div class="tut-item-name">{props.entry.label}</div>
       <div class="tut-item-sub">{props.entry.sub}</div>
     </div>
