@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Datenschutz & Impressum · Backrooms Baden</title>
+<title>Datenschutz · Backrooms Baden</title>
 <style>
   :root {
     --bg: #0a0a0d;
@@ -31,9 +31,12 @@
   }
 
   .page {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 6vh 1.5rem 8vh;
+    width: min(760px, 100%);
+    margin-inline: auto;
+    padding: clamp(24px, 6vh, 64px) clamp(16px, 5vw, 32px);
+    padding-left: calc(clamp(16px, 5vw, 32px) + env(safe-area-inset-left));
+    padding-right: calc(clamp(16px, 5vw, 32px) + env(safe-area-inset-right));
+    padding-bottom: calc(clamp(24px, 6vh, 64px) + env(safe-area-inset-bottom));
   }
 
   .back-link {
@@ -104,9 +107,14 @@
     margin-bottom: 0.4rem;
   }
 
+  code {
+    overflow-wrap: anywhere;
+  }
+
   a {
     color: var(--accent);
     text-decoration: underline;
+    overflow-wrap: anywhere;
   }
 
   a:hover {
@@ -121,10 +129,6 @@
     margin-bottom: 1.5rem;
   }
 
-  .muted {
-    color: var(--dim);
-  }
-
   .footer-note {
     margin-top: 4rem;
     color: var(--dim);
@@ -132,36 +136,18 @@
     letter-spacing: 0.04em;
   }
 
-  @media (max-width: 420px) {
-    .page {
-      padding: 5vh 1rem 6vh;
-    }
-    .section {
-      padding: 1.2rem 1rem 0.2rem;
-    }
-  }
 </style>
 </head>
 <body>
 <div class="page">
   <a class="back-link" href="/">← Zurück zum Spiel</a>
 
-  <h1>DATENSCHUTZ &amp; IMPRESSUM</h1>
+  <h1>DATENSCHUTZ</h1>
   <p class="subtitle">Backrooms Baden</p>
 
   <div class="section">
-    <h2>Impressum</h2>
-    <ul>
-      <li>Betreiber: PianoNic</li>
-      <li>Privates Hobbyprojekt, nicht kommerziell.</li>
-      <li>Kontakt: <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a></li>
-    </ul>
-    <p>„Privates Hobbyprojekt ohne Verbindung zu einer realen Schule. Alle Lehrpersonen und Namen sind frei erfunden.“</p>
-  </div>
-
-  <div class="section">
     <h2>Datenschutz</h2>
-    <p>Verantwortlich für die Bearbeitung der Daten ist der Betreiber (siehe Impressum), erreichbar unter <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a>.</p>
+    <p>Verantwortlich für die Bearbeitung der Daten ist der Betreiber, erreichbar unter <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a>.</p>
 
     <h3>Login</h3>
     <p>Die Anmeldung ist freiwillig; ohne Konto ist das Spiel spielbar. Login läuft über Google oder Microsoft (OpenID Connect). Vom Anbieter erhalten wir eine eindeutige Benutzerkennung (OIDC-Subject) und den Anzeigenamen. Gespeichert werden nur: Anbieter (Google oder Microsoft), Benutzerkennung des Anbieters, Anzeigename, Zeitpunkt der Kontoerstellung.</p>
@@ -198,7 +184,7 @@
     <p>Das Konto lässt sich jederzeit im Profil über „Konto löschen“ entfernen; Kontodaten und Spielfortschritt werden dabei gelöscht. Alternativ genügt eine Mail an <a href="mailto:kontakt@backrooms-baden.ch">kontakt@backrooms-baden.ch</a>.</p>
 
     <h3>Hosting</h3>
-    <p>Server und Datenbank laufen in der Schweiz bzw. der EU. <span class="muted">(vom Betreiber zu bestätigen)</span></p>
+    <p>Server und Datenbank werden bei IONOS in einem Rechenzentrum in Frankreich (EU) betrieben; der Anbieter unterliegt der DSGVO.</p>
   </div>
 
   <div class="section" id="nutzungsbedingungen">

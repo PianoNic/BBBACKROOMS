@@ -13,11 +13,14 @@
   "dependencies": {
     "@babylonjs/core": "^9.25.0",
     "@babylonjs/loaders": "9.25.0",
+    "@preact/signals": "^2.11.2",
     "lucide": "^1.14.0",
+    "preact": "^10.29.8",
     "stats.js": "^0.17.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@preact/preset-vite": "^2.10.6",
     "@types/stats.js": "^0.17.4",
     "gltfpack": "^1.2.0",
     "meshoptimizer": "^1.2.0",

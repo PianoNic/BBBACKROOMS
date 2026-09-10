@@ -201,6 +201,15 @@ export async function removePack(id: string): Promise<void> {
   await deletePackRecord(id);
 }
 
+export async function getStoredPack(id: string): Promise<StoredPack | undefined> {
+  return getPack(id);
+}
+
+export function invalidatePackCache(id: string): void {
+  revokeMemoryUrls(id);
+  if (active && active.id === id) active = null;
+}
+
 type LoadedPack = {
   id: string;
   name: string;

@@ -1,12 +1,15 @@
-/** "How to play" text screen reached from the title menu. Mostly text;
- *  also renders a small showcase of the in-game items rotating in 3D so
- *  players know what to look for. */
-import { el } from "./dom";
-import { buildItemModel } from "../gameplay/itemModels";
-import { buildPickupModel } from "../gameplay/pickups";
-import { buildChairMesh } from "../gameplay/chairs";
-import { createItemViewer } from "./itemViewer";
-import type { ItemType, PickupKind } from "../net/protocol";
+import { useEffect, useState } from "preact/hooks";
+import type { ItemType, PickupKind } from "../../../net/protocol";
+import { buildChairMesh } from "../../../gameplay/chairs";
+import { buildItemModel } from "../../../gameplay/itemModels";
+import { buildPickupModel } from "../../../gameplay/pickups";
+import { createItemViewer } from "../../itemViewer";
+import { Button } from "../components/controls";
+import { Heading, Panel, Scroll } from "../components/layout";
+import { Accordion } from "../components/Accordion";
+import { DomNode } from "../components/DomNode";
+import { useMediaQuery } from "../components/useMediaQuery";
+import { navigate } from "../routes";
 
 type Section = { title: string; bullets: string[] };
 
@@ -88,12 +91,12 @@ const SECTIONS: Section[] = [
   },
 ];
 
-type Showcase =
+type ShowcaseEntry =
   | { kind: "pickup"; type: PickupKind; label: string; sub: string }
   | { kind: "item"; type: ItemType; label: string; sub: string }
   | { kind: "chair"; label: string; sub: string };
 
-const SHOWCASE: Showcase[] = [
+const SHOWCASE: ShowcaseEntry[] = [
   { kind: "pickup", type: "medkit",  label: "Medkit",  sub: "revives a teammate" },
   { kind: "pickup", type: "potion",  label: "Potion",  sub: "drink (Q) for speed" },
   { kind: "pickup", type: "compass", label: "Compass", sub: "points to next task" },
@@ -108,53 +111,96 @@ const SHOWCASE: Showcase[] = [
   { kind: "item", type: "envelope",   label: "Envelope",   sub: "desk pickup" },
 ];
 
-function buildShowcase(): { row: HTMLElement; dispose: () => void } {
-  const grid = el<HTMLDivElement>("div", "tut-showcase");
-  const viewers: Array<{ dispose: () => void }> = [];
-  for (const item of SHOWCASE) {
-    const tile = el<HTMLDivElement>("div", "tut-item");
-    const build = () => (item.kind === "pickup"
-      ? buildPickupModel(item.type)
-      : item.kind === "chair"
-        ? buildChairMesh()
-        : buildItemModel(item.type));
-    const viewer = createItemViewer(build);
-    viewers.push(viewer);
-    tile.appendChild(viewer.canvas);
-    tile.appendChild(el("div", "tut-item-name", item.label));
-    tile.appendChild(el("div", "tut-item-sub", item.sub));
-    grid.appendChild(tile);
-  }
-  return { row: grid, dispose: () => viewers.forEach((v) => v.dispose()) };
+function buildShowcaseModel(entry: ShowcaseEntry) {
+  if (entry.kind === "pickup") return buildPickupModel(entry.type);
+  if (entry.kind === "chair") return buildChairMesh();
+  return buildItemModel(entry.type);
 }
 
-export function buildTutorialScreen(
-  root: HTMLElement, onBack: () => void,
-): void {
-  const panel = el<HTMLDivElement>("div", "panel panel-brackets tutorial-panel");
-  panel.appendChild(el("h2", undefined, "HOW TO PLAY"));
+function ShowcaseTile(props: { entry: ShowcaseEntry }) {
+  const [viewer] = useState(() => {
+    const v = createItemViewer(() => buildShowcaseModel(props.entry));
+    v.canvas.style.width = "100%";
+    v.canvas.style.height = "auto";
+    v.canvas.style.aspectRatio = "1";
+    return v;
+  });
 
-  const body = el<HTMLDivElement>("div", "tutorial-body");
-  for (const sec of SECTIONS) {
-    const block = el<HTMLDivElement>("div", "tut-section");
-    block.appendChild(el("h3", "tut-title", sec.title));
-    const ul = el<HTMLUListElement>("ul", "tut-list");
-    for (const b of sec.bullets) ul.appendChild(el("li", undefined, b));
-    block.appendChild(ul);
-    body.appendChild(block);
+  useEffect(() => () => viewer.dispose(), [viewer]);
+
+  return (
+    <div class="tut-item">
+      <DomNode node={viewer.canvas} class="tut-item-canvas" />
+      <div class="tut-item-name">{props.entry.label}</div>
+      <div class="tut-item-sub">{props.entry.sub}</div>
+    </div>
+  );
+}
+
+function TextSection(props: { section: Section; accordion: boolean; defaultOpen: boolean }) {
+  const body = (
+    <ul class="tut-list">
+      {props.section.bullets.map((bullet, i) => <li key={i}>{bullet}</li>)}
+    </ul>
+  );
+  if (props.accordion) {
+    return (
+      <Accordion title={props.section.title} collapsible defaultOpen={props.defaultOpen}>
+        {body}
+      </Accordion>
+    );
   }
+  return (
+    <div class="tut-section">
+      <h3 class="tut-title">{props.section.title}</h3>
+      {body}
+    </div>
+  );
+}
 
-  const showcaseBlock = el<HTMLDivElement>("div", "tut-section");
-  showcaseBlock.appendChild(el("h3", "tut-title", "Items & Pickups"));
-  const showcase = buildShowcase();
-  showcaseBlock.appendChild(showcase.row);
-  body.appendChild(showcaseBlock);
+function ShowcaseSection(props: { accordion: boolean }) {
+  const body = (
+    <div class="tut-showcase">
+      {SHOWCASE.map((entry) => <ShowcaseTile key={entry.label} entry={entry} />)}
+    </div>
+  );
+  if (props.accordion) {
+    return (
+      <Accordion title="Items & Pickups" collapsible defaultOpen={false}>
+        {body}
+      </Accordion>
+    );
+  }
+  return (
+    <div class="tut-section">
+      <h3 class="tut-title">Items & Pickups</h3>
+      {body}
+    </div>
+  );
+}
 
-  panel.appendChild(body);
+export function TutorialScreen() {
+  const accordion = useMediaQuery("(max-width: 719.98px)");
 
-  const back = el<HTMLButtonElement>("button", "menu-btn back", "← BACK");
-  back.onclick = () => { showcase.dispose(); onBack(); };
-  panel.appendChild(back);
-
-  root.appendChild(panel);
+  return (
+    <Panel class="tutorial-panel">
+      <Heading>HOW TO PLAY</Heading>
+      <Scroll class="tutorial-body">
+        <div class="tut-columns">
+          {SECTIONS.map((section, i) => (
+            <TextSection
+              key={section.title}
+              section={section}
+              accordion={accordion}
+              defaultOpen={i === 0}
+            />
+          ))}
+          <ShowcaseSection accordion={accordion} />
+        </div>
+      </Scroll>
+      <Button variant="back" class="screen-back" onClick={() => navigate("title", "back")}>
+        ← BACK
+      </Button>
+    </Panel>
+  );
 }

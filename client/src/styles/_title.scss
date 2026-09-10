@@ -1,8 +1,5 @@
 @use "variables" as *;
-@use "panels" as *;
-@use "overlays" as *;
-@forward "title-tutorial";
-@forward "title-server";
+@use "components" as *;
 
 .screen-stage {
   position: relative;
@@ -10,289 +7,318 @@
   min-height: 0;
   perspective: 900px;
   perspective-origin: 50% 42%;
+
   &.is-transitioning { pointer-events: none; }
-  &.stage-overlay { position: fixed; inset: 0; z-index: 10; flex: none; }
+  &.stage-overlay { position: fixed; inset: 0; z-index: 12; flex: none; }
+
   > .screen {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     transform-style: preserve-3d;
     backface-visibility: hidden;
   }
-  &.is-transitioning > .screen {
-    will-change: transform, opacity, filter;
-  }
+
+  &.is-transitioning > .screen { will-change: transform, opacity, filter; }
 }
 
-// Main title-screen shell: sysbar, hero text, vertical menu, panels and
-// the avatar/file pickers. Tutorial + server-screen specifics live in
-// `_title-tutorial.scss` and `_title-server.scss`.
 #title {
-  --accent: #{$accent};
-  --dim: #{$dim};
-  --ink: #{$ink};
-  @include terminal-screen(10);
-
-  * { scrollbar-width: none; }
-  *::-webkit-scrollbar { display: none; }
+  z-index: 10;
 
   .sysbar {
-    display: flex; justify-content: space-between; align-items: center; gap: 14px;
-    font-size: 14px; letter-spacing: 0.2em; color: $ink;
-    margin-bottom: 4vh; padding-bottom: 8px;
-    border-bottom: 1px solid rgba(106, 98, 88, 0.25);
-    .sysbar-label { white-space: nowrap; }
-
-    .rec {
-      color: $red-rec;
-      display: inline-flex; align-items: center; gap: 6px;
-      &::before {
-        content: ""; width: 8px; height: 8px; background: $red-rec;
-        display: inline-block;
-        animation: rec-blink 1.4s steps(1) infinite;
-      }
-    }
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--bb-space-3);
+    flex-wrap: wrap;
+    font-size: var(--bb-fs-xs);
+    letter-spacing: 0.2em;
+    color: var(--bb-ink);
+    margin-bottom: var(--bb-space-3);
+    padding-bottom: var(--bb-space-2);
+    border-bottom: 1px solid var(--bb-line-soft);
   }
-  @keyframes rec-blink {
-    0%, 49% { opacity: 1; }
-    50%, 100% { opacity: 0.15; }
+
+  .sysbar-label { white-space: nowrap; }
+
+  .rec {
+    color: var(--bb-red-rec);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bb-space-1);
+
+    &::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--bb-red-rec);
+      display: inline-block;
+      animation: rec-blink 1.4s steps(1) infinite;
+    }
   }
 
   h1 {
     font-family: $font-display;
-    font-size: clamp(60px, 13vh, 160px);
+    font-size: var(--bb-fs-3xl);
     font-weight: 400;
-    margin: 0;
-    color: $accent-bright;
+    margin: 0 0 var(--bb-space-3);
+    color: var(--bb-accent-bright);
     letter-spacing: 0.04em;
     line-height: 1;
+    cursor: pointer;
     text-shadow:
       0 0 18px rgba(232, 196, 74, 0.45),
       2px 0 0 rgba(255, 0, 80, 0.55),
       -2px 0 0 rgba(0, 200, 255, 0.55),
       0 6px 0 rgba(0, 0, 0, 0.8);
     animation: title-flicker 4.2s infinite steps(1);
-  }
-  @keyframes title-flicker {
-    0%, 19%, 21%, 49%, 51%, 79%, 81%, 100% { opacity: 1; }
-    20%, 50%, 80% { opacity: 0.55; }
+    overflow-wrap: anywhere;
   }
 
-  h2 { @include section-heading; }
-
-  .menu {
-    display: flex; flex-direction: column;
-    align-items: flex-start; margin-top: 4vh;
-  }
-  .menu-btn,
-  .menu .menu-btn {
-    background: transparent; border: none;
-    color: $ink;
+  .footnote,
+  .social-links {
     font-family: $font-mono;
-    font-size: clamp(20px, 3.5vh, 36px);
-    letter-spacing: 0.2em;
-    padding: 4px 0 4px 36px;
-    position: relative;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: color 0.12s;
-
-    &::before {
-      content: ">"; position: absolute; left: 0; top: 50%;
-      transform: translateY(-50%) translateX(-6px);
-      opacity: 0; color: $accent;
-      transition: opacity 0.12s, transform 0.12s;
-    }
-    &:hover { color: $accent; }
-    &:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); }
-    &.primary { font-size: clamp(26px, 4.5vh, 44px); }
-    &.wide { width: 100%; text-align: left; padding-left: 22px; }
-    &.back {
-      font-size: 18px; color: $ink;
-      margin-top: 14px; padding-left: 24px;
-      &::before { content: "<"; }
-      &:hover { color: $accent; }
-    }
+    font-size: var(--bb-fs-xs);
+    letter-spacing: 0.15em;
+    color: var(--bb-ink);
   }
 
-  // Account widget sits at the bottom of the main menu, under the menu items
-  // and aligned with their labels.
-  .account-widget {
-    margin-top: 3.2vh;
-    padding-left: 36px;
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    letter-spacing: 0.08em;
-  }
-  .acc-note.error { color: $red-rec; font-size: 12px; text-transform: uppercase; }
-  .acc-login {
-    background: transparent; color: $accent; border: none;
-    box-shadow: inset 0 0 0 1px $accent;
-    padding: 5px 12px; font-family: $font-mono; font-size: 12px;
-    letter-spacing: 0.1em; cursor: pointer; text-transform: uppercase;
-    white-space: nowrap; transition: background 0.12s;
-    &:hover { background: rgba(200, 162, 90, 0.18); }
-  }
-  .account-chip {
-    display: flex; align-items: center; gap: 10px;
-    font-family: $font-mono; color: $ink;
-    .acc-name { color: $accent-bright; font-size: 13px; letter-spacing: 0.08em; }
-    .acc-stats { font-size: 12px; color: #ffd24a; letter-spacing: 0.08em; white-space: nowrap; }
-    .acc-signout {
-      background: transparent; border: none; color: $dim;
-      box-shadow: inset 0 0 0 1px $dim; padding: 4px 9px;
-      font-family: $font-mono; font-size: 11px; letter-spacing: 0.1em;
-      cursor: pointer; text-transform: uppercase;
-      transition: color 0.12s, box-shadow 0.12s;
-      &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
-    }
-  }
-  .menu-legal-link {
-    display: inline-block; margin-top: 1.6vh; margin-left: 36px;
-    color: $dim; font-family: $font-mono; font-size: 13px;
-    letter-spacing: 0.08em; text-decoration: underline;
-    transition: color 0.12s;
-    &:hover { color: $accent; }
-  }
-
-  .panel {
-    max-width: 720px; padding: 18px 24px;
-    flex: 1 1 auto; min-height: 0;
-    display: flex; flex-direction: column;
-  }
-
-  .field {
-    margin-bottom: 18px;
-    label {
-      display: block; font-family: $font-mono;
-      font-size: 16px; letter-spacing: 0.2em; color: $ink;
-      margin-bottom: 8px; text-transform: uppercase;
-    }
-  }
-  .avatar-controls { display: flex; align-items: center; gap: 14px; }
-  .file-input-hidden { @include sr-only-input; }
-  .file-group { display: flex; flex-direction: column; gap: 4px; }
-  .file-btn {
-    background: transparent; color: $accent;
-    border: none;
-    box-shadow: inset 0 0 0 1px $accent;
-    padding: 6px 14px;
-    font-family: $font-mono; font-size: 18px;
-    letter-spacing: 0.16em;
-    cursor: pointer; text-transform: uppercase;
-    transition: background 0.12s;
-    &:hover { background: rgba(200,162,90,0.18); }
-  }
-  .file-name {
-    color: $ink; font-size: 14px;
-    letter-spacing: 0.12em; font-family: $font-mono;
-    text-transform: uppercase;
-  }
-  #avatar-preview {
-    width: 64px; height: 64px; background: #000;
-    image-rendering: pixelated;
-    box-shadow: inset 0 0 0 1px $accent;
-  }
-
-  input { @include terminal-input; }
-
-  .footnote {
-    position: fixed; left: 16px; bottom: 12px;
-    font-family: $font-mono; font-size: 14px;
-    color: $ink; letter-spacing: 0.15em;
-    z-index: 1;
-  }
+  .footnote { padding-top: var(--bb-space-3); }
 
   .social-links {
-    position: fixed; right: 16px; bottom: 12px;
-    display: flex; gap: 16px; z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bb-space-4);
+    padding-top: var(--bb-space-2);
   }
-  .social-link {
-    display: inline-flex; align-items: center; gap: 6px;
-    color: $ink;
-    font-family: $font-mono; font-size: 14px;
-    letter-spacing: 0.15em; text-transform: uppercase;
-    text-decoration: none;
-    transition: color 0.12s, transform 0.12s;
-    &:hover { color: $accent-bright; transform: translateY(-1px); }
-    svg { width: 24px; height: 24px; display: block; }
 
-    &.info-link {
-      background: transparent; border: none; cursor: pointer; font: inherit;
-      padding: 0;
+  .social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bb-space-1);
+    min-height: var(--bb-tap);
+    color: var(--bb-ink);
+    text-transform: uppercase;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    font: inherit;
+    letter-spacing: inherit;
+    padding: 0;
+    cursor: pointer;
+    transition: color 0.12s, transform 0.12s;
+
+    &:hover, &:focus-visible { color: var(--bb-accent-bright); }
+    &:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+    i { font-size: 1.3em; }
+  }
+
+  @media (min-width: 720px) {
+    .footnote {
+      position: fixed;
+      left: calc(var(--bb-gutter) + var(--bb-safe-l));
+      bottom: calc(var(--bb-space-3) + var(--bb-safe-b));
+      z-index: 1;
+      padding-top: 0;
     }
+    .social-links {
+      position: fixed;
+      right: calc(var(--bb-gutter) + var(--bb-safe-r));
+      bottom: calc(var(--bb-space-3) + var(--bb-safe-b));
+      z-index: 2;
+      padding-top: 0;
+    }
+  }
+
+  @media (max-height: 480px) {
+    h1 { font-size: clamp(1.6rem, 8vh, 3rem); }
+    .sysbar { margin-bottom: var(--bb-space-2); }
   }
 }
 
+@keyframes rec-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.15; }
+}
+
+@keyframes title-flicker {
+  0%, 19%, 21%, 49%, 51%, 79%, 81%, 100% { opacity: 1; }
+  20%, 50%, 80% { opacity: 0.55; }
+}
+
+.title-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--bb-block);
+  min-height: 0;
+  overflow-y: auto;
+  width: min(1400px, 100%);
+
+  @media (min-width: 720px) and (min-height: 600px) {
+    align-content: center;
+  }
+
+  @media (min-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+    align-items: center;
+    column-gap: var(--bb-space-6);
+  }
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+
+  .bb-listbtn.primary { font-size: var(--bb-fs-2xl); }
+}
+
+.title-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bb-space-3);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.account-widget {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-3);
+  flex-wrap: wrap;
+  letter-spacing: 0.08em;
+  min-width: 0;
+}
+
+.acc-note.error {
+  color: var(--bb-red-rec);
+  font-size: var(--bb-fs-xs);
+  text-transform: uppercase;
+}
+
+.acc-login {
+  background: transparent;
+  color: var(--bb-accent);
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--bb-accent);
+  min-height: var(--bb-tap);
+  padding: var(--bb-space-1) var(--bb-space-3);
+  font-family: $font-mono;
+  font-size: var(--bb-fs-sm);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.12s;
+
+  &:hover, &:focus-visible { background: var(--bb-accent-wash-strong); }
+  &:focus-visible { outline: 2px solid var(--bb-accent); outline-offset: 2px; }
+}
+
+.account-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-2);
+  flex-wrap: wrap;
+  font-family: $font-mono;
+  color: var(--bb-ink);
+
+  .acc-name { color: var(--bb-accent-bright); font-size: var(--bb-fs-sm); letter-spacing: 0.08em; }
+  .acc-stats { font-size: var(--bb-fs-sm); color: #ffd24a; letter-spacing: 0.08em; white-space: nowrap; }
+
+  .acc-signout {
+    background: transparent;
+    border: none;
+    color: var(--bb-dim);
+    box-shadow: inset 0 0 0 1px var(--bb-dim);
+    min-height: var(--bb-tap);
+    padding: var(--bb-space-1) var(--bb-space-2);
+    font-family: $font-mono;
+    font-size: var(--bb-fs-xs);
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    text-transform: uppercase;
+
+    &:hover, &:focus-visible { color: var(--bb-accent); box-shadow: inset 0 0 0 1px var(--bb-accent); }
+  }
+}
+
+.menu-legal-link {
+  display: inline-block;
+  min-height: var(--bb-tap);
+  color: var(--bb-dim);
+  font-family: $font-mono;
+  font-size: var(--bb-fs-sm);
+  letter-spacing: 0.08em;
+  text-decoration: underline;
+
+  &:hover, &:focus-visible { color: var(--bb-accent); }
+}
+
 #info-overlay {
-  @include overlay(60);
+  z-index: 60;
 
-  .panel {
-    max-width: 460px; padding: 24px 30px;
-    --bracket-bg: #{$panel-bg-overlay};
-
-    h2 { @include section-heading; font-size: 24px; letter-spacing: 0.22em; }
+  .modal-text, .info-disclaimer {
+    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+    line-height: 1.55;
+    color: var(--bb-ink);
+    margin: 0 0 var(--bb-space-4);
   }
 
   .info-project {
-    margin: 0 0 14px;
-    color: $accent-bright;
-    font-size: 16px; letter-spacing: 0.1em;
-  }
-
-  .info-disclaimer {
-    margin: 0 0 18px;
-    color: $ink;
-    font-size: 14px; line-height: 1.6;
+    margin: 0 0 var(--bb-space-3);
+    color: var(--bb-accent-bright);
+    font-size: var(--bb-fs-md);
+    letter-spacing: 0.1em;
   }
 
   .info-legal-link {
     display: inline-block;
-    margin-bottom: 22px;
-    color: $accent;
-    font-family: $font-mono; font-size: 13px;
-    letter-spacing: 0.08em; text-decoration: underline;
-    transition: color 0.12s;
-    &:hover { color: $accent-bright; }
-  }
+    margin-bottom: var(--bb-space-5);
+    color: var(--bb-accent);
+    font-family: $font-mono;
+    font-size: var(--bb-fs-sm);
+    letter-spacing: 0.08em;
+    text-decoration: underline;
 
-  .menu-btn {
-    display: block;
-    background: transparent; border: none;
-    color: $ink;
-    font-family: $font-mono; font-size: 16px;
-    letter-spacing: 0.18em; padding: 8px 18px; cursor: pointer;
-    text-transform: uppercase;
-    box-shadow: inset 0 0 0 1px rgba(106, 98, 88, 0.45);
-    transition: color 0.12s, box-shadow 0.12s;
-    &:hover { color: $accent; box-shadow: inset 0 0 0 1px $accent; }
+    &:hover, &:focus-visible { color: var(--bb-accent-bright); }
   }
 }
 
-// =========================================================================
-// Intro splash ("PianoNic Games presents") — once per session.
-// =========================================================================
 #intro-splash {
-  position: fixed; inset: 0; z-index: 4000;
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
   background: #000;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: opacity 600ms ease;
+
   &.intro-out { opacity: 0; pointer-events: none; }
 
-  .intro-credit {
-    text-align: center;
-    .intro-studio {
-      font-size: clamp(34px, 6vw, 64px);
-      font-weight: 700; color: #e8e2f4;
-      letter-spacing: 4px;
-      animation: intro-studio-in 2.6s ease-out both;
-      text-shadow: 0 0 30px rgba(201, 162, 39, 0.35);
-    }
-    .intro-presents {
-      margin-top: 14px;
-      font-size: 16px; letter-spacing: 10px; color: #9b8fb8;
-      text-transform: uppercase;
-      animation: intro-presents-in 2.2s ease-out 0.7s both;
-    }
+  .intro-credit { text-align: center; }
+
+  .intro-studio {
+    font-size: clamp(34px, 6vw, 64px);
+    font-weight: 700;
+    color: #e8e2f4;
+    letter-spacing: 4px;
+    animation: intro-studio-in 2.6s ease-out both;
+    text-shadow: 0 0 30px rgba(201, 162, 39, 0.35);
+  }
+
+  .intro-presents {
+    margin-top: var(--bb-space-3);
+    font-size: var(--bb-fs-md);
+    letter-spacing: 10px;
+    color: #9b8fb8;
+    text-transform: uppercase;
+    animation: intro-presents-in 2.2s ease-out 0.7s both;
   }
 }
 
@@ -302,6 +328,7 @@
   85% { opacity: 1; letter-spacing: 4px; }
   100% { opacity: 0.9; }
 }
+
 @keyframes intro-presents-in {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }

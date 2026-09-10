@@ -1,0 +1,86 @@
+@use "variables" as *;
+@use "components" as *;
+
+.tutorial-panel {
+  width: min(900px, 92vw);
+  max-height: min(88svh, 820px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--bb-space-3);
+  margin-inline: auto;
+}
+
+.tutorial-body { max-width: 68ch; }
+
+.tut-columns {
+  @media (min-width: 1100px) {
+    columns: 2;
+    column-gap: var(--bb-space-5);
+    max-width: none;
+  }
+}
+
+.tut-section {
+  margin-bottom: var(--bb-space-4);
+  break-inside: avoid;
+}
+
+.tut-title {
+  font-size: var(--bb-fs-lg);
+  letter-spacing: 0.18em;
+  color: var(--bb-accent);
+  text-transform: uppercase;
+  margin: 0 0 var(--bb-space-2);
+  border-bottom: 1px dashed var(--bb-accent-line);
+  padding-bottom: var(--bb-space-1);
+}
+
+.tut-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    font-size: var(--bb-fs-md);
+    line-height: 1.55;
+    padding: var(--bb-space-1) 0 var(--bb-space-1) var(--bb-space-4);
+    position: relative;
+    color: var(--bb-ink);
+
+    &::before {
+      content: ">";
+      position: absolute;
+      left: 0;
+      top: var(--bb-space-1);
+      color: var(--bb-accent);
+    }
+  }
+}
+
+.tut-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 28vw, 140px), 1fr));
+  gap: var(--bb-space-3);
+  margin-top: var(--bb-space-1);
+}
+
+.tut-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--bb-space-1);
+  padding: var(--bb-space-2) var(--bb-space-1);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px var(--bb-line);
+}
+
+.tut-item-canvas { width: 100%; }
+.tut-item-name { font-size: var(--bb-fs-sm); color: var(--bb-accent); letter-spacing: 0.1em; }
+.tut-item-sub { font-size: var(--bb-fs-xs); color: var(--bb-dim); letter-spacing: 0.04em; }
+
+.tut-columns .bb-accordion {
+  break-inside: avoid;
+  margin-bottom: var(--bb-space-3);
+}

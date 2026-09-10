@@ -13,6 +13,9 @@
 FROM --platform=$BUILDPLATFORM oven/bun:1.3-alpine AS client
 WORKDIR /client
 
+ARG BUILD_DATE
+ENV BUILD_DATE=$BUILD_DATE
+
 # Lockfile first so dependency installs stay cached across source-only changes.
 COPY client/package.json client/bun.lock ./
 RUN bun install --frozen-lockfile

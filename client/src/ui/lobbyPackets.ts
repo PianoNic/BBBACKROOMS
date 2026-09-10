@@ -1,65 +1,56 @@
-/** Packet handler for the pre-game lobby room.
- *
- *  Mirrors the in-game `gamePackets.ts` split. Owns nothing — receives
- *  the lobby state, webcam, and render callbacks and dispatches. */
-import type {
-  ServerPacket, LobbyPlayer, ChatMessage, EquippedCosmetics, ShopResultPkt,
-} from "../net/protocol";
+import type { ServerPacket } from "../net/protocol";
 import type { WebcamMesh } from "../gameplay/webcam";
-import type { AdminPanelState } from "./lobbyAdminPanel";
+import { SHOP_FAIL_TEXT } from "./menu/state/shop";
+import {
+  lobbyAdminId, lobbyChat, lobbyHasPassword, lobbyMapSeed, lobbyMapSize, lobbyMaxPlayers,
+  lobbyObjectiveCount, lobbyPackHash, lobbyPackId, lobbyPlayers, lobbyRemoteStreams,
+  lobbySelectedTeachers, lobbySelfId, lobbyShopBalance, lobbyShopNote, selfCosmeticsEquipped,
+  selfCosmeticsOwned,
+} from "./menu/state/lobby";
 
-export type SelfCosmetics = { owned: Set<string>; equipped: EquippedCosmetics };
-
-export type LobbyState = AdminPanelState & {
-  players: Map<string, LobbyPlayer>;
-  chat: ChatMessage[];
-  selfId: string;
-  selfCosmetics: SelfCosmetics;
-};
-
-export type LobbyCallbacks = {
-  renderPlayers: () => void;
-  refreshAdmin: () => void;
-  appendChatLine: (m: ChatMessage) => void;
-  /** Notify an open shop panel of a purchase result / equip change. */
-  onShopResult?: (pkt: ShopResultPkt) => void;
-  onCosmeticChange?: () => void;
-  onPackChange?: () => void;
-};
-
-export function handleLobbyPacket(
-  pkt: ServerPacket, state: LobbyState, webcam: WebcamMesh | undefined,
-  remoteStreams: Map<string, MediaStream>, cb: LobbyCallbacks,
-): void {
+export function handleLobbyPacket(pkt: ServerPacket, webcam: WebcamMesh | undefined): void {
   switch (pkt.type) {
-    case "lobby_player_join":
-      state.players.set(pkt.id, {
-        id: pkt.id, name: pkt.name, color: pkt.color,
-        avatar: pkt.avatar, equipped: pkt.equipped,
+    case "lobby_player_join": {
+      const next = new Map(lobbyPlayers.value);
+      next.set(pkt.id, {
+        id: pkt.id, name: pkt.name, color: pkt.color, avatar: pkt.avatar, equipped: pkt.equipped,
       });
+      lobbyPlayers.value = next;
       webcam?.addPeer(pkt.id);
-      cb.renderPlayers();
-      return;
-    case "player_cosmetic": {
-      const p = state.players.get(pkt.id);
-      if (p) p.equipped = pkt.equipped;
-      if (pkt.id === state.selfId) {
-        state.selfCosmetics.equipped = pkt.equipped;
-        cb.onCosmeticChange?.();
-      }
-      cb.renderPlayers();
       return;
     }
-    case "shop_result":
-      if (pkt.ok) state.selfCosmetics.owned.add(pkt.cosmeticId);
-      cb.onShopResult?.(pkt);
+    case "player_cosmetic": {
+      const p = lobbyPlayers.value.get(pkt.id);
+      if (p) {
+        const next = new Map(lobbyPlayers.value);
+        next.set(pkt.id, { ...p, equipped: pkt.equipped });
+        lobbyPlayers.value = next;
+      }
+      if (pkt.id === lobbySelfId.value) selfCosmeticsEquipped.value = pkt.equipped;
       return;
-    case "player_leave":
-      state.players.delete(pkt.id);
+    }
+    case "shop_result": {
+      if (pkt.ok) {
+        const next = new Set(selfCosmeticsOwned.value);
+        next.add(pkt.cosmeticId);
+        selfCosmeticsOwned.value = next;
+        lobbyShopNote.value = "Purchased!";
+      } else {
+        lobbyShopNote.value = SHOP_FAIL_TEXT[pkt.reason] ?? "Purchase failed.";
+      }
+      lobbyShopBalance.value = pkt.balance;
+      return;
+    }
+    case "player_leave": {
+      const next = new Map(lobbyPlayers.value);
+      next.delete(pkt.id);
+      lobbyPlayers.value = next;
       webcam?.removePeer(pkt.id);
-      remoteStreams.delete(pkt.id);
-      cb.renderPlayers();
+      const streams = new Map(lobbyRemoteStreams.value);
+      streams.delete(pkt.id);
+      lobbyRemoteStreams.value = streams;
       return;
+    }
     case "webrtc_signal":
       void webcam?.applySignal(pkt.from, pkt.kind, pkt.data);
       return;
@@ -67,40 +58,43 @@ export function handleLobbyPacket(
       if (!pkt.on) webcam?.applyPeerOff(pkt.id);
       return;
     case "lobby_player_rename": {
-      const p = state.players.get(pkt.id);
-      if (p) { p.name = pkt.name; cb.renderPlayers(); }
+      const p = lobbyPlayers.value.get(pkt.id);
+      if (p) {
+        const next = new Map(lobbyPlayers.value);
+        next.set(pkt.id, { ...p, name: pkt.name });
+        lobbyPlayers.value = next;
+      }
       return;
     }
     case "lobby_admin_changed":
-      state.adminId = pkt.adminId;
-      cb.renderPlayers();
-      cb.refreshAdmin();
+      lobbyAdminId.value = pkt.adminId;
       return;
     case "lobby_settings":
-      state.maxPlayers = pkt.maxPlayers;
-      state.hasPassword = pkt.hasPassword;
-      state.selectedTeachers = pkt.selectedTeachers;
-      if (pkt.mapSize != null) state.mapSize = pkt.mapSize;
-      // mapSeed can legitimately become null (admin cleared it → random).
-      // Use `in` to distinguish "field present in payload" from "absent".
-      if ("mapSeed" in pkt) state.mapSeed = pkt.mapSeed ?? null;
-      if (pkt.objectiveCount != null) state.objectiveCount = pkt.objectiveCount;
-      cb.refreshAdmin();
-      cb.renderPlayers();
+      lobbyMaxPlayers.value = pkt.maxPlayers;
+      lobbyHasPassword.value = pkt.hasPassword;
+      lobbySelectedTeachers.value = pkt.selectedTeachers;
+      if (pkt.mapSize != null) lobbyMapSize.value = pkt.mapSize;
+      if ("mapSeed" in pkt) lobbyMapSeed.value = pkt.mapSeed ?? null;
+      if (pkt.objectiveCount != null) lobbyObjectiveCount.value = pkt.objectiveCount;
       return;
     case "player_avatar": {
-      const p = state.players.get(pkt.id);
-      if (p) { p.avatar = pkt.avatar; cb.renderPlayers(); }
+      const p = lobbyPlayers.value.get(pkt.id);
+      if (p) {
+        const next = new Map(lobbyPlayers.value);
+        next.set(pkt.id, { ...p, avatar: pkt.avatar });
+        lobbyPlayers.value = next;
+      }
       return;
     }
     case "chat_message":
-      state.chat.push({ id: pkt.id, author: pkt.author, text: pkt.text, ts: pkt.ts });
-      cb.appendChatLine({ id: pkt.id, author: pkt.author, text: pkt.text, ts: pkt.ts });
+      lobbyChat.value = [
+        ...lobbyChat.value,
+        { id: pkt.id, author: pkt.author, text: pkt.text, ts: pkt.ts },
+      ];
       return;
     case "lobby_pack":
-      state.packId = pkt.packId;
-      state.packHash = pkt.packHash;
-      cb.onPackChange?.();
+      lobbyPackId.value = pkt.packId;
+      lobbyPackHash.value = pkt.packHash;
       return;
   }
 }

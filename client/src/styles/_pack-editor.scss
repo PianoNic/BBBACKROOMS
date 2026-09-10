@@ -1,154 +1,155 @@
 @use "variables" as *;
-@use "panels" as *;
-
-@mixin pack-editor-btn-small {
-  background: transparent; color: $accent;
-  border: none; box-shadow: inset 0 0 0 1px $accent;
-  font-family: $font-mono; font-size: 16px;
-  letter-spacing: 0.14em; padding: 6px 14px; cursor: pointer;
-  text-transform: uppercase;
-  &:hover { background: rgba(200,162,90,0.12); }
-  &:disabled { color: $dim; box-shadow: inset 0 0 0 1px rgba(106,98,88,0.35); cursor: default; background: transparent; }
-}
 
 #pack-editor {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(6, 5, 3, 0.86);
-  backdrop-filter: blur(2px);
-  display: flex; align-items: center; justify-content: center;
-  font-family: $font-mono; color: $ink;
-  padding: 4vh 3vw;
-
-  .panel {
-    width: min(1100px, 94vw);
-    max-height: 92vh; overflow-y: auto;
-    padding: 26px 32px;
-    --bracket-bg: #{$panel-bg-modal};
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-
-    h2 { @include section-heading; font-size: 26px; }
+  .pack-editor-modal {
+    width: min(1100px, 100% - 2 * var(--bb-gutter));
+    max-height: min(92svh, 900px);
   }
 
-  .menu-btn.small { @include pack-editor-btn-small; }
+  .pack-editor-toolbar {
+    position: relative;
+    margin-bottom: var(--bb-space-4);
+  }
+
+  .pack-editor-openmenu {
+    position: absolute;
+    top: calc(100% + var(--bb-space-2));
+    left: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: var(--bb-space-2);
+    padding: var(--bb-space-3);
+    max-width: min(360px, 90vw);
+    max-height: 40vh;
+    overflow-y: auto;
+    background: var(--bb-panel-bg-modal);
+    box-shadow: inset 0 0 0 1px var(--bb-line);
+  }
+
+  .pack-editor-openmenu-empty {
+    color: var(--bb-dim);
+    font-size: var(--bb-fs-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pack-editor-openfile {
+    display: inline-flex;
+    justify-content: center;
+    cursor: pointer;
+  }
 
   .pack-editor-meta {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px; margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+    gap: var(--bb-space-3);
+    margin-bottom: var(--bb-space-4);
   }
 
   .pack-editor-field {
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--bb-space-1);
 
     label {
-      color: $dim; font-size: 13px; letter-spacing: 0.14em;
+      color: var(--bb-dim);
+      font-size: var(--bb-fs-xs);
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
 
-    input {
-      @include terminal-input;
-      &.error { box-shadow: inset 0 0 0 1px $danger; }
-    }
+    .error { box-shadow: inset 0 0 0 1px var(--bb-danger); }
   }
 
-  #pack-editor-slots {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px; margin-bottom: 18px;
+  .pack-editor-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(130px, 40vw, 170px), 1fr));
+    gap: var(--bb-space-3);
+    margin-bottom: var(--bb-space-4);
   }
 
   .pack-slot {
-    display: flex; flex-direction: column; gap: 6px;
-    padding: 8px; box-shadow: inset 0 0 0 1px rgba(106,98,88,0.35);
+    display: flex;
+    flex-direction: column;
+    gap: var(--bb-space-2);
+    padding: var(--bb-space-2);
+    box-shadow: inset 0 0 0 1px var(--bb-line-soft);
 
-    &[data-ready="true"] { box-shadow: inset 0 0 0 1px $accent; }
+    &[data-ready="true"] { box-shadow: inset 0 0 0 1px var(--bb-accent); }
   }
 
   .pack-slot-preview {
-    position: relative; width: 100%; aspect-ratio: 3 / 4;
-    background: #000; overflow: hidden;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #000;
+    overflow: hidden;
 
     img, canvas {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%; object-fit: cover;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
   }
 
   .pack-slot-name {
-    font-size: 15px; color: $ink;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--bb-fs-sm);
+    color: var(--bb-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+
   .pack-slot-subject {
-    font-size: 12px; color: $dim; letter-spacing: 0.08em; text-transform: uppercase;
+    font-size: var(--bb-fs-xs);
+    color: var(--bb-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  .pack-slot-actions {
-    display: flex; gap: 6px; flex-wrap: wrap;
+  .pack-slot-actions { display: flex; gap: var(--bb-space-2); flex-wrap: wrap; }
 
-    .menu-btn.small {
-      font-size: 13px; padding: 4px 8px; letter-spacing: 0.08em;
-    }
-  }
+  .pack-slot-name-input { font-size: var(--bb-fs-sm); }
 
-  .pack-slot-name-input {
-    @include terminal-input;
-    font-size: 14px; padding: 6px 8px;
-  }
+  .pack-slot-size { font-size: var(--bb-fs-xs); color: var(--bb-dim); }
 
-  .pack-slot-size { font-size: 12px; color: $dim; }
-
-  .pack-slot-error.error {
-    font-size: 12px; color: $accent-bright;
-  }
+  .pack-slot-error.error { font-size: var(--bb-fs-xs); color: var(--bb-accent-bright); }
 
   .pack-editor-actions {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;
+    display: flex;
+    gap: var(--bb-space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--bb-space-2);
   }
 
   #pack-editor-status {
-    font-size: 15px; color: $dim; min-height: 1.2em;
-    &.error { color: $accent-bright; }
-  }
+    min-height: 1.2em;
+    color: var(--bb-dim);
+    font-size: var(--bb-fs-sm);
 
-  .menu-btn.back {
-    background: transparent; border: none; color: $dim;
-    font-family: $font-mono; font-size: 18px;
-    letter-spacing: 0.18em; padding: 8px 0 8px 22px; margin-top: 14px;
-    cursor: pointer; position: relative;
-
-    &::before { content: "<"; position: absolute; left: 0; color: $accent; }
-    &:hover { color: $accent; }
+    &.error { color: var(--bb-accent-bright); }
   }
 }
 
 #pack-consent {
-  position: fixed; inset: 0; z-index: 510;
-  background: rgba(0, 0, 0, 0.82);
-  display: flex; align-items: center; justify-content: center;
-  font-family: $font-mono; color: $ink;
-  padding: 4vh 3vw;
-
-  .panel {
-    width: min(520px, 92vw);
-    padding: 24px 28px;
-    --bracket-bg: #{$panel-bg-modal};
-
-    h2 { @include section-heading; font-size: 20px; }
+  .pack-consent-modal {
+    width: min(92vw, 44rem);
   }
-
-  .menu-btn.small { @include pack-editor-btn-small; }
 
   .pack-consent-text {
-    font-size: 15px; line-height: 1.5; color: $ink;
-    margin: 0 0 14px;
-  }
-
-  .pack-consent-label {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 14px; color: $dim; letter-spacing: 0.04em;
-    margin-bottom: 18px; cursor: pointer;
+    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+    line-height: 1.55;
+    color: var(--bb-ink);
+    margin: 0 0 var(--bb-space-4);
   }
 
   .pack-consent-actions {
-    display: flex; justify-content: flex-end; gap: 10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--bb-space-3);
+    margin-top: var(--bb-space-4);
   }
 }
