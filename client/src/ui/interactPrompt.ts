@@ -3,6 +3,7 @@ import { Viewport } from "@babylonjs/core/Maths/math.viewport";
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 import { cameraForward } from "../rendering/babylon";
 import { distanceSquaredXZ } from "../core/geom";
+import { interactLabel, interactX, interactY } from "./hud/state";
 
 const MIN_DOT = 0.55;
 const RANGE_PAD = 1.5;
@@ -34,13 +35,6 @@ export type InteractTarget = {
 
 export class InteractPrompt {
   current: InteractTarget | null = null;
-  private readonly el: HTMLDivElement;
-  private readonly label: HTMLSpanElement;
-
-  constructor() {
-    this.el = document.getElementById("interact-prompt") as HTMLDivElement;
-    this.label = this.el.querySelector(".label") as HTMLSpanElement;
-  }
 
   update(
     camera: Camera, yaw: number, pitch: number,
@@ -87,16 +81,13 @@ export class InteractPrompt {
       this.hide();
       return;
     }
-    const sx = projected.x;
-    const sy = projected.y;
-    this.el.style.left = `${sx}px`;
-    this.el.style.top = `${sy}px`;
-    if (this.label.textContent !== this.current.label) this.label.textContent = this.current.label;
-    this.el.classList.remove("hidden");
+    interactX.value = projected.x;
+    interactY.value = projected.y;
+    if (interactLabel.value !== this.current.label) interactLabel.value = this.current.label;
   }
 
   private hide(): void {
-    this.el.classList.add("hidden");
+    interactLabel.value = null;
     this.current = null;
   }
 }
