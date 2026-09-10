@@ -178,6 +178,10 @@ export class FlickerLights {
     for (const mesh of this.glowMeshes) mesh.thinInstanceBufferUpdated("color");
   }
 
+  get blackout(): { x: number; z: number } | null {
+    return this.activeBlackout ? { x: this.activeBlackout.x, z: this.activeBlackout.z } : null;
+  }
+
   averageIntensityNear(x: number, z: number): number {
     if (this.fixtures.length === 0) return 1;
     const radius2 = AMBIENCE.ambientLight.radius * AMBIENCE.ambientLight.radius;

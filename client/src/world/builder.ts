@@ -2,10 +2,11 @@ import "@babylonjs/core/Meshes/thinInstanceMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Material } from "@babylonjs/core/Materials/material";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { Grid, Prop } from "../net/protocol";
+import type { Grid, Light, Prop } from "../net/protocol";
 import { getDecalMaterial, getRoomMaterials } from "../rendering/materials";
 import { freezeWhenCompiled } from "../rendering/modelMaterials";
 import { AMBIENCE } from "../rendering/ambience";
+import { ScatteredLight } from "../rendering/scatteredLight";
 import { RoomInference } from "./rooms";
 import { mulberry32 } from "./propBuilders/_common";
 import { box, group, plane, type Group } from "../rendering/babylon";
@@ -17,6 +18,7 @@ export type World = {
   grid: Grid;
   isWall: (cellX: number, cellY: number) => boolean;
   inference: RoomInference;
+  scattered: ScatteredLight;
 };
 
 const FLOOR = 1;
@@ -27,24 +29,27 @@ const WALL_FACE_MARGIN = 0.01;
 
 const frozenMaterials = new WeakSet<Material>();
 
-function bake(mesh: Mesh, matrices: Float32Array): void {
-  mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
-  mesh.isPickable = false;
-  mesh.alwaysSelectAsActiveMesh = false;
-  mesh.doNotSyncBoundingInfo = false;
-  mesh.thinInstanceRefreshBoundingInfo(true);
-  mesh.freezeWorldMatrix();
-
-  const mat = mesh.material;
-  if (mat && !frozenMaterials.has(mat)) {
-    frozenMaterials.add(mat);
-    freezeWhenCompiled(mat, mesh, { useInstances: true });
-  }
-}
-
-export function buildWorld(grid: Grid, props: Prop[]): World {
+export function buildWorld(grid: Grid, props: Prop[], lights: readonly Light[]): World {
   const { width, height, cellSize, cells } = grid;
   const stage = group("world");
+  const scattered = new ScatteredLight(lights);
+
+  function bake(mesh: Mesh, matrices: Float32Array, worldXZ: Float32Array | null): void {
+    mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
+    mesh.isPickable = false;
+    mesh.alwaysSelectAsActiveMesh = false;
+    mesh.doNotSyncBoundingInfo = false;
+    mesh.thinInstanceRefreshBoundingInfo(true);
+    mesh.freezeWorldMatrix();
+
+    if (worldXZ) scattered.register(mesh, worldXZ);
+
+    const mat = mesh.material;
+    if (mat && !frozenMaterials.has(mat)) {
+      frozenMaterials.add(mat);
+      freezeWhenCompiled(mat, mesh, { useInstances: true });
+    }
+  }
 
   const isFloor = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === FLOOR;
@@ -126,20 +131,23 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
 
     const floorMatrices = new Float32Array(idxs.length * 16);
     const ceilMatrices = new Float32Array(idxs.length * 16);
+    const floorCeilXZ = new Float32Array(idxs.length * 2);
     const tmp = Matrix.Identity();
     idxs.forEach((idx, i) => {
       const x = idx % width;
       const y = (idx / width) | 0;
       const cx = (x + 0.5) * cellSize;
       const cz = (y + 0.5) * cellSize;
+      floorCeilXZ[i * 2] = cx;
+      floorCeilXZ[i * 2 + 1] = cz;
       Matrix.TranslationToRef(cx, 0, cz, tmp);
       tmp.copyToArray(floorMatrices, i * 16);
       Matrix.TranslationToRef(cx, WALL_HEIGHT, cz, tmp);
       tmp.copyToArray(ceilMatrices, i * 16);
     });
     stage.add(floorMesh, ceilMesh);
-    bake(floorMesh, floorMatrices);
-    bake(ceilMesh, ceilMatrices);
+    bake(floorMesh, floorMatrices, floorCeilXZ);
+    bake(ceilMesh, ceilMatrices, floorCeilXZ);
   }
 
   for (const [regionId, coords] of wallByRegion) {
@@ -147,15 +155,18 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     const matSet = getRoomMaterials(archetype);
     const wallMesh = box(cellSize, WALL_HEIGHT, cellSize, matSet.wall, `walls_r${regionId}`);
     const wallMatrices = new Float32Array(coords.length * 16);
+    const wallXZ = new Float32Array(coords.length * 2);
     const tmp = Matrix.Identity();
     coords.forEach(([x, y], i) => {
       const cx = (x + 0.5) * cellSize;
       const cz = (y + 0.5) * cellSize;
+      wallXZ[i * 2] = cx;
+      wallXZ[i * 2 + 1] = cz;
       Matrix.TranslationToRef(cx, WALL_HEIGHT / 2, cz, tmp);
       tmp.copyToArray(wallMatrices, i * 16);
     });
     stage.add(wallMesh);
-    bake(wallMesh, wallMatrices);
+    bake(wallMesh, wallMatrices, wallXZ);
 
     const config = AMBIENCE.materials.rooms[archetype];
     if (config.dado && matSet.dado && matSet.rail) {
@@ -178,8 +189,8 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
         tmp2.copyToArray(railMatrices, i * 16);
       });
       stage.add(dadoMesh, railMesh);
-      bake(dadoMesh, dadoMatrices);
-      bake(railMesh, railMatrices);
+      bake(dadoMesh, dadoMatrices, wallXZ);
+      bake(railMesh, railMatrices, wallXZ);
     }
   }
 
@@ -245,7 +256,7 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       const decalMatrices = new Float32Array(composed.length * 16);
       composed.forEach((m, i) => m.copyToArray(decalMatrices, i * 16));
       stage.add(decalMesh);
-      bake(decalMesh, decalMatrices);
+      bake(decalMesh, decalMatrices, null);
     }
   }
 
@@ -254,5 +265,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     grid,
     isWall: (cx, cy) => !isFloor(cx, cy),
     inference,
+    scattered,
   };
 }

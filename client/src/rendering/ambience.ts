@@ -30,7 +30,6 @@ export const AMBIENCE = {
   },
   ambientLight: {
     skyColor: 0xb7b3a0,
-    groundColor: 0x55544b,
     intensity: 1.0,
     minFactor: 0.14,
     radius: 12,

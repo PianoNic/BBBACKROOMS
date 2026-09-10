@@ -58,7 +58,7 @@ export function buildScene(
   webcam: WebcamMesh,
   models: ModelLibrary | null,
 ) {
-  const world = buildWorld(init.grid, init.props);
+  const world = buildWorld(init.grid, init.props, init.lights);
   const regionOfXY = (x: number, z: number): number => world.inference.regionAtXY(
     Math.floor(x / init.grid.cellSize),
     Math.floor(z / init.grid.cellSize),
@@ -172,6 +172,6 @@ export function buildScene(
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice,
-    inference: world.inference, ambientLights, modelStage,
+    inference: world.inference, ambientLights, modelStage, scattered: world.scattered,
   };
 }

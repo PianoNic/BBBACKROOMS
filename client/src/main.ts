@@ -209,7 +209,7 @@ async function main(): Promise<void> {
   ctx.canvas.focus();
   runGameLoop({
     ctx, net, stats,
-    player: s.player, lights: s.lights, ambientLights: s.ambientLights,
+    player: s.player, lights: s.lights, ambientLights: s.ambientLights, scattered: s.scattered,
     remotes: s.remotes, minimap: s.minimap,
     quests: s.quests, pings: s.pings, hideouts: s.hideouts, stamina: s.stamina, interactPrompt: s.interactPrompt,
     portal: s.portal, spectator: s.spectator, state: s.state,

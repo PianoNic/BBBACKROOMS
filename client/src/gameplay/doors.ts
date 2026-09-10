@@ -6,6 +6,7 @@ import type { DoorInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import type { Rect } from "../world/colliders";
 import { Group, group } from "../rendering/babylon";
+import { mergeChildMeshes } from "../rendering/staticMerge";
 import {
   CELL, DOOR_T, DOOR_W, FILLER_HALF_W, DOORWAY_X,
   buildFillers, buildFrameAndPanel,
@@ -41,6 +42,7 @@ export class Doors {
 
     const pivot = buildFrameAndPanel(root);
     buildFillers(root);
+    mergeChildMeshes(root);
     this.group.add(root);
 
     // Static colliders for the wall fillers (always blocking).

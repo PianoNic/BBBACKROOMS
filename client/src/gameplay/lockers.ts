@@ -9,6 +9,7 @@ import type { LockerInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { Group, box, group } from "../rendering/babylon";
 import { materials } from "../rendering/materials";
+import { mergeChildMeshes } from "../rendering/staticMerge";
 import { activeModelLibrary } from "../rendering/modelLoader";
 import { normalizeModelTemplate } from "../world/modelPropStage";
 import { MODEL_PROPS } from "../world/modelProps";
@@ -84,6 +85,7 @@ export class Lockers {
 
     const modelLocker = this.buildModelLocker(root);
     if (modelLocker) {
+      mergeChildMeshes(root);
       this.group.add(root);
       const opened = lk.opened;
       this.entries.set(lk.id, {
@@ -142,6 +144,7 @@ export class Lockers {
     doorPivot.add(handle);
     root.add(doorPivot);
 
+    mergeChildMeshes(root);
     this.group.add(root);
     const opened = lk.opened;
     this.entries.set(lk.id, {
