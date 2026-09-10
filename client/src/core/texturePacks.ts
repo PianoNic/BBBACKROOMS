@@ -2,8 +2,9 @@ import type { RosterEntry } from "../net/protocol";
 import { fetchRoster } from "../net/roster";
 import { decodeBbpack } from "./bbpack";
 import { migrateLegacyTexturePackDb } from "./legacyStorage";
+import { MUSIC_DEFINITIONS, SOUND_DEFINITIONS } from "./soundRegistry";
 
-export type PackTeacherEntry = { image: string; name?: string };
+export type PackTeacherEntry = { image: string; name?: string; sound?: string };
 
 export type StoredPack = {
   id: string;
@@ -12,6 +13,9 @@ export type StoredPack = {
   hash: string;
   teachers: Record<string, PackTeacherEntry>;
   images: Record<string, Blob>;
+  sounds: Record<string, string>;
+  music: Record<string, string>;
+  audio: Record<string, Blob>;
 };
 
 export type PackSummary = {
@@ -33,6 +37,11 @@ const MAX_IMAGE_BYTES = 512 * 1024;
 const MAX_IMAGE_DIM = 1024;
 export const MAX_TEACHER_ENTRIES = 256;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+export const MAX_SOUND_BYTES = 1024 * 1024;
+export const MAX_MUSIC_BYTES = 6 * 1024 * 1024;
+const ALLOWED_AUDIO_MIME = new Set(["audio/mpeg", "audio/ogg", "audio/wav", "audio/webm"]);
+const KNOWN_SOUND_IDS = new Set(SOUND_DEFINITIONS.map((d) => d.id));
+const KNOWN_MUSIC_IDS = new Set(MUSIC_DEFINITIONS.map((d) => d.id));
 
 async function openDb(): Promise<IDBDatabase> {
   await migrateLegacyTexturePackDb();
@@ -106,8 +115,11 @@ async function checkImageDimensions(blob: Blob): Promise<void> {
   }
 }
 
-type ManifestTeachers = Record<string, { image?: unknown; name?: unknown }>;
-type Manifest = { id?: unknown; version?: unknown; name?: unknown; teachers?: unknown };
+type ManifestTeachers = Record<string, { image?: unknown; name?: unknown; sound?: unknown }>;
+type Manifest = {
+  id?: unknown; version?: unknown; name?: unknown; teachers?: unknown;
+  sounds?: unknown; music?: unknown;
+};
 
 function validateManifestShape(raw: unknown): asserts raw is Manifest {
   if (!raw || typeof raw !== "object") throw new Error("pack.json is not an object");
@@ -118,6 +130,23 @@ function validateString(value: unknown, field: string, maxLen = MAX_STRING_LEN):
     throw new Error(`pack.json field "${field}" must be a non-empty string up to ${maxLen} chars`);
   }
   return value;
+}
+
+function validateAudioAsset(
+  assetsByName: Map<string, { name: string; mime: string; bytes: Uint8Array<ArrayBuffer> }>,
+  assetName: string, field: string, maxBytes: number,
+): Blob {
+  const asset = assetsByName.get(assetName);
+  if (!asset) {
+    throw new Error(`pack.json field "${field}" references missing asset "${assetName}"`);
+  }
+  if (!ALLOWED_AUDIO_MIME.has(asset.mime)) {
+    throw new Error(`audio asset "${assetName}" must be MP3, OGG, WAV or WebM`);
+  }
+  if (asset.bytes.byteLength > maxBytes) {
+    throw new Error(`audio asset "${assetName}" exceeds ${maxBytes} bytes`);
+  }
+  return new Blob([asset.bytes], { type: asset.mime });
 }
 
 export async function importPackFromFile(file: File): Promise<StoredPack> {
@@ -134,14 +163,56 @@ export async function importPackFromFile(file: File): Promise<StoredPack> {
   const version = validateString(manifestRaw.version, "version");
   const name = validateString(manifestRaw.name, "name");
 
-  if (!manifestRaw.teachers || typeof manifestRaw.teachers !== "object") {
+  if (
+    manifestRaw.teachers !== undefined
+    && (typeof manifestRaw.teachers !== "object" || manifestRaw.teachers === null)
+  ) {
     throw new Error("pack.json field \"teachers\" must be an object");
   }
-  const teachersRaw = manifestRaw.teachers as ManifestTeachers;
+  const teachersRaw = (manifestRaw.teachers ?? {}) as ManifestTeachers;
   const teacherKeys = Object.keys(teachersRaw);
-  if (teacherKeys.length === 0) throw new Error("pack.json must declare at least one teacher entry");
   if (teacherKeys.length > MAX_TEACHER_ENTRIES) {
     throw new Error(`pack.json declares more than ${MAX_TEACHER_ENTRIES} teacher entries`);
+  }
+
+  const audio: Record<string, Blob> = {};
+  const sounds: Record<string, string> = {};
+  const music: Record<string, string> = {};
+
+  if (manifestRaw.sounds !== undefined) {
+    if (typeof manifestRaw.sounds !== "object" || manifestRaw.sounds === null) {
+      throw new Error("pack.json field \"sounds\" must be an object");
+    }
+    const soundsRaw = manifestRaw.sounds as Record<string, unknown>;
+    for (const soundId of Object.keys(soundsRaw)) {
+      if (!KNOWN_SOUND_IDS.has(soundId)) {
+        throw new Error(`pack.json field "sounds" references unknown sound id "${soundId}"`);
+      }
+      const assetName = validateString(soundsRaw[soundId], `sounds.${soundId}`, 256);
+      const blob = validateAudioAsset(assetsByName, assetName, `sounds.${soundId}`, MAX_SOUND_BYTES);
+      sounds[soundId] = assetName;
+      audio[assetName] = blob;
+    }
+  }
+
+  if (manifestRaw.music !== undefined) {
+    if (typeof manifestRaw.music !== "object" || manifestRaw.music === null) {
+      throw new Error("pack.json field \"music\" must be an object");
+    }
+    const musicRaw = manifestRaw.music as Record<string, unknown>;
+    for (const trackId of Object.keys(musicRaw)) {
+      if (!KNOWN_MUSIC_IDS.has(trackId)) {
+        throw new Error(`pack.json field "music" references unknown track id "${trackId}"`);
+      }
+      const assetName = validateString(musicRaw[trackId], `music.${trackId}`, 256);
+      const blob = validateAudioAsset(assetsByName, assetName, `music.${trackId}`, MAX_MUSIC_BYTES);
+      music[trackId] = assetName;
+      audio[assetName] = blob;
+    }
+  }
+
+  if (teacherKeys.length === 0 && Object.keys(sounds).length === 0 && Object.keys(music).length === 0) {
+    throw new Error("pack.json must declare at least one teacher entry");
   }
 
   const teachers: Record<string, PackTeacherEntry> = {};
@@ -170,11 +241,17 @@ export async function importPackFromFile(file: File): Promise<StoredPack> {
     if (entryRaw.name !== undefined) {
       entry.name = validateString(entryRaw.name, `teachers.${key}.name`);
     }
+    if (entryRaw.sound !== undefined) {
+      const soundName = validateString(entryRaw.sound, `teachers.${key}.sound`, 256);
+      const soundBlob = validateAudioAsset(assetsByName, soundName, `teachers.${key}.sound`, MAX_SOUND_BYTES);
+      entry.sound = soundName;
+      audio[soundName] = soundBlob;
+    }
     teachers[key] = entry;
     images[imageName] = blob;
   }
 
-  const stored: StoredPack = { id, name, version, hash, teachers, images };
+  const stored: StoredPack = { id, name, version, hash, teachers, images, sounds, music, audio };
   await putPack(stored);
   return stored;
 }
@@ -194,6 +271,18 @@ function revokeMemoryUrls(id: string): void {
   memoryByPackId.delete(id);
 }
 
+type PackChangeListener = () => void;
+const packChangeListeners = new Set<PackChangeListener>();
+
+export function onActivePackChange(cb: PackChangeListener): () => void {
+  packChangeListeners.add(cb);
+  return () => packChangeListeners.delete(cb);
+}
+
+function notifyActivePackChange(): void {
+  for (const cb of packChangeListeners) cb();
+}
+
 export async function removePack(id: string): Promise<void> {
   revokeMemoryUrls(id);
   if (active && active.id === id) active = null;
@@ -201,6 +290,7 @@ export async function removePack(id: string): Promise<void> {
     try { localStorage.removeItem(ACTIVE_PACK_KEY); } catch {}
   }
   await deletePackRecord(id);
+  notifyActivePackChange();
 }
 
 export async function getStoredPack(id: string): Promise<StoredPack | undefined> {
@@ -210,6 +300,7 @@ export async function getStoredPack(id: string): Promise<StoredPack | undefined>
 export function invalidatePackCache(id: string): void {
   revokeMemoryUrls(id);
   if (active && active.id === id) active = null;
+  notifyActivePackChange();
 }
 
 type LoadedPack = {
@@ -217,6 +308,8 @@ type LoadedPack = {
   name: string;
   hash: string;
   teachers: Record<string, PackTeacherEntry>;
+  sounds: Record<string, string>;
+  music: Record<string, string>;
   urls: Map<string, string>;
 };
 
@@ -230,7 +323,13 @@ async function loadIntoMemory(pack: StoredPack): Promise<LoadedPack> {
   for (const [path, blob] of Object.entries(pack.images)) {
     urls.set(path, URL.createObjectURL(blob));
   }
-  const loaded: LoadedPack = { id: pack.id, name: pack.name, hash: pack.hash, teachers: pack.teachers, urls };
+  for (const [path, blob] of Object.entries(pack.audio ?? {})) {
+    urls.set(path, URL.createObjectURL(blob));
+  }
+  const loaded: LoadedPack = {
+    id: pack.id, name: pack.name, hash: pack.hash, teachers: pack.teachers,
+    sounds: pack.sounds ?? {}, music: pack.music ?? {}, urls,
+  };
   memoryByPackId.set(pack.id, loaded);
   return loaded;
 }
@@ -247,23 +346,27 @@ export async function setActivePackId(id: string | null): Promise<void> {
   if (id === null) {
     active = null;
     try { localStorage.removeItem(ACTIVE_PACK_KEY); } catch {}
+    notifyActivePackChange();
     return;
   }
   const pack = await getPack(id);
   if (!pack) throw new Error(`no locally stored pack with id "${id}"`);
   active = await loadIntoMemory(pack);
   try { localStorage.setItem(ACTIVE_PACK_KEY, id); } catch {}
+  notifyActivePackChange();
 }
 
 export async function activatePack(id: string, hash: string): Promise<boolean> {
   const pack = await getPack(id);
   if (!pack || pack.hash !== hash) return false;
   active = await loadIntoMemory(pack);
+  notifyActivePackChange();
   return true;
 }
 
 export function deactivatePack(): void {
   active = null;
+  notifyActivePackChange();
 }
 
 export function activePack(): { id: string; name: string; hash: string } | null {
@@ -279,6 +382,26 @@ function resolveEntry(abilityId: string | undefined, rosterIndex: number): PackT
   }
   if (abilityId && active.teachers[abilityId]) return active.teachers[abilityId];
   return null;
+}
+
+export function resolveSound(id: string, defaultUrl: string): string {
+  if (!active) return defaultUrl;
+  const assetName = active.sounds[id];
+  if (!assetName) return defaultUrl;
+  return active.urls.get(assetName) ?? defaultUrl;
+}
+
+export function resolveMusic(id: string, defaultUrl: string): string {
+  if (!active) return defaultUrl;
+  const assetName = active.music[id];
+  if (!assetName) return defaultUrl;
+  return active.urls.get(assetName) ?? defaultUrl;
+}
+
+export function resolveTeacherSound(abilityId: string | undefined, rosterIndex: number): string | null {
+  const entry = resolveEntry(abilityId, rosterIndex);
+  if (!entry || !active || !entry.sound) return null;
+  return active.urls.get(entry.sound) ?? null;
 }
 
 const rosterImageIndex = new Map<string, number>();
@@ -378,3 +501,14 @@ export function resolveTeacherName(
   const entry = resolveEntry(abilityId, effectiveIndex);
   return entry?.name ?? defaultName;
 }
+
+export type PackAudioDevHandle = { resolveSound: typeof resolveSound };
+
+export function installPackAudioDevHook(): void {
+  if (!import.meta.env.DEV) return;
+  (window as unknown as { nachsitzenPackAudioDev?: PackAudioDevHandle }).nachsitzenPackAudioDev = {
+    resolveSound,
+  };
+}
+
+installPackAudioDevHook();
