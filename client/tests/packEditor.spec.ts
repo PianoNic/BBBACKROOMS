@@ -32,7 +32,7 @@ const ROSTER = [
 test("pack editor builds a bbpack without any network traffic", async ({ page }) => {
   test.setTimeout(90_000);
 
-  await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
+  await page.addInitScript(() => sessionStorage.setItem("nachsitzen-intro-seen", "1"));
 
   await mockBackend(page);
   await page.route("**/roster", (route) =>

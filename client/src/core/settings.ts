@@ -28,7 +28,7 @@ export type Settings = {
   cameraMode: "off" | "on";
 };
 
-const KEY = "bbb_settings";
+const KEY = "nachsitzen_settings";
 
 export const DEFAULTS: Settings = {
   fov: 75,

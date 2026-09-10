@@ -54,7 +54,7 @@ for (const viewport of VIEWPORTS) {
     test.setTimeout(120_000);
 
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
+    await page.addInitScript(() => sessionStorage.setItem("nachsitzen-intro-seen", "1"));
     await mockBackend(page);
 
     await page.goto("/");

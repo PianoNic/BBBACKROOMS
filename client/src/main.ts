@@ -1,5 +1,7 @@
+import "./core/legacyStorageBoot";
 import "./styles/main.scss";
 import Stats from "stats.js";
+import { LOBBY_RESUME_KEY } from "./ui/menu/state/storageKeys";
 import { SpatialListener } from "./core/spatialAudio";
 import { runGameLoop } from "./core/gameLoop";
 import { connect, type NetClient } from "./net/client";
@@ -42,7 +44,7 @@ async function main(): Promise<void> {
     // Auto-resume just failed (lobby gone or WS unreachable). Clear the
     // resume hint so the reload lands on the title menu, not in an
     // infinite "couldn't join" loop.
-    sessionStorage.removeItem("bbb_lobby_resume");
+    sessionStorage.removeItem(LOBBY_RESUME_KEY);
     console.warn(`Couldn't join: ${(e as Error).message}`);
     window.location.reload();
     return;
@@ -167,7 +169,7 @@ async function main(): Promise<void> {
     showPauseMenu({
       onResume: () => { pauseOpen = false; enterGame(); },
       onLeave: () => {
-        sessionStorage.removeItem("bbb_lobby_resume");
+        sessionStorage.removeItem(LOBBY_RESUME_KEY);
         webcam.dispose();
         window.location.reload();
       },

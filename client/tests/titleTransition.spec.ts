@@ -4,7 +4,7 @@ import { mockBackend } from "./backendMocks";
 test("title screens transition forward and back through the screen stage", async ({ page }) => {
   test.setTimeout(60_000);
 
-  await page.addInitScript(() => sessionStorage.setItem("bbb-intro-seen", "1"));
+  await page.addInitScript(() => sessionStorage.setItem("nachsitzen-intro-seen", "1"));
 
   await mockBackend(page);
 

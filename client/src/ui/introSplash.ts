@@ -5,15 +5,15 @@
  *  title music starts on the first real interaction instead. */
 import { playSfx, unlockAudio } from "../core/audio";
 import { el } from "./dom";
+import { INTRO_SEEN_KEY } from "./menu/state/storageKeys";
 
-const SEEN_KEY = "bbb-intro-seen";
 const STING = "/sounds/actions/logo-sting.ogg";
 const CREDITS_MS = 3400;
 
 export function playIntro(): Promise<void> {
   // Once per tab session — endgame "back to lobby" reloads shouldn't replay it.
-  if (sessionStorage.getItem(SEEN_KEY)) return Promise.resolve();
-  sessionStorage.setItem(SEEN_KEY, "1");
+  if (sessionStorage.getItem(INTRO_SEEN_KEY)) return Promise.resolve();
+  sessionStorage.setItem(INTRO_SEEN_KEY, "1");
 
   return new Promise((resolve) => {
     const overlay = el<HTMLDivElement>("div");

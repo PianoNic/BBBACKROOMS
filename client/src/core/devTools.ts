@@ -12,5 +12,5 @@ export type DevHandle = {
 
 export function installDevTools(handle: DevHandle): void {
   if (!import.meta.env.DEV) return;
-  (window as unknown as { bbbDev?: DevHandle }).bbbDev = handle;
+  (window as unknown as { nachsitzenDev?: DevHandle }).nachsitzenDev = handle;
 }
