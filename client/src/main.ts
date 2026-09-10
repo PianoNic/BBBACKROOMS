@@ -8,6 +8,8 @@ import { createRenderContext } from "./rendering/renderer";
 import { showTitleScreen, getStoredAvatar, getStoredName } from "./ui/title";
 import { hideLoading, setLoading, showLoading, yieldToPaint } from "./ui/loading";
 import { showTeacherSlots } from "./ui/teacherSlots";
+import { resolveTeacherImage } from "./core/texturePacks";
+import { imagePreloader } from "./core/imagePreload";
 import { showPauseMenu } from "./ui/pauseMenu";
 import { captureInput } from "./core/inputCapture";
 import { startAmbient, unlockAudio } from "./core/audio";
@@ -64,6 +66,10 @@ async function main(): Promise<void> {
     showLoading("generating map…");
   });
   if (!genStarted) room.dismount();
+
+  const selectedPortraitUrls = init.teachers.map((t) =>
+    resolveTeacherImage(t.ability, -1, `/teachers/${t.image}`));
+  imagePreloader.warm(selectedPortraitUrls);
 
   showLoading("building world…");
   await yieldToPaint();
@@ -198,9 +204,19 @@ async function main(): Promise<void> {
   Object.assign(stats.dom.style, { position: "fixed", bottom: "8px", right: "8px", top: "auto", left: "auto" });
   document.body.appendChild(stats.dom);
 
+  setLoading("Modelle laden…");
+  await yieldToPaint();
+  const modelsSettled = Promise.all([
+    s.modelsReady,
+    models ? models.pickupsReady() : Promise.resolve(),
+  ]).then(() => undefined);
+  const modelsTimeout = new Promise<void>((resolve) => { setTimeout(resolve, 15000); });
+  await Promise.race([modelsSettled, modelsTimeout]);
+
   hideLoading();
   status.style.display = "none";
   if (init.phase === "tasks" && init.teachers.length > 0 && !s.state.extracted) {
+    await imagePreloader.ready(selectedPortraitUrls);
     await showTeacherSlots(init.teachers, init.roster);
   }
   // Auto-focus the canvas so keyboard input works without any click.

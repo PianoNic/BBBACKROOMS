@@ -15,6 +15,7 @@ export class ModelLibrary {
   private readonly resolved = new Map<PropType, AssetContainer | null>();
   private readonly pickupPending = new Map<PickupKind, Promise<AssetContainer | null>>();
   private readonly pickupResolved = new Map<PickupKind, AssetContainer | null>();
+  private pickupBundlePromise: Promise<void> | null = null;
 
   constructor(private readonly scene: Scene) {}
 
@@ -66,8 +67,14 @@ export class ModelLibrary {
     return this.pickupResolved.get(kind) ?? null;
   }
 
-  loadPickupBundle(): void {
-    for (const kind of PICKUP_KINDS) void this.loadPickup(kind);
+  loadPickupBundle(): Promise<void> {
+    const promise = Promise.all(PICKUP_KINDS.map((kind) => this.loadPickup(kind))).then(() => undefined);
+    this.pickupBundlePromise = promise;
+    return promise;
+  }
+
+  pickupsReady(): Promise<void> {
+    return this.pickupBundlePromise ?? Promise.resolve();
   }
 
   async loadBundle(
@@ -80,7 +87,7 @@ export class ModelLibrary {
       done++;
       onProgress?.(done, total);
     })));
-    this.loadPickupBundle();
+    void this.loadPickupBundle();
   }
 }
 

@@ -7,7 +7,7 @@
 import { playSfx } from "../core/audio";
 import { abilityCopy } from "../gameplay/abilityLabels";
 import type { RosterEntry, TeacherInfo } from "../net/protocol";
-import { resolveTeacherImage, resolveTeacherName } from "../core/texturePacks";
+import { resolveTeacherImage, resolveTeacherName, resolveTeacherThumb } from "../core/texturePacks";
 import { el } from "./dom";
 import { ensureTeacherSlotStyle } from "./teacherSlotStyle";
 import { TICK_VOICES, playTick } from "./teacherSlotSound";
@@ -15,16 +15,71 @@ import { TICK_VOICES, playTick } from "./teacherSlotSound";
 const LOCK_SOUND = "/sounds/metal/clang.mp3";
 const CELL_H = 320;
 
-function buildCell(e: { image: string; name: string; ability: string }): HTMLDivElement {
-  const ab = abilityCopy(e.ability);
-  const cell = el<HTMLDivElement>("div", "cell");
-  const img = document.createElement("img");
-  img.src = resolveTeacherImage(e.ability, -1, `/teachers/${e.image}`);
-  img.alt = "";
-  cell.appendChild(img);
-  cell.appendChild(el<HTMLDivElement>("div", "name", resolveTeacherName(e.ability, -1, e.name)));
-  cell.appendChild(el<HTMLDivElement>("div", "ability", ab.label));
-  return cell;
+type CellRefs = {
+  root: HTMLDivElement;
+  img: HTMLImageElement;
+  name: HTMLDivElement;
+  ability: HTMLDivElement;
+};
+
+class Reel {
+  readonly el: HTMLDivElement;
+  readonly targetIdx: number;
+  private readonly strip: HTMLDivElement;
+  private readonly entries: RosterEntry[];
+  private readonly cells: [CellRefs, CellRefs];
+  private readonly boundIdx: [number, number] = [-1, -1];
+  private boundBase = 0;
+
+  constructor(entries: RosterEntry[]) {
+    this.entries = entries;
+    this.targetIdx = entries.length - 1;
+    this.el = el<HTMLDivElement>("div", "reel spinning");
+    this.strip = el<HTMLDivElement>("div", "strip");
+    this.cells = [Reel.buildCell(), Reel.buildCell()];
+    this.strip.appendChild(this.cells[0].root);
+    this.strip.appendChild(this.cells[1].root);
+    this.el.appendChild(this.strip);
+    this.bindCell(0, 0);
+    this.bindCell(1, Math.min(1, this.targetIdx));
+  }
+
+  private static buildCell(): CellRefs {
+    const root = el<HTMLDivElement>("div", "cell");
+    const img = document.createElement("img");
+    img.alt = "";
+    root.appendChild(img);
+    const name = el<HTMLDivElement>("div", "name");
+    root.appendChild(name);
+    const ability = el<HTMLDivElement>("div", "ability");
+    root.appendChild(ability);
+    return { root, img, name, ability };
+  }
+
+  private bindCell(cellIndex: 0 | 1, entryIndex: number): void {
+    if (this.boundIdx[cellIndex] === entryIndex) return;
+    this.boundIdx[cellIndex] = entryIndex;
+    const e = this.entries[entryIndex];
+    const cell = this.cells[cellIndex];
+    const landed = entryIndex === this.targetIdx;
+    cell.img.src = landed
+      ? resolveTeacherImage(e.ability, -1, `/teachers/${e.image}`)
+      : resolveTeacherThumb(e.ability, -1, e.image);
+    cell.name.textContent = resolveTeacherName(e.ability, -1, e.name);
+    cell.ability.textContent = abilityCopy(e.ability).label;
+  }
+
+  render(pos: number): number {
+    const base = Math.min(Math.floor(pos), this.targetIdx);
+    const frac = pos - base;
+    this.strip.style.transform = `translateY(${-frac * CELL_H}px)`;
+    if (base !== this.boundBase) {
+      this.boundBase = base;
+      this.bindCell(0, base);
+      this.bindCell(1, Math.min(base + 1, this.targetIdx));
+    }
+    return base;
+  }
 }
 
 function pickStrip(
@@ -54,7 +109,7 @@ export function showTeacherSlots(
     const countdownEl = el<HTMLDivElement>("div", "countdown");
     root.appendChild(countdownEl);
 
-    const reels: { el: HTMLDivElement; strip: HTMLDivElement; }[] = [];
+    const reels: Reel[] = [];
     const fallback = roster.length > 0
       ? roster
       : teachers.map((t) => ({
@@ -62,16 +117,13 @@ export function showTeacherSlots(
         }));
 
     teachers.forEach((t, i) => {
-      const reel = el<HTMLDivElement>("div", "reel spinning");
-      const strip = el<HTMLDivElement>("div", "strip");
       const padBefore = 40 + i * 16;
       const list = pickStrip(fallback, {
         image: t.image, name: t.name, subject: t.subject, ability: t.ability,
       }, padBefore);
-      for (const entry of list) strip.appendChild(buildCell(entry));
-      reel.appendChild(strip);
-      reelsEl.appendChild(reel);
-      reels.push({ el: reel, strip });
+      const reel = new Reel(list);
+      reelsEl.appendChild(reel.el);
+      reels.push(reel);
       const desc = el<HTMLDivElement>("div", "desc");
       const descName = resolveTeacherName(t.ability, -1, t.name);
       desc.textContent = `${descName} — ${abilityCopy(t.ability).desc}`;
@@ -80,7 +132,6 @@ export function showTeacherSlots(
 
     document.body.appendChild(root);
 
-    const stripLengths = reels.map((r) => r.strip.children.length);
     const startTimes = teachers.map((_, i) => i * 250);
     const stopTimes = teachers.map((_, i) => 2400 + i * 700);
     const t0 = performance.now();
@@ -124,8 +175,7 @@ export function showTeacherSlots(
           if (!r.el.classList.contains("locked")) {
             r.el.classList.remove("spinning");
             r.el.classList.add("locked");
-            const targetIdx = stripLengths[i] - 1;
-            r.strip.style.transform = `translateY(${-targetIdx * CELL_H}px)`;
+            r.render(r.targetIdx);
             descsEl.children[i].classList.add("show");
             playSfx(LOCK_SOUND, 0.35);
           }
@@ -134,9 +184,8 @@ export function showTeacherSlots(
         stillSpinning = true;
         const progress = (dt - startT) / (stopT - startT);
         const eased = 1 - Math.pow(1 - progress, 3);
-        const targetIdx = stripLengths[i] - 1;
-        r.strip.style.transform = `translateY(${-eased * targetIdx * CELL_H}px)`;
-        const cellIdx = Math.floor(eased * targetIdx);
+        const pos = eased * r.targetIdx;
+        const cellIdx = r.render(pos);
         if (cellIdx !== lastCellIdx[i]) {
           lastCellIdx[i] = cellIdx;
           const voice = TICK_VOICES[i % TICK_VOICES.length];

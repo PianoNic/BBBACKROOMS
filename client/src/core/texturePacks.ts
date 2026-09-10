@@ -321,18 +321,39 @@ function deriveIndexFromName(defaultName: string): number {
   return index !== undefined ? index : -1;
 }
 
-export function resolveTeacherImage(
+function resolvePackEntry(
   abilityId: string | undefined, rosterIndex: number, defaultUrl: string,
-): string {
+): PackTeacherEntry | null {
   let effectiveIndex = rosterIndex;
   if (rosterIndex < 0) {
     ensureRosterCache();
     effectiveIndex = deriveIndexFromImage(defaultUrl);
   }
-  const entry = resolveEntry(abilityId, effectiveIndex);
+  return resolveEntry(abilityId, effectiveIndex);
+}
+
+export function resolveTeacherImage(
+  abilityId: string | undefined, rosterIndex: number, defaultUrl: string,
+): string {
+  const entry = resolvePackEntry(abilityId, rosterIndex, defaultUrl);
   if (!entry || !active) return defaultUrl;
   const url = active.urls.get(entry.image);
   return url ?? defaultUrl;
+}
+
+export function teacherThumbUrl(imageFile: string): string {
+  const stem = imageFile.replace(/\.[^.]+$/, "");
+  return `/teachers/thumbs/${stem}.webp`;
+}
+
+export function resolveTeacherThumb(
+  abilityId: string | undefined, rosterIndex: number, imageFile: string,
+): string {
+  const defaultUrl = `/teachers/${imageFile}`;
+  const entry = resolvePackEntry(abilityId, rosterIndex, defaultUrl);
+  if (!entry || !active) return teacherThumbUrl(imageFile);
+  const url = active.urls.get(entry.image);
+  return url ?? teacherThumbUrl(imageFile);
 }
 
 export function resolveTeacherName(

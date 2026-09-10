@@ -82,7 +82,7 @@ export class ModelPropStage {
     props: readonly Prop[],
     immediate: readonly PropType[],
     deferred: readonly PropType[],
-  ): void {
+  ): Promise<void> {
     const byType = new Map<PropType, Prop[]>();
     for (const p of props) {
       if (!MODEL_PROPS[p.type] || MANAGER_OWNED_TYPES.has(p.type)) continue;
@@ -98,13 +98,14 @@ export class ModelPropStage {
       if (container) this.renderType(type, container, list);
     }
 
-    for (const type of deferred) {
+    const deferredLoads = deferred.map((type) => {
       const list = byType.get(type);
-      if (!list || list.length === 0) continue;
-      void this.library.load(type).then((container) => {
+      if (!list || list.length === 0) return Promise.resolve();
+      return this.library.load(type).then((container) => {
         if (container) this.renderType(type, container, list);
       });
-    }
+    });
+    return Promise.all(deferredLoads).then(() => undefined);
   }
 
   dispose(): void {
