@@ -2,10 +2,10 @@
 
 Twenty-three props and all six world pickups used to be procedural — boxes
 and cylinders built in `propBuilders/*.ts` and `gameplay/pickupModels.ts` at
-runtime. This replaces them with realistic CC0 PBR glTF models fetched from
-Poly Haven, while keeping the procedural builders as the `niedrig`-tier
-fallback (same reasoning as the [Materials](materials.md) PBR set: that tier
-must cost nothing).
+runtime. This replaces them with realistic CC0 glTF models fetched from Poly
+Haven, while keeping the procedural builders for every prop type that has no
+CC0 model match (see [Why Sketchfab's picks weren't fetched](#why-sketchfabs-picks-werent-fetched)
+below).
 
 ## What moved to a model
 
@@ -274,30 +274,21 @@ original props + `locker` + 6 pickups, no LOD meshes — see
 **4.85MB** — `tools/fetch_models.py` prints the exact on-disk total after
 every run, and the server test suite asserts it stays under budget.
 
-## Tier behaviour
+## Rendering: one profile, StandardMaterial only
 
-Niedrig keeps every procedural builder exactly as before — no models load,
-same reasoning as the material set in #128: that tier has to stay free.
-Mittel and above load the real models instead — every tier that loads a
-model always renders its one full-detail mesh (see
-[Why there's no LOD mesh](#why-theres-no-lod-mesh)).
-
-## Cheap materials below Realistisch
-
-The glTF models ship with full PBR materials (baked normal/AO/roughness
-maps), and measuring them on real hardware showed that's what actually
-costs frame time, not the extra triangles: Mittel went from ~7.6 ms/frame
-on `main` to roughly 28–40 ms/frame once the PBR-textured models loaded —
-enough on its own to trip the auto-drop watchdog from #130 and silently
-knock a player down a graphics tier mid-session. In response, the client
-renders the models with cheap `StandardMaterial`s (flat/no PBR texture
-sampling) at `niedrig`, `mittel`, and `hoch`, and only swaps in the full
-glTF PBR materials at `realistisch` — the one tier explicitly meant to
-spend extra GPU budget on visual fidelity (see
-[Realistisch tier](#realistisch-tier-and-the-pixelation-default) below).
-This is why the models look flatter than their baked textures suggest at
-every tier except Realistisch: the geometry from this pipeline is shared
-across all tiers, but the material cost only shows up at the top.
+There is no graphics tier and no Options row to control it. Every prop type
+that has a model always loads and always renders its one full-detail mesh
+(see [Why there's no LOD mesh](#why-theres-no-lod-mesh)); prop types with no
+CC0 match keep their procedural builder (see
+[Why Sketchfab's picks weren't fetched](#why-sketchfabs-picks-werent-fetched)
+below). The glTF models ship with full PBR materials (baked normal/AO/roughness
+maps), but `client/src/rendering/modelMaterials.ts` converts every one of them
+to a plain `StandardMaterial` (diffuse texture only, `maxSimultaneousLights = 1`)
+before it's ever shown — this is the only material path glTF props render
+through, matching the rest of the world (see [Materials](materials.md)).
+Rendering resolution is likewise fixed: the internal render target is always
+downscaled with `engine.setHardwareScalingLevel(4)` and the canvas uses
+`image-rendering: pixelated` — there is no separate high-resolution mode.
 
 ## Float UVs: why the models were rendering black
 
@@ -307,14 +298,14 @@ texture-coordinate quantization snaps those into a 12-bit fixed-point grid
 and compensates for the resulting precision loss by writing a
 `KHR_texture_transform` (a per-texture UV scale/offset, here scale ≈ 15.8)
 onto the material's `baseColorTexture`. Babylon's glTF loader applies that
-extension correctly under a PBR material, but the cheap `StandardMaterial`
-path used at `niedrig`/`mittel`/`hoch` (see
-[Cheap materials below Realistisch](#cheap-materials-below-realistisch)
+extension correctly under a PBR material, but the `StandardMaterial`
+conversion every model goes through (see
+[Rendering: one profile, StandardMaterial only](#rendering-one-profile-standardmaterial-only)
 above) doesn't apply `KHR_texture_transform` at all, so every prop sampled
 its texture through the wrong, untransformed UVs and rendered as a flat
-black silhouette below Realistisch. Confirmed on `locker`: clearing its
-diffuse texture made it render as a normal lit cabinet, isolating the bug
-to texture sampling rather than lighting or geometry.
+black silhouette. Confirmed on `locker`: clearing its diffuse texture made
+it render as a normal lit cabinet, isolating the bug to texture sampling
+rather than lighting or geometry.
 
 The fix is `gltfpack -vtf` (float texture-coordinate attributes instead of
 quantized ones) on every pack invocation, which removes the need for
@@ -325,26 +316,6 @@ Float UVs are slightly less compact than quantized ones, but the total
 `client/public/models` size actually went down in this pass (removing the
 LOD meshes more than offset it) — see
 [The 25MB budget](#the-25mb-budget) above.
-
-## Realistisch tier, and the pixelation default
-
-A fourth graphics tier, `realistisch`, was added alongside `hoch` in
-[`client/src/rendering/ambience.ts`](../client/src/rendering/ambience.ts).
-Its feature set matches `hoch` exactly — the only difference is in
-[`client/src/rendering/pipeline.ts`](../client/src/rendering/pipeline.ts):
-`Ambience.applySize` forces the hardware scaling level to `1.0` and sets
-`canvas.style.imageRendering` to `"auto"`, so the render target is native
-resolution with no pixelation downscale and no nearest-neighbour upscaling.
-
-This exists because the models carry baked PBR normal and AO detail that a
-1/4-resolution pixelation pass (the old default) mostly throws away —
-detail paid for in triangle and texture budget but invisible on screen. For
-the same reason, `DEFAULTS.pixelation` in
-[`client/src/core/settings.ts`](../client/src/core/settings.ts) moved from
-`4` to `2` for every other tier: the models are worth seeing even without
-switching all the way to Realistisch. The 1–8 slider range is unchanged,
-and anyone with a saved `bbb_settings` value keeps it — this only changes
-what a fresh install starts at.
 
 ## Running the model fetch script
 
