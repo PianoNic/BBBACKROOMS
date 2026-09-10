@@ -107,18 +107,18 @@ export async function buildPack(
   if (audio) {
     for (const [id, asset] of audio.sounds) {
       const path = `sounds/${sanitizeAssetSegment(id)}.${extensionForMime(asset.mime)}`;
-      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.file.arrayBuffer()) });
+      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.blob.arrayBuffer()) });
       sounds[id] = path;
     }
     for (const [id, asset] of audio.music) {
       const path = `music/${sanitizeAssetSegment(id)}.${extensionForMime(asset.mime)}`;
-      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.file.arrayBuffer()) });
+      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.blob.arrayBuffer()) });
       music[id] = path;
     }
     for (const [index, asset] of audio.teacherSounds) {
       const entry = roster[index];
       const path = `teachers/${slugifyImage(entry.image)}-taunt.${extensionForMime(asset.mime)}`;
-      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.file.arrayBuffer()) });
+      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.blob.arrayBuffer()) });
       const key = String(index);
       const existing = teachers[key];
       if (existing) existing.sound = path;

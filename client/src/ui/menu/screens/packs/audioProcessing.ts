@@ -2,7 +2,7 @@ import { MAX_MUSIC_BYTES, MAX_SOUND_BYTES } from "../../../../core/texturePacks"
 
 export type AudioKind = "sound" | "music";
 
-export type AudioAsset = { file: File; mime: string };
+export type AudioAsset = { blob: Blob; mime: string; fileName: string };
 
 const EXT_MIME: Record<string, string> = {
   mp3: "audio/mpeg",
@@ -37,7 +37,7 @@ export function processAudioFile(file: File, kind: AudioKind): AudioAsset {
   if (file.size > max) {
     throw new Error(`Datei überschreitet ${Math.round(max / (1024 * 1024))} MB`);
   }
-  return { file, mime };
+  return { blob: file, mime, fileName: file.name };
 }
 
 export function sanitizeAssetSegment(id: string): string {

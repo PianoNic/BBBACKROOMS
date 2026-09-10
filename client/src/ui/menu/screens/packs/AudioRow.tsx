@@ -8,6 +8,7 @@ export type AudioRowUi = { fileName: string | null; sizeLabel: string; error: st
 export function AudioRow(props: {
   def: SoundDefinition;
   ui: AudioRowUi;
+  disabled: boolean;
   playingDefault: boolean;
   playingReplacement: boolean;
   onPlayDefault: () => void;
@@ -43,6 +44,7 @@ export function AudioRow(props: {
             class="pack-audio-row-input"
             accept="audio/*"
             hidden
+            disabled={props.disabled}
             onChange={(e) => {
               const input = e.target as HTMLInputElement;
               const file = input.files?.[0];
@@ -75,6 +77,7 @@ export function TeacherTauntRow(props: {
   entry: RosterEntry;
   index: number;
   ui: AudioRowUi;
+  disabled: boolean;
   playingReplacement: boolean;
   onPlayReplacement: () => void;
   onFile: (file: File) => void;
@@ -97,6 +100,7 @@ export function TeacherTauntRow(props: {
             class="pack-audio-row-input"
             accept="audio/*"
             hidden
+            disabled={props.disabled}
             onChange={(e) => {
               const input = e.target as HTMLInputElement;
               const file = input.files?.[0];
