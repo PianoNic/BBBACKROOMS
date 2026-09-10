@@ -1,6 +1,4 @@
 /** Tiny helpers shared by the Teams + Moodle challenge apps. */
-import { el } from "../../dom";
-
 export type SendFn = (choice: string) => void;
 
 /** Stable initials for a name — used on fake avatar tiles. */
@@ -19,16 +17,6 @@ export function avatarColor(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
-}
-
-export function avatarTile(name: string, size = 32): HTMLDivElement {
-  const a = el<HTMLDivElement>("div", "avatar");
-  a.style.background = avatarColor(name);
-  a.style.width = `${size}px`;
-  a.style.height = `${size}px`;
-  a.style.fontSize = `${Math.max(10, size * 0.4)}px`;
-  a.textContent = initials(name);
-  return a;
 }
 
 /** Map a fake filename to an Office-style file-type swatch. */
