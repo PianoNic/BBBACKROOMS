@@ -152,7 +152,6 @@ export function buildScene(
   );
   const reviveBar = new ReviveBar();
   const compass = new TaskCompass(quests);
-  document.body.appendChild(compass.element);
   compass.setEnabled(inventory.hasCompass());
   const heartbeat = new Heartbeat();
   const horrorAudio = new HorrorAudio(audioListener);
