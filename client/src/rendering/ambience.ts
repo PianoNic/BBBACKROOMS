@@ -98,7 +98,7 @@ export const AMBIENCE = {
     },
     rooms: {
       classroom: {
-        wall: "wall_plaster_plain", wallTint: 0x8b8471,
+        wall: "wall_plaster_cream", wallTint: 0x9d9179,
         wallRepeatU: 1, wallRepeatV: 1.5,
         dado: { category: "dado_tile_green", tint: 0x1e2a22 },
         dadoHeight: 1.0,
@@ -108,7 +108,7 @@ export const AMBIENCE = {
         ceilingRepeatU: 1, ceilingRepeatV: 1,
       },
       hallway: {
-        wall: "wall_plaster_green", wallTint: 0x788172,
+        wall: "wall_plaster_cream", wallTint: 0x998d75,
         wallRepeatU: 1, wallRepeatV: 1.5,
         dado: { category: "dado_tile_green", tint: 0x1e2a22 },
         dadoHeight: 1.0,
@@ -168,7 +168,7 @@ export const AMBIENCE = {
         ceilingRepeatU: 1, ceilingRepeatV: 1,
       },
       teacher_room: {
-        wall: "wall_plaster_plain", wallTint: 0x888172,
+        wall: "wall_plaster_cream", wallTint: 0xa09479,
         wallRepeatU: 1, wallRepeatV: 1.5,
         floor: "floor_carpet", floorTint: 0x463b22,
         floorRepeatU: 1, floorRepeatV: 1,

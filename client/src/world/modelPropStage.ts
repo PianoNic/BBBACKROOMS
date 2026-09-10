@@ -29,6 +29,13 @@ export function normalizeModelTemplate(
     mesh.bakeCurrentTransformIntoVertices();
   }
 
+  if (spec.yawOffset !== 0) {
+    for (const mesh of meshes) {
+      mesh.rotationQuaternion = Quaternion.RotationYawPitchRoll(spec.yawOffset, 0, 0);
+      mesh.bakeCurrentTransformIntoVertices();
+    }
+  }
+
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -117,7 +124,7 @@ export class ModelPropStage {
     if (!spec) return;
     const templates = this.buildTemplates(type, container, spec);
     if (templates.length === 0) return;
-    this.instance(templates, props, spec);
+    this.instance(templates, props);
   }
 
   private buildTemplates(type: PropType, container: AssetContainer, spec: ModelPropSpec): Mesh[] {
@@ -129,7 +136,7 @@ export class ModelPropStage {
     return meshes;
   }
 
-  private instance(templates: Mesh[], props: readonly Prop[], spec: ModelPropSpec): void {
+  private instance(templates: Mesh[], props: readonly Prop[]): void {
     for (const template of templates) {
       template.parent = this.group;
 
@@ -137,7 +144,7 @@ export class ModelPropStage {
       props.forEach((p, i) => {
         Matrix.Compose(
           Vector3.One(),
-          Quaternion.RotationYawPitchRoll(p.yaw + spec.yawOffset, 0, 0),
+          Quaternion.RotationYawPitchRoll(p.yaw, 0, 0),
           new Vector3(p.x, 0, p.z),
         ).copyToArray(matrices, i * 16);
       });

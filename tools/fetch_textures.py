@@ -27,7 +27,7 @@ class CategorySpec:
 
 
 MANIFEST = (
-    CategorySpec("wall_plaster_green", "PaintedPlaster003", "JPG", False),
+    CategorySpec("wall_plaster_cream", "PaintedPlaster017", "JPG", False),
     CategorySpec("wall_plaster_plain", "Plaster001", "JPG", False),
     CategorySpec("wall_tile_white", "Tiles036", "JPG", False),
     CategorySpec("wall_tile_hex", "Tiles071", "JPG", False),
