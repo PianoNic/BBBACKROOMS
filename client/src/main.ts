@@ -75,6 +75,7 @@ async function main(): Promise<void> {
   await yieldToPaint();
   const net: NetClient = conn.client;
   status.textContent = `world: ${init.grid.width}×${init.grid.height} • you: ${init.selfColor}`;
+  status.classList.remove("hidden");
 
   setLoading("building world…");
   await yieldToPaint();
@@ -242,6 +243,9 @@ async function main(): Promise<void> {
 main().catch((err) => {
   hideLoading();
   const status = document.getElementById("status");
-  if (status) status.textContent = `error: ${err.message}`;
+  if (status) {
+    status.textContent = `error: ${err.message}`;
+    status.classList.remove("hidden");
+  }
   console.error(err);
 });

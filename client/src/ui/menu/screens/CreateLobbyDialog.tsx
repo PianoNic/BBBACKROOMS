@@ -38,14 +38,20 @@ export function CreateLobbyDialog() {
     }
   };
 
+  const createRef = useRef(create);
+  createRef.current = create;
+
   useEffect(() => {
     nameRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Enter") { e.preventDefault(); void create(); }
+      if (e.code === "Enter") { e.preventDefault(); void createRef.current(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, []);
 
   return (
     <Overlay id="create-modal" onClose={close}>
@@ -55,7 +61,7 @@ export function CreateLobbyDialog() {
           <label for="create-lobby-name">Name</label>
           <TextInput
             id="create-lobby-name"
-            ref={nameRef}
+            inputRef={nameRef}
             placeholder="lobby name"
             value={name}
             onInput={(e) => setName((e.target as HTMLInputElement).value)}

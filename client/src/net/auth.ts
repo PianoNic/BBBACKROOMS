@@ -65,6 +65,8 @@ export async function deleteAccount(): Promise<boolean> {
 /** Short-lived token to authenticate the WebSocket. null = guest. */
 export async function getWsTicket(): Promise<string | null> {
   try {
+    const account = await getMe();
+    if (!account) return null;
     const r = await fetch(`${API}/auth/ws-ticket`, { credentials: "include" });
     if (!r.ok) return null;
     const data = (await r.json()) as { ticket?: string };

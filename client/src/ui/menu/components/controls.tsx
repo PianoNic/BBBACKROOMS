@@ -1,4 +1,4 @@
-import type { ComponentChildren, JSX } from "preact";
+import type { ComponentChildren, JSX, Ref } from "preact";
 
 type ButtonProps = {
   variant?: "primary" | "ghost" | "danger" | "back";
@@ -92,10 +92,10 @@ export function Slider(props: {
   );
 }
 
-type TextInputProps = { class?: string } & JSX.IntrinsicElements["input"];
+type TextInputProps = { class?: string; inputRef?: Ref<HTMLInputElement> } & JSX.IntrinsicElements["input"];
 
-export function TextInput({ class: cls, ...rest }: TextInputProps) {
-  return <input {...rest} class={cls ? `bb-input ${cls}` : "bb-input"} />;
+export function TextInput({ class: cls, inputRef, ...rest }: TextInputProps) {
+  return <input {...rest} ref={inputRef} class={cls ? `bb-input ${cls}` : "bb-input"} />;
 }
 
 export function Checkbox(props: {

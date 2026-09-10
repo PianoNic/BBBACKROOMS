@@ -3,7 +3,7 @@ import type { ItemType, PickupKind } from "../../../net/protocol";
 import { buildChairMesh } from "../../../gameplay/chairs";
 import { buildItemModel } from "../../../gameplay/itemModels";
 import { buildPickupModel } from "../../../gameplay/pickups";
-import { createItemViewer } from "../../itemViewer";
+import { createItemViewerPool, type ItemViewerPool } from "../../itemViewer";
 import { Button } from "../components/controls";
 import { Heading, Panel, Scroll } from "../components/layout";
 import { Accordion } from "../components/Accordion";
@@ -117,9 +117,9 @@ function buildShowcaseModel(entry: ShowcaseEntry) {
   return buildItemModel(entry.type);
 }
 
-function ShowcaseTile(props: { entry: ShowcaseEntry }) {
+function ShowcaseTile(props: { entry: ShowcaseEntry; pool: ItemViewerPool }) {
   const [viewer] = useState(() => {
-    const v = createItemViewer(() => buildShowcaseModel(props.entry));
+    const v = props.pool.add(() => buildShowcaseModel(props.entry));
     v.canvas.style.width = "100%";
     v.canvas.style.height = "auto";
     v.canvas.style.aspectRatio = "1";
@@ -159,9 +159,12 @@ function TextSection(props: { section: Section; accordion: boolean; defaultOpen:
 }
 
 function ShowcaseSection(props: { accordion: boolean }) {
+  const [pool] = useState(() => createItemViewerPool());
+  useEffect(() => () => pool.dispose(), [pool]);
+
   const body = (
     <div class="tut-showcase">
-      {SHOWCASE.map((entry) => <ShowcaseTile key={entry.label} entry={entry} />)}
+      {SHOWCASE.map((entry) => <ShowcaseTile key={entry.label} entry={entry} pool={pool} />)}
     </div>
   );
   if (props.accordion) {
