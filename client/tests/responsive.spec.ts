@@ -31,6 +31,11 @@ async function assertInsideViewport(locator: Locator, viewport: Viewport): Promi
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
 }
 
+async function settle(page: Page): Promise<void> {
+  await expect(page.locator(".screen-stage > .screen")).toHaveCount(1);
+  await expect(page.locator(".screen-stage")).not.toHaveClass(/is-transitioning/);
+}
+
 async function assertScreen(
   page: Page,
   viewport: Viewport,
@@ -38,6 +43,7 @@ async function assertScreen(
   primaryAction: Locator,
 ): Promise<void> {
   await expect(primaryAction).toBeVisible();
+  await settle(page);
   await assertNoHorizontalOverflow(page);
   await assertInsideViewport(primaryAction, viewport);
   await page.screenshot({ path: `test-results/responsive/${viewport.name}-${screenName}.png` });
