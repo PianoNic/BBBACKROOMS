@@ -1,8 +1,10 @@
 import { defineConfig } from "vite";
+import preact from "@preact/preset-vite";
 
 const DEV_BACKEND = process.env.VITE_DEV_BACKEND ?? "http://localhost:8000";
 
 export default defineConfig({
+  plugins: [preact()],
   server: {
     port: 5173,
     host: true,
