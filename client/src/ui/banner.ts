@@ -1,22 +1,18 @@
-let el: HTMLDivElement | null = null;
+import { bannerText, bannerVisible } from "./hud/state";
+
 let timer: number | null = null;
 
 export function showBanner(text: string, durationMs = 4000): void {
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "banner";
-    document.body.appendChild(el);
-  }
-  el.textContent = text;
-  el.classList.remove("hidden");
+  bannerText.value = text;
+  bannerVisible.value = true;
   if (timer !== null) window.clearTimeout(timer);
   if (durationMs > 0) {
-    timer = window.setTimeout(() => el?.classList.add("hidden"), durationMs);
+    timer = window.setTimeout(() => { bannerVisible.value = false; }, durationMs);
   }
 }
 
 export function hideBanner(): void {
-  el?.classList.add("hidden");
+  bannerVisible.value = false;
   if (timer !== null) {
     window.clearTimeout(timer);
     timer = null;

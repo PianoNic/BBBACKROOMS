@@ -33,10 +33,11 @@ export const interactLabel = signal<string | null>(null);
 export const interactX = signal(0);
 export const interactY = signal(0);
 
-export const bannerText = signal<string | null>(null);
+export const bannerText = signal("");
+export const bannerVisible = signal(false);
 
-export type ToastState = { text: string; action: ToastAction | null } | null;
-export const toastState = signal<ToastState>(null);
+export type ToastState = { text: string; action: ToastAction | null; visible: boolean };
+export const toastState = signal<ToastState>({ text: "", action: null, visible: false });
 
 export const loadingText = signal<string | null>(null);
 

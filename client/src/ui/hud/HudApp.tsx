@@ -7,6 +7,8 @@ import { InventoryHud } from "./InventoryHud";
 import { InteractPrompt } from "./InteractPrompt";
 import { Minimap } from "./Minimap";
 import { TaskCompass } from "./Compass";
+import { Banner } from "./Banner";
+import { Toast } from "./Toast";
 import { hudActive } from "./state";
 
 export function HudApp() {
@@ -23,6 +25,8 @@ export function HudApp() {
           <InventoryHud />
           <Minimap />
           <TaskCompass />
+          <Banner />
+          <Toast />
         </>
       ) : null}
     </>
