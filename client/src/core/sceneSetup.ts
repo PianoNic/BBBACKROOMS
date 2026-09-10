@@ -47,6 +47,7 @@ import { preloadJumpscareImages } from "../ui/jumpscare";
 import { preloadSfx } from "./audio";
 import { resolveTeacherImage } from "./texturePacks";
 import { showVictory, showGameOver } from "../ui/victory";
+import { hudActive } from "../ui/hud/state";
 import { InputState } from "./input";
 
 export type SceneSetup = ReturnType<typeof buildScene>;
@@ -170,6 +171,8 @@ export function buildScene(
   );
   webcam.onRemoteAudio((id, stream) => proximityVoice.setStream(id, stream));
   webcam.setPeers(init.players.map((p) => p.id));
+
+  hudActive.value = true;
 
   return {
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,
