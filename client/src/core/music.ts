@@ -7,18 +7,23 @@
  *  don't repeat the same piece. Everything routes through the music
  *  gain from `audio.ts`, so the settings "Music" slider applies. */
 import { getMusicDestination, unlockAudio } from "./audio";
+import { MUSIC_DEFINITIONS } from "./soundRegistry";
+import { onActivePackChange, resolveMusic } from "./texturePacks";
 
 export type MusicState = "title" | "tasks" | "chase" | "escape";
 
-const TRACKS: Record<MusicState, string[]> = {
-  title: ["/sounds/music/backroomsbaden-1.mp3", "/sounds/music/backroomsbaden-2.mp3"],
-  tasks: [
-    "/sounds/music/liminal-lernatelier-1.mp3",
-    "/sounds/music/liminal-lernatelier-2.mp3",
-  ],
-  chase: ["/sounds/music/korridorjagd-1.mp3", "/sounds/music/korridorjagd-2.mp3"],
-  escape: ["/sounds/music/extraktion-1.mp3", "/sounds/music/extraktion-2.mp3"],
+const MUSIC_STATE_ID: Record<MusicState, string> = {
+  title: "music.title",
+  tasks: "music.liminal",
+  chase: "music.corridor_chase",
+  escape: "music.extraction",
 };
+
+const musicDefById = new Map(MUSIC_DEFINITIONS.map((d) => [d.id, d]));
+
+function tracksFor(state: MusicState): string[] {
+  return musicDefById.get(MUSIC_STATE_ID[state])?.defaults ?? [];
+}
 
 /** Per-state loudness relative to the music slider. */
 const LEVEL: Record<MusicState, number> = {
@@ -72,11 +77,12 @@ class MusicDirector {
     }
 
     // Rotate variants per entry so repeated states alternate pieces.
-    const variants = TRACKS[state];
+    const variants = tracksFor(state);
     const idx = this.variantIdx[state] % variants.length;
     this.variantIdx[state] += 1;
 
-    const el = new Audio(variants[idx]);
+    const url = resolveMusic(MUSIC_STATE_ID[state], variants[idx]);
+    const el = new Audio(url);
     el.loop = true;
     el.crossOrigin = "anonymous";
     const node = ctx.createMediaElementSource(el);
@@ -143,6 +149,15 @@ class MusicDirector {
       this.setState(this.basePhase);
     }
   }
+
+  refreshActivePack(): void {
+    const current = this.state;
+    if (current === null) return;
+    this.state = null;
+    this.setState(current);
+  }
 }
 
 export const music = new MusicDirector();
+
+onActivePackChange(() => music.refreshActivePack());
