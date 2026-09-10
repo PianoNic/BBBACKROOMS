@@ -1,7 +1,7 @@
 /** Persistent player settings. Single store, subscribers apply on change. */
 
 import type { GraphicsTier } from "../rendering/ambience";
-import { defaultGraphicsTierForHardware } from "./gpuTier";
+import { defaultGraphicsTierForHardware, gpuRendererString, isSoftwareRenderer } from "./gpuTier";
 
 export type Settings = {
   fov: number;          // 60..110
@@ -64,6 +64,11 @@ export const DEFAULTS: Settings = {
 let graphicsTierWasAutoSelected = false;
 let current: Settings = load();
 const listeners = new Set<(s: Settings) => void>();
+try {
+  const renderer = gpuRendererString();
+  if (renderer) console.info(`[gpu] ${renderer} → tier ${current.graphicsTier}`);
+  if (isSoftwareRenderer()) console.warn("[gpu] software WebGL renderer detected; hardware acceleration is off in this browser");
+} catch {}
 
 function load(): Settings {
   try {
@@ -74,7 +79,12 @@ function load(): Settings {
     }
     const parsed = JSON.parse(raw);
     graphicsTierWasAutoSelected = !("graphicsTier" in parsed);
-    return { ...DEFAULTS, ...parsed };
+    const merged = { ...DEFAULTS, ...parsed };
+    if (isSoftwareRenderer()) {
+      merged.graphicsTier = "niedrig";
+      merged.pixelation = Math.max(merged.pixelation, 3);
+    }
+    return merged;
   } catch {
     graphicsTierWasAutoSelected = true;
     return { ...DEFAULTS };

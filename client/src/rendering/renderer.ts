@@ -64,6 +64,7 @@ export function createRenderContext(mount: HTMLElement): RenderContext {
     stencil: false,
     powerPreference: "high-performance",
   }, false);
+  engine.disableUniformBuffers = true;
 
   const scene = new Scene(engine);
   scene.useRightHandedSystem = true;

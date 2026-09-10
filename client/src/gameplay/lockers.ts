@@ -4,10 +4,15 @@
  *  until the locker is opened. Each locker has a door that swings open
  *  (~90° around its hinge) when opened. Closed lockers expose an interact
  *  target; opened lockers don't (re-opening is a no-op server-side). */
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { LockerInfo } from "../net/protocol";
 import type { InteractTarget } from "../ui/interactPrompt";
 import { Group, box, group } from "../rendering/babylon";
 import { materials } from "../rendering/materials";
+import { activeModelLibrary } from "../rendering/modelLoader";
+import { normalizeModelTemplate } from "../world/modelPropStage";
+import { MODEL_PROPS } from "../world/modelProps";
+import { ModelHinge } from "./modelHinge";
 
 const OPEN_RADIUS = 1.8;
 const OPEN_ANGLE = Math.PI / 2;     // 90° swing
@@ -23,11 +28,25 @@ const D = 0.4;
 
 type Entry = {
   info: LockerInfo;
-  doorPivot: Group;
   opened: boolean;
-  /** Target angle for the door — linearly chased by `update()`. */
+  /** Target open fraction (0..1) — linearly chased by `update()`. */
   target: number;
+  fraction: number;
+  maxAngle: number;
+  drive: (fraction: number) => void;
 };
+
+let lockerTemplate: Mesh[] | null = null;
+
+function getLockerTemplate(): Mesh[] | null {
+  if (lockerTemplate) return lockerTemplate;
+  const container = activeModelLibrary()?.get("locker");
+  const spec = MODEL_PROPS.locker;
+  if (!container || !spec || !spec.hinge) return null;
+  lockerTemplate = normalizeModelTemplate(container, spec);
+  for (const mesh of lockerTemplate) mesh.setEnabled(false);
+  return lockerTemplate;
+}
 
 export class Lockers {
   readonly group = group("lockers");
@@ -37,10 +56,45 @@ export class Lockers {
     for (const lk of initial) this.add(lk);
   }
 
+  private buildModelLocker(root: Group): { maxAngle: number; drive: (f: number) => void } | null {
+    const template = getLockerTemplate();
+    const spec = MODEL_PROPS.locker;
+    if (!template || template.length === 0 || !spec?.hinge) return null;
+
+    const clones = template.map((mesh) => {
+      const clone = mesh.clone(mesh.name, null);
+      clone.setEnabled(true);
+      clone.isPickable = false;
+      clone.receiveShadows = true;
+      return clone;
+    });
+
+    const split = ModelHinge.split(clones, spec.hinge);
+    const hinge = new ModelHinge(spec.hinge, split, root);
+    for (const mesh of split.frame) {
+      mesh.parent = root;
+      mesh.isPickable = false;
+    }
+
+    return { maxAngle: spec.hinge.openRad, drive: (f) => hinge.setOpenFraction(f) };
+  }
+
   private add(lk: LockerInfo): void {
     const root = group("locker");
     root.position.set(lk.x, 0, lk.z);
     root.rotation.y = lk.yaw;
+
+    const modelLocker = this.buildModelLocker(root);
+    if (modelLocker) {
+      this.group.add(root);
+      const opened = lk.opened;
+      this.entries.set(lk.id, {
+        info: lk, opened, target: opened ? 1 : 0, fraction: opened ? 1 : 0,
+        maxAngle: modelLocker.maxAngle, drive: modelLocker.drive,
+      });
+      modelLocker.drive(opened ? 1 : 0);
+      return;
+    }
 
     // 5-sided shell — open on -Z. Each panel is `T` thick so when the door
     // swings out the player sees the (darker) interior, not a solid block.
@@ -93,7 +147,8 @@ export class Lockers {
     this.group.add(root);
     const opened = lk.opened;
     this.entries.set(lk.id, {
-      info: lk, doorPivot, opened, target: opened ? OPEN_ANGLE : 0,
+      info: lk, opened, target: opened ? 1 : 0, fraction: opened ? 1 : 0,
+      maxAngle: OPEN_ANGLE, drive: (f) => { doorPivot.rotation.y = f * OPEN_ANGLE; },
     });
     if (opened) doorPivot.rotation.y = OPEN_ANGLE;
   }
@@ -102,16 +157,15 @@ export class Lockers {
     const e = this.entries.get(id);
     if (!e || e.opened) return;
     e.opened = true;
-    e.target = OPEN_ANGLE;
+    e.target = 1;
   }
 
   update(dt: number): void {
     for (const e of this.entries.values()) {
-      const cur = e.doorPivot.rotation.y;
-      if (cur === e.target) continue;
-      const step = OPEN_SPEED * dt;
-      const next = cur + Math.sign(e.target - cur) * Math.min(step, Math.abs(e.target - cur));
-      e.doorPivot.rotation.y = next;
+      if (e.fraction === e.target) continue;
+      const step = (OPEN_SPEED / e.maxAngle) * dt;
+      e.fraction += Math.sign(e.target - e.fraction) * Math.min(step, Math.abs(e.target - e.fraction));
+      e.drive(e.fraction);
     }
   }
 

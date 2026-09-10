@@ -9,6 +9,9 @@ import {
   Color3, Group, Mesh, StandardMaterial,
   activeScene, basicMaterial, box, cone, cylinder, disc, group, lambertMaterial, plane, sphere,
 } from "../rendering/babylon";
+import { activeModelLibrary } from "../rendering/modelLoader";
+import { normalizeModelTemplate } from "../world/modelPropStage";
+import { PICKUP_MODELS } from "../world/modelProps";
 
 function buildMedkit(): Group {
   const g = group("medkit");
@@ -225,8 +228,35 @@ const BUILDERS: Record<PickupKind, () => Group> = {
   gps: buildGps,
 };
 
+const pickupTemplates = new Map<PickupKind, Mesh[]>();
+
+function getPickupTemplate(kind: PickupKind): Mesh[] | null {
+  const cached = pickupTemplates.get(kind);
+  if (cached) return cached;
+  const container = activeModelLibrary()?.getPickup(kind);
+  const spec = PICKUP_MODELS[kind];
+  if (!container || !spec) return null;
+  const template = normalizeModelTemplate(container, spec);
+  for (const mesh of template) mesh.setEnabled(false);
+  pickupTemplates.set(kind, template);
+  return template;
+}
+
+function buildModelPickup(kind: PickupKind): Group | null {
+  const template = getPickupTemplate(kind);
+  if (!template || template.length === 0) return null;
+  const g = group(`pickup_${kind}`);
+  for (const mesh of template) {
+    const clone = mesh.clone(mesh.name, null);
+    clone.setEnabled(true);
+    clone.isPickable = false;
+    g.add(clone);
+  }
+  return g;
+}
+
 export function buildPickupModel(kind: PickupKind): Group {
-  return (BUILDERS[kind] ?? buildCompass)();
+  return buildModelPickup(kind) ?? (BUILDERS[kind] ?? buildCompass)();
 }
 
 const LABELS: Record<PickupKind, string> = {

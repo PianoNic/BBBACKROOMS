@@ -5,13 +5,16 @@
  *  managers, then the caller wires them into the packet handler and loop. */
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { SpatialListener } from "./spatialAudio";
-import type { Prop, WorldInit } from "../net/protocol";
+import type { Prop, PropType, WorldInit } from "../net/protocol";
 import type { NetClient } from "../net/client";
 import { AmbientLights, type createRenderContext } from "../rendering/renderer";
 import type { WebcamMesh } from "../gameplay/webcam";
+import type { ModelLibrary } from "../rendering/modelLoader";
 import { buildWorld } from "../world/builder";
 import { buildProps } from "../world/props";
 import { buildPropColliders } from "../world/colliders";
+import { MODEL_PROP_TYPES, bundlesFor } from "../world/modelProps";
+import { ModelPropStage } from "../world/modelPropStage";
 import { FlickerLights } from "../rendering/lights";
 import { AmbienceParticles } from "../rendering/particles";
 import { Player } from "../gameplay/player";
@@ -55,6 +58,7 @@ export function buildScene(
   net: NetClient,
   audioListener: SpatialListener,
   webcam: WebcamMesh,
+  models: ModelLibrary | null,
 ) {
   const world = buildWorld(init.grid, init.props);
   const regionOfXY = (x: number, z: number): number => world.inference.regionAtXY(
@@ -65,7 +69,9 @@ export function buildScene(
   const lights = new FlickerLights(init.lights, regionOfXY);
   const particles = new AmbienceParticles(ctx.scene);
   const regionOf = (prop: Prop): number => regionOfXY(prop.x, prop.z);
-  const { group: propsGroup, regionMeshes: propRegionMeshes } = buildProps(init.props, regionOf);
+  const modelSkip: ReadonlySet<PropType> = models ? MODEL_PROP_TYPES : new Set<PropType>();
+  const { group: propsGroup, regionMeshes: propRegionMeshes } =
+    buildProps(init.props, regionOf, modelSkip);
   lights.setShadowCasters([...propsGroup.getChildMeshes(), ...world.shadowCasters]);
   const propColliders = buildPropColliders(init.props);
 
@@ -77,6 +83,13 @@ export function buildScene(
     else regionMeshes.set(id, [...meshes]);
   }
   lights.setRegionMeshes(regionMeshes);
+
+  let modelStage: ModelPropStage | null = null;
+  if (models) {
+    modelStage = new ModelPropStage(ctx.scene, models, lights, regionOf);
+    const { immediate, deferred } = bundlesFor(init.grid, init.props, init.spawn);
+    modelStage.place(init.props, immediate, deferred);
+  }
   const ambientLights = new AmbientLights(ctx.scene);
 
   const remotes = new RemotePlayers();
@@ -175,6 +188,6 @@ export function buildScene(
     interactPrompt, laptops, teachers, teacherById, teacherEffects, corpses,
     laptop, chairs, pickups, lockers, doors, toiletStallDoors, fuseBoxes,
     inventory, reviveBar, compass, heartbeat, horrorAudio, lights, proximityVoice, particles,
-    regionMeshes, inference: world.inference, ambientLights,
+    regionMeshes, inference: world.inference, ambientLights, modelStage,
   };
 }

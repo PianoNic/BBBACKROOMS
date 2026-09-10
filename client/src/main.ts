@@ -20,6 +20,8 @@ import { buildScene } from "./core/sceneSetup";
 import { getSettings, onSettingsChange, updateSetting } from "./core/settings";
 import { ensureCatalog } from "./gameplay/cosmetics";
 import { installDevTools } from "./core/devTools";
+import { ModelLibrary, setActiveModelLibrary } from "./rendering/modelLoader";
+import { bundlesFor } from "./world/modelProps";
 
 
 async function main(): Promise<void> {
@@ -73,7 +75,15 @@ async function main(): Promise<void> {
   const ctx = createRenderContext(mount);
   const audioListener = new SpatialListener();
   await ensureCatalog();  // so equipped cosmetics resolve when seeding players
-  const s = buildScene(init, ctx, net, audioListener, webcam);
+  const useModels = true;
+  let models: ModelLibrary | null = null;
+  if (useModels) {
+    models = new ModelLibrary(ctx.scene);
+    setActiveModelLibrary(models);
+    const { immediate } = bundlesFor(init.grid, init.props, init.spawn);
+    await models.loadBundle(immediate, (done, total) => setLoading(`Modelle laden… ${done}/${total}`));
+  }
+  const s = buildScene(init, ctx, net, audioListener, webcam, models);
   installDevTools({
     init, player: s.player, camera: ctx.camera,
     teacherPositions: () => s.teachers.getMapPositions(),

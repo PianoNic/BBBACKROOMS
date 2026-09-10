@@ -72,7 +72,7 @@ export class FlickerLights {
   private tier: GraphicsTier;
   private activeBlackout: { x: number; z: number; endTime: number } | null = null;
   private readonly regionOf: (x: number, z: number) => number;
-  private regionMeshes: ReadonlyMap<number, Mesh[]> = new Map();
+  private regionMeshes = new Map<number, Mesh[]>();
   private allRegionMeshes: Mesh[] = [];
   private readonly excludedByRegion = new Map<number, Mesh[]>();
   private readonly slotRegion: (number | null)[] = [];
@@ -164,9 +164,20 @@ export class FlickerLights {
   }
 
   setRegionMeshes(map: ReadonlyMap<number, Mesh[]>): void {
-    this.regionMeshes = map;
+    this.regionMeshes = new Map();
+    for (const [id, meshes] of map) this.regionMeshes.set(id, [...meshes]);
     this.allRegionMeshes = [];
-    for (const meshes of map.values()) this.allRegionMeshes.push(...meshes);
+    for (const meshes of this.regionMeshes.values()) this.allRegionMeshes.push(...meshes);
+    this.excludedByRegion.clear();
+    this.slotRegion.fill(null);
+  }
+
+  addRegionMeshes(regionId: number, meshes: readonly Mesh[]): void {
+    if (meshes.length === 0) return;
+    const list = this.regionMeshes.get(regionId);
+    if (list) list.push(...meshes);
+    else this.regionMeshes.set(regionId, [...meshes]);
+    this.allRegionMeshes.push(...meshes);
     this.excludedByRegion.clear();
     this.slotRegion.fill(null);
   }

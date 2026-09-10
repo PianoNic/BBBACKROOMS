@@ -1,6 +1,15 @@
 import type { GraphicsTier } from "../rendering/ambience";
 
-export type GpuClass = "integrated" | "discrete" | "unknown";
+export type GpuClass = "software" | "integrated" | "discrete" | "unknown";
+
+const SOFTWARE_RENDERER_PATTERNS: RegExp[] = [
+  /swiftshader/i,
+  /llvmpipe/i,
+  /softpipe/i,
+  /software/i,
+  /microsoft basic render/i,
+  /mesa offscreen/i,
+];
 
 const INTEGRATED_RENDERER_PATTERNS: RegExp[] = [
   /intel/i,
@@ -60,6 +69,10 @@ export function classifyGpu(): GpuClass {
   try {
     const renderer = probeRendererString();
     if (renderer) {
+      if (SOFTWARE_RENDERER_PATTERNS.some((p) => p.test(renderer))) {
+        cachedClass = "software";
+        return cachedClass;
+      }
       if (INTEGRATED_RENDERER_PATTERNS.some((p) => p.test(renderer))) {
         cachedClass = "integrated";
         return cachedClass;
@@ -83,9 +96,18 @@ export function isIntegratedGpu(): boolean {
   return classifyGpu() === "integrated";
 }
 
+export function isSoftwareRenderer(): boolean {
+  return classifyGpu() === "software";
+}
+
+export function gpuRendererString(): string | null {
+  return probeRendererString();
+}
+
 export function defaultGraphicsTierForHardware(): GraphicsTier {
   try {
-    return isIntegratedGpu() ? "niedrig" : "mittel";
+    const cls = classifyGpu();
+    return cls === "software" || cls === "integrated" ? "niedrig" : "mittel";
   } catch {
     return "mittel";
   }

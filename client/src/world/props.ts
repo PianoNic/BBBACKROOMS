@@ -21,9 +21,11 @@ const BUILDERS: Partial<Record<PropType, Builder>> =
 export function buildProps(
   props: Prop[],
   regionOf: (prop: Prop) => number,
+  skip: ReadonlySet<PropType>,
 ): { group: Group; regionMeshes: Map<number, Mesh[]> } {
   const byRegion = new Map<number, Prop[]>();
   for (const p of props) {
+    if (skip.has(p.type)) continue;
     const regionId = regionOf(p);
     const list = byRegion.get(regionId);
     if (list) list.push(p);
