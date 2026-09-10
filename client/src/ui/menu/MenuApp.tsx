@@ -10,6 +10,7 @@ import { PackEditor } from "./screens/PackEditor";
 import { SettingsOverlay } from "./screens/options/SettingsOverlay";
 import { ShopScreen } from "./screens/ShopScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
+import { NewsScreen } from "./screens/NewsScreen";
 import { LobbyRoom } from "./screens/LobbyRoom";
 import { PauseMenu } from "./screens/PauseMenu";
 import { EndgameOverlay } from "./screens/EndgameOverlay";
@@ -22,6 +23,7 @@ function titleScreenFor(name: string): ComponentChildren {
     case "options": return <OptionsScreen />;
     case "shop": return <ShopScreen />;
     case "tutorial": return <TutorialScreen />;
+    case "news": return <NewsScreen />;
     default: return <TitleScreen />;
   }
 }

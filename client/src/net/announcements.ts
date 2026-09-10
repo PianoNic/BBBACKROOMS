@@ -7,14 +7,23 @@ export type Announcement = {
   level: "info" | "important";
 };
 
+export type AnnouncementsResult = {
+  ok: boolean;
+  announcements: Announcement[];
+};
+
 const API = import.meta.env.VITE_SERVER_URL ?? "";
 
-export async function fetchAnnouncements(): Promise<Announcement[]> {
+export async function fetchAnnouncementsResult(): Promise<AnnouncementsResult> {
   try {
     const r = await fetch(`${API}/announcements`);
-    if (!r.ok) return [];
-    return (await r.json()) as Announcement[];
+    if (!r.ok) return { ok: false, announcements: [] };
+    return { ok: true, announcements: (await r.json()) as Announcement[] };
   } catch {
-    return [];
+    return { ok: false, announcements: [] };
   }
+}
+
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  return (await fetchAnnouncementsResult()).announcements;
 }

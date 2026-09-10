@@ -1,12 +1,13 @@
 import { signal } from "@preact/signals";
 import type { ScreenDirection } from "../screenTransition";
 
-export type MenuRoute = "title" | "servers" | "options" | "shop" | "tutorial" | "lobby" | null;
+export type MenuRoute = "title" | "servers" | "options" | "shop" | "tutorial" | "news" | "lobby" | null;
 
 export const route = signal<MenuRoute>(null);
 export const direction = signal<ScreenDirection>("forward");
 
-const ORDER: Exclude<MenuRoute, null>[] = ["title", "servers", "options", "shop", "tutorial", "lobby"];
+const ORDER: Exclude<MenuRoute, null>[] =
+  ["title", "servers", "options", "shop", "tutorial", "news", "lobby"];
 
 export function navigate(next: MenuRoute, dir?: ScreenDirection): void {
   if (next === route.value) return;
