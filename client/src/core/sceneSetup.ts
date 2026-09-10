@@ -73,7 +73,7 @@ export function buildScene(
 
   let modelStage: ModelPropStage | null = null;
   if (models) {
-    modelStage = new ModelPropStage(ctx.scene, models, regionOf);
+    modelStage = new ModelPropStage(ctx.scene, models);
     const { immediate, deferred } = bundlesFor(init.grid, init.props, init.spawn);
     modelStage.place(init.props, immediate, deferred);
   }

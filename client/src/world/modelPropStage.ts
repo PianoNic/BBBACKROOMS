@@ -75,7 +75,6 @@ export class ModelPropStage {
   constructor(
     _scene: Scene,
     private readonly library: ModelLibrary,
-    private readonly regionOf: (prop: Prop) => number,
   ) {
     this.group = group("modelProps");
   }
@@ -132,38 +131,25 @@ export class ModelPropStage {
   }
 
   private instance(templates: Mesh[], props: readonly Prop[], spec: ModelPropSpec): void {
-    const regions = new Map<number, Prop[]>();
-    for (const p of props) {
-      const key = this.regionOf(p);
-      const list = regions.get(key);
-      if (list) list.push(p);
-      else regions.set(key, [p]);
-    }
-
     for (const template of templates) {
-      let first = true;
-      for (const [key, regionProps] of regions) {
-        const mesh = first ? template : template.clone(`${template.name}_r${key}`, null);
-        first = false;
-        mesh.parent = this.group;
+      template.parent = this.group;
 
-        const matrices = new Float32Array(regionProps.length * 16);
-        regionProps.forEach((p, i) => {
-          Matrix.Compose(
-            Vector3.One(),
-            Quaternion.RotationYawPitchRoll(p.yaw + spec.yawOffset, 0, 0),
-            new Vector3(p.x, 0, p.z),
-          ).copyToArray(matrices, i * 16);
-        });
+      const matrices = new Float32Array(props.length * 16);
+      props.forEach((p, i) => {
+        Matrix.Compose(
+          Vector3.One(),
+          Quaternion.RotationYawPitchRoll(p.yaw + spec.yawOffset, 0, 0),
+          new Vector3(p.x, 0, p.z),
+        ).copyToArray(matrices, i * 16);
+      });
 
-        mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
-        mesh.isPickable = false;
-        mesh.alwaysSelectAsActiveMesh = false;
-        mesh.thinInstanceRefreshBoundingInfo(true);
-        mesh.freezeWorldMatrix();
+      template.thinInstanceSetBuffer("matrix", matrices, 16, true);
+      template.isPickable = false;
+      template.alwaysSelectAsActiveMesh = true;
+      template.doNotSyncBoundingInfo = true;
+      template.freezeWorldMatrix();
 
-        this.scheduleInstancedCompile(mesh);
-      }
+      this.scheduleInstancedCompile(template);
     }
   }
 
