@@ -8,7 +8,6 @@ import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Prop, PropType } from "../net/protocol";
 import type { ModelLibrary } from "../rendering/modelLoader";
 import { group, type Group } from "../rendering/babylon";
-import { invalidateActiveMeshes } from "../rendering/activeMeshes";
 import { ModelMaterialFactory } from "../rendering/modelMaterials";
 import { MANAGER_OWNED_TYPES, MODEL_PROPS, type ModelPropSpec } from "./modelProps";
 
@@ -75,6 +74,7 @@ export class ModelPropStage {
   constructor(
     _scene: Scene,
     private readonly library: ModelLibrary,
+    private readonly regionOf: (prop: Prop) => number,
   ) {
     this.group = group("modelProps");
   }
@@ -104,7 +104,6 @@ export class ModelPropStage {
       if (!list || list.length === 0) continue;
       void this.library.load(type).then((container) => {
         if (container) this.renderType(type, container, list);
-        invalidateActiveMeshes();
       });
     }
   }
@@ -131,25 +130,38 @@ export class ModelPropStage {
   }
 
   private instance(templates: Mesh[], props: readonly Prop[], spec: ModelPropSpec): void {
+    const regions = new Map<number, Prop[]>();
+    for (const p of props) {
+      const key = this.regionOf(p);
+      const list = regions.get(key);
+      if (list) list.push(p);
+      else regions.set(key, [p]);
+    }
+
     for (const template of templates) {
-      template.parent = this.group;
+      let first = true;
+      for (const [key, regionProps] of regions) {
+        const mesh = first ? template : template.clone(`${template.name}_r${key}`, null);
+        first = false;
+        mesh.parent = this.group;
 
-      const matrices = new Float32Array(props.length * 16);
-      props.forEach((p, i) => {
-        Matrix.Compose(
-          Vector3.One(),
-          Quaternion.RotationYawPitchRoll(p.yaw + spec.yawOffset, 0, 0),
-          new Vector3(p.x, 0, p.z),
-        ).copyToArray(matrices, i * 16);
-      });
+        const matrices = new Float32Array(regionProps.length * 16);
+        regionProps.forEach((p, i) => {
+          Matrix.Compose(
+            Vector3.One(),
+            Quaternion.RotationYawPitchRoll(p.yaw + spec.yawOffset, 0, 0),
+            new Vector3(p.x, 0, p.z),
+          ).copyToArray(matrices, i * 16);
+        });
 
-      template.thinInstanceSetBuffer("matrix", matrices, 16, true);
-      template.isPickable = false;
-      template.alwaysSelectAsActiveMesh = true;
-      template.thinInstanceRefreshBoundingInfo(true);
-      template.freezeWorldMatrix();
+        mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
+        mesh.isPickable = false;
+        mesh.alwaysSelectAsActiveMesh = false;
+        mesh.thinInstanceRefreshBoundingInfo(true);
+        mesh.freezeWorldMatrix();
 
-      this.scheduleInstancedCompile(template);
+        this.scheduleInstancedCompile(mesh);
+      }
     }
   }
 

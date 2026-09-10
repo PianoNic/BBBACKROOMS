@@ -1,12 +1,11 @@
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { RawCubeTexture } from "@babylonjs/core/Materials/Textures/rawCubeTexture";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { FresnelParameters } from "@babylonjs/core/Materials/fresnelParameters";
-import { Constants } from "@babylonjs/core/Engines/constants";
 import type { Material } from "@babylonjs/core/Materials/material";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { activeScene, basicMaterial, color3, lambertMaterial } from "./babylon";
 import { AMBIENCE } from "./ambience";
+import { getFloorSheenTexture } from "./reflectionCube";
 import type { RoomArchetype } from "../world/rooms";
 
 function loadPainting(url: string): Texture {
@@ -21,46 +20,6 @@ function pbrTexturePath(category: string): string {
 }
 
 export const FLOOR_SHEEN_ENABLED = true;
-
-const SHEEN_SIZE = 32;
-const SHEEN_TOP_CENTER = "#2a3028";
-const SHEEN_DARK = "#050605";
-
-function sheenFace(top: boolean): Uint8Array {
-  const c = document.createElement("canvas");
-  c.width = SHEEN_SIZE;
-  c.height = SHEEN_SIZE;
-  const ctx = c.getContext("2d")!;
-  if (top) {
-    const grad = ctx.createRadialGradient(
-      SHEEN_SIZE / 2, SHEEN_SIZE / 2, 0, SHEEN_SIZE / 2, SHEEN_SIZE / 2, SHEEN_SIZE / 2,
-    );
-    grad.addColorStop(0, SHEEN_TOP_CENTER);
-    grad.addColorStop(1, SHEEN_DARK);
-    ctx.fillStyle = grad;
-  } else {
-    ctx.fillStyle = SHEEN_DARK;
-  }
-  ctx.fillRect(0, 0, SHEEN_SIZE, SHEEN_SIZE);
-  return Uint8Array.from(ctx.getImageData(0, 0, SHEEN_SIZE, SHEEN_SIZE).data);
-}
-
-let sheenCubeTexture: RawCubeTexture | null = null;
-
-function getSheenCubeTexture(): RawCubeTexture {
-  if (sheenCubeTexture) return sheenCubeTexture;
-  const top = sheenFace(true);
-  const dark = sheenFace(false);
-  const tex = new RawCubeTexture(
-    activeScene(), [dark, top, dark, dark, dark, dark], SHEEN_SIZE,
-    Constants.TEXTUREFORMAT_RGBA, Constants.TEXTURETYPE_UNSIGNED_BYTE,
-    false, false, Texture.BILINEAR_SAMPLINGMODE,
-  );
-  tex.coordinatesMode = Texture.CUBIC_MODE;
-  tex.level = 0.16;
-  sheenCubeTexture = tex;
-  return tex;
-}
 
 function buildSurface(
   name: string, category: string, tint: number, repeat: [number, number], sheen?: boolean,
@@ -78,7 +37,7 @@ function buildSurface(
   mat.specularColor = Color3.Black();
   mat.maxSimultaneousLights = 1;
   if (sheen && FLOOR_SHEEN_ENABLED) {
-    mat.reflectionTexture = getSheenCubeTexture();
+    mat.reflectionTexture = getFloorSheenTexture();
     mat.useReflectionFresnelFromSpecular = false;
     mat.reflectionFresnelParameters = new FresnelParameters({ bias: 0.2, power: 2 });
   }

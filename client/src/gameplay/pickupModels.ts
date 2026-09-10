@@ -256,7 +256,11 @@ function buildModelPickup(kind: PickupKind): Group | null {
 }
 
 export function buildPickupModel(kind: PickupKind): Group {
-  return buildModelPickup(kind) ?? (BUILDERS[kind] ?? buildCompass)();
+  const g = buildModelPickup(kind) ?? (BUILDERS[kind] ?? buildCompass)();
+  g.traverse((node) => {
+    if (node instanceof Mesh) node.alwaysSelectAsActiveMesh = true;
+  });
+  return g;
 }
 
 const LABELS: Record<PickupKind, string> = {

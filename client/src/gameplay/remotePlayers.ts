@@ -91,6 +91,7 @@ export class RemotePlayers {
     const mesh = buildVoxelMesh(0.6, 1.7, 0.6, makeColorMaterial(bodyColor(equipped, p.color)));
     mesh.position.set(p.x, Y, p.z);
     mesh.rotation.y = p.yaw;
+    mesh.alwaysSelectAsActiveMesh = true;
     this.group.add(mesh);
 
     let audio: PositionalSound | null = null;

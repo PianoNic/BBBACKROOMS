@@ -85,6 +85,7 @@ export class Teachers {
     const sprite = plane(SPRITE_HEIGHT * SPRITE_ASPECT, SPRITE_HEIGHT, mat);
     sprite.billboardMode = Mesh.BILLBOARDMODE_ALL;
     sprite.position.set(t.x, SPRITE_HEIGHT / 2, t.z);
+    sprite.alwaysSelectAsActiveMesh = true;
     this.group.add(sprite);
 
     // Through-wall thermal silhouette: same texture, but tinted hot-red,
@@ -105,6 +106,7 @@ export class Teachers {
     outline.position.set(t.x, SPRITE_HEIGHT / 2, t.z);
     outline.visible = false;
     outline.renderingGroupId = 1;
+    outline.alwaysSelectAsActiveMesh = true;
     this.group.add(outline);
 
     const audio = new PositionalSound(this.listener);

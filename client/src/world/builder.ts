@@ -4,8 +4,8 @@ import type { Material } from "@babylonjs/core/Materials/material";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Grid, Prop } from "../net/protocol";
 import { getDecalMaterial, getRoomMaterials } from "../rendering/materials";
-import { AMBIENCE } from "../rendering/ambience";
 import { freezeWhenCompiled } from "../rendering/modelMaterials";
+import { AMBIENCE } from "../rendering/ambience";
 import { RoomInference } from "./rooms";
 import { mulberry32 } from "./propBuilders/_common";
 import { box, group, plane, type Group } from "../rendering/babylon";
@@ -25,6 +25,8 @@ const WALL_DECAL_Y = 2.1;
 const CEILING_DECAL_MARGIN = 0.02;
 const WALL_FACE_MARGIN = 0.01;
 
+const frozenMaterials = new WeakSet<Material>();
+
 function bake(mesh: Mesh, matrices: Float32Array, cullable: boolean): void {
   mesh.thinInstanceSetBuffer("matrix", matrices, 16, true);
   mesh.isPickable = false;
@@ -37,18 +39,17 @@ function bake(mesh: Mesh, matrices: Float32Array, cullable: boolean): void {
     mesh.doNotSyncBoundingInfo = true;
   }
   mesh.freezeWorldMatrix();
+
+  const mat = mesh.material;
+  if (mat && !frozenMaterials.has(mat)) {
+    frozenMaterials.add(mat);
+    freezeWhenCompiled(mat, mesh, { useInstances: true });
+  }
 }
 
 export function buildWorld(grid: Grid, props: Prop[]): World {
   const { width, height, cellSize, cells } = grid;
   const stage = group("world");
-
-  const frozenMaterials = new Set<Material>();
-  const scheduleFreeze = (material: Material, mesh: Mesh): void => {
-    if (frozenMaterials.has(material)) return;
-    frozenMaterials.add(material);
-    freezeWhenCompiled(material, mesh, { useInstances: true });
-  };
 
   const isFloor = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === FLOOR;
@@ -144,8 +145,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     stage.add(floorMesh, ceilMesh);
     bake(floorMesh, floorMatrices, true);
     bake(ceilMesh, ceilMatrices, true);
-    scheduleFreeze(matSet.floor, floorMesh);
-    scheduleFreeze(matSet.ceiling, ceilMesh);
   }
 
   for (const [regionId, coords] of wallByRegion) {
@@ -162,7 +161,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
     });
     stage.add(wallMesh);
     bake(wallMesh, wallMatrices, true);
-    scheduleFreeze(matSet.wall, wallMesh);
 
     const config = AMBIENCE.materials.rooms[archetype];
     if (config.dado && matSet.dado && matSet.rail) {
@@ -187,8 +185,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       stage.add(dadoMesh, railMesh);
       bake(dadoMesh, dadoMatrices, true);
       bake(railMesh, railMatrices, true);
-      scheduleFreeze(matSet.dado, dadoMesh);
-      scheduleFreeze(matSet.rail, railMesh);
     }
   }
 
@@ -255,7 +251,6 @@ export function buildWorld(grid: Grid, props: Prop[]): World {
       composed.forEach((m, i) => m.copyToArray(decalMatrices, i * 16));
       stage.add(decalMesh);
       bake(decalMesh, decalMatrices, true);
-      scheduleFreeze(decalMat, decalMesh);
     }
   }
 
