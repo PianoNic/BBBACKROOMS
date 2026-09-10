@@ -47,6 +47,7 @@ import { preloadJumpscareImages } from "../ui/jumpscare";
 import { preloadSfx } from "./audio";
 import { resolveTeacherImage } from "./texturePacks";
 import { showVictory, showGameOver } from "../ui/victory";
+import { hudActive } from "../ui/hud/state";
 import { InputState } from "./input";
 
 export type SceneSetup = ReturnType<typeof buildScene>;
@@ -110,7 +111,6 @@ export function buildScene(
   }
 
   const minimap = new Minimap(init.grid);
-  document.body.appendChild(minimap.element);
   const stamina = new StaminaBar();
   const interactPrompt = new InteractPrompt();
   const laptops = new Laptops(init.laptops);
@@ -152,7 +152,6 @@ export function buildScene(
   );
   const reviveBar = new ReviveBar();
   const compass = new TaskCompass(quests);
-  document.body.appendChild(compass.element);
   compass.setEnabled(inventory.hasCompass());
   const heartbeat = new Heartbeat();
   const horrorAudio = new HorrorAudio(audioListener);
@@ -170,6 +169,8 @@ export function buildScene(
   );
   webcam.onRemoteAudio((id, stream) => proximityVoice.setStream(id, stream));
   webcam.setPeers(init.players.map((p) => p.id));
+
+  hudActive.value = true;
 
   return {
     state, player, remotes, quests, pings, hideouts, portal, spectator, minimap, stamina,

@@ -1,6 +1,7 @@
 import "./core/legacyStorageBoot";
 import "./styles/main.scss";
 import Stats from "stats.js";
+import { mountHud } from "./ui/hud/mount";
 import { LOBBY_RESUME_KEY } from "./ui/menu/state/storageKeys";
 import { SpatialListener } from "./core/spatialAudio";
 import { runGameLoop } from "./core/gameLoop";
@@ -29,6 +30,7 @@ import { bundlesFor } from "./world/modelProps";
 
 
 async function main(): Promise<void> {
+  mountHud();
   const mount = document.getElementById("app")!;
   const status = document.getElementById("status")!;
 

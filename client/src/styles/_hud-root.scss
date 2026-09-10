@@ -1,0 +1,10 @@
+#hud-root {
+  position: fixed; inset: 0; z-index: 1;
+  pointer-events: none;
+}
+
+// Full-screen modal-like overlays block the game canvas underneath, same
+// as when they were plain document.body-appended elements.
+#loading, #intro-splash, #teacher-slots {
+  pointer-events: auto;
+}

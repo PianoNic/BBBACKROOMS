@@ -36,6 +36,7 @@ export async function connect(lobbyId: string, password?: string): Promise<Lobby
   const ws = new WebSocket(url);
 
   let activeHandler: ((pkt: ServerPacket) => void) | null = null;
+  let worldHandler: ((pkt: ServerPacket) => void) | null = null;
   const queued: ServerPacket[] = [];
 
   const lobby: LobbyStatePkt = await new Promise((resolve, reject) => {
@@ -52,6 +53,10 @@ export async function connect(lobbyId: string, password?: string): Promise<Lobby
         ws.removeEventListener("message", onFirst);
         ws.addEventListener("message", (e) => {
           const p = JSON.parse(e.data) as ServerPacket;
+          if (worldHandler && (p.type === "world_gen_start" || p.type === "world_init")) {
+            worldHandler(p);
+            return;
+          }
           if (activeHandler) activeHandler(p);
           else queued.push(p);
         });
@@ -72,19 +77,21 @@ export async function connect(lobbyId: string, password?: string): Promise<Lobby
 
   const waitForWorld = (onGenStart?: () => void): Promise<WorldInit> =>
     new Promise((resolve) => {
-      const prev = activeHandler;
-      client.onPacket((pkt) => {
-        if (pkt.type === "world_init") {
-          client.onPacket(prev ?? (() => undefined));
-          resolve(pkt);
-          return;
-        }
+      worldHandler = (pkt) => {
         if (pkt.type === "world_gen_start") {
           onGenStart?.();
           return;
         }
-        if (prev) prev(pkt);
-      });
+        worldHandler = null;
+        resolve(pkt as WorldInit);
+      };
+      const pending = queued.filter(
+        (p) => p.type === "world_gen_start" || p.type === "world_init",
+      );
+      for (const p of pending) {
+        queued.splice(queued.indexOf(p), 1);
+        worldHandler?.(p);
+      }
     });
 
   return { client, lobby, waitForWorld };

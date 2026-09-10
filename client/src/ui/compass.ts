@@ -1,5 +1,6 @@
 import type { Quests } from "../gameplay/quests";
 import type { Objective } from "../net/protocol";
+import { compassEnabled, compassLabel } from "./hud/state";
 
 const SIZE = 110;
 
@@ -24,38 +25,26 @@ function targetLabel(o: Objective): string {
   return ITEM_LABEL[o.item] ?? o.item.toUpperCase();
 }
 
+let publishedCtx: CanvasRenderingContext2D | null = null;
+
+export function setCompassCanvas(ctx: CanvasRenderingContext2D | null): void {
+  publishedCtx = ctx;
+}
+
 /** Just an arrow pointing to the nearest unfinished objective, with a
  *  label below saying WHAT that target is. Hidden until the player picks
  *  up a compass. */
 export class TaskCompass {
-  readonly element: HTMLDivElement;
-  private readonly canvas: HTMLCanvasElement;
-  private readonly ctx: CanvasRenderingContext2D;
-  private readonly label: HTMLDivElement;
   private readonly quests: Quests;
   private enabled = false;
 
   constructor(quests: Quests) {
     this.quests = quests;
-    this.element = document.createElement("div");
-    this.element.id = "task-compass";
-    this.element.style.display = "none";
-
-    this.canvas = document.createElement("canvas");
-    this.canvas.width = SIZE;
-    this.canvas.height = SIZE;
-    this.element.appendChild(this.canvas);
-
-    this.label = document.createElement("div");
-    this.label.className = "label";
-    this.element.appendChild(this.label);
-
-    this.ctx = this.canvas.getContext("2d")!;
   }
 
   setEnabled(on: boolean): void {
     this.enabled = on;
-    this.element.style.display = on ? "" : "none";
+    compassEnabled.value = on;
   }
 
   private nearestObjective(px: number, pz: number): {
@@ -75,12 +64,13 @@ export class TaskCompass {
 
   update(playerX: number, playerZ: number, yaw: number): void {
     if (!this.enabled) return;
-    const ctx = this.ctx;
+    const ctx = publishedCtx;
+    if (!ctx) return;
     ctx.clearRect(0, 0, SIZE, SIZE);
 
     const target = this.nearestObjective(playerX, playerZ);
     if (!target) {
-      this.label.textContent = "ALL DONE";
+      if (compassLabel.value !== "ALL DONE") compassLabel.value = "ALL DONE";
       return;
     }
 
@@ -117,6 +107,7 @@ export class TaskCompass {
     ctx.fill();
     ctx.restore();
 
-    this.label.textContent = `${targetLabel(target.obj)} • ${Math.round(target.dist)}m`;
+    const label = `${targetLabel(target.obj)} • ${Math.round(target.dist)}m`;
+    if (compassLabel.value !== label) compassLabel.value = label;
   }
 }

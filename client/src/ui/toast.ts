@@ -1,7 +1,7 @@
+import { toastState } from "./hud/state";
+
 export type ToastAction = { label: string; key?: string; run: () => void };
 
-let el: HTMLDivElement | null = null;
-let textEl: HTMLSpanElement | null = null;
 let timer: number | null = null;
 let keyHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -12,42 +12,24 @@ function clearKeyHandler(): void {
 }
 
 export function showToast(text: string, action?: ToastAction, durationMs = 8000): void {
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "toast";
-    textEl = document.createElement("span");
-    el.appendChild(textEl);
-    document.body.appendChild(el);
-  }
-  if (!textEl) return;
-  textEl.textContent = text;
-
-  el.querySelector(".toast-undo")?.remove();
   clearKeyHandler();
+  toastState.value = { text, action: action ?? null, visible: true };
 
-  if (action) {
+  if (action?.key) {
+    const code = action.key;
     const fire = () => {
       action.run();
       hideToast();
     };
-    const button = document.createElement("button");
-    button.className = "toast-undo";
-    button.textContent = action.label;
-    button.addEventListener("click", fire);
-    el.appendChild(button);
-    if (action.key) {
-      const code = action.key;
-      keyHandler = (e: KeyboardEvent) => {
-        if (e.code !== code) return;
-        e.preventDefault();
-        e.stopPropagation();
-        fire();
-      };
-      window.addEventListener("keydown", keyHandler, true);
-    }
+    keyHandler = (e: KeyboardEvent) => {
+      if (e.code !== code) return;
+      e.preventDefault();
+      e.stopPropagation();
+      fire();
+    };
+    window.addEventListener("keydown", keyHandler, true);
   }
 
-  el.classList.remove("hidden");
   if (timer !== null) window.clearTimeout(timer);
   if (durationMs > 0) {
     timer = window.setTimeout(hideToast, durationMs);
@@ -55,7 +37,8 @@ export function showToast(text: string, action?: ToastAction, durationMs = 8000)
 }
 
 export function hideToast(): void {
-  el?.classList.add("hidden");
+  const current = toastState.value;
+  if (current.visible) toastState.value = { ...current, visible: false };
   clearKeyHandler();
   if (timer !== null) {
     window.clearTimeout(timer);
