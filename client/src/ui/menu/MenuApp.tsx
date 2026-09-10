@@ -1,17 +1,20 @@
 import type { ComponentChildren } from "preact";
-import { direction, infoOpen, route } from "./routes";
+import { direction, infoOpen, packEditorOpen, route, settingsOverlayOpen } from "./routes";
 import { ScreenStage } from "./transition/ScreenStage";
 import { Footnote, SocialLinks, Sysbar } from "./screens/TitleChrome";
 import { TitleLogo, TitleScreen } from "./screens/TitleScreen";
 import { InfoOverlay } from "./screens/InfoOverlay";
 import { ServerBrowser } from "./screens/ServerBrowser";
 import { OptionsScreen } from "./screens/OptionsScreen";
+import { PackEditor } from "./screens/PackEditor";
+import { SettingsOverlay } from "./screens/options/SettingsOverlay";
 import { ShopScreen } from "./screens/ShopScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { LobbyRoom } from "./screens/LobbyRoom";
 import { PauseMenu } from "./screens/PauseMenu";
 import { EndgameOverlay } from "./screens/EndgameOverlay";
 import { endgame, pauseMenu } from "./state/overlays";
+import { packEditorRoster, refreshPacks } from "./state/packs";
 
 function titleScreenFor(name: string): ComponentChildren {
   switch (name) {
@@ -48,6 +51,14 @@ export function MenuApp() {
       {infoOpen.value ? <InfoOverlay /> : null}
       {pauseMenu.value ? <PauseMenu options={pauseMenu.value} /> : null}
       {endgame.value ? <EndgameOverlay state={endgame.value} /> : null}
+      {settingsOverlayOpen.value ? <SettingsOverlay /> : null}
+      {packEditorOpen.value && packEditorRoster.value ? (
+        <PackEditor
+          roster={packEditorRoster.value}
+          onClose={() => { packEditorOpen.value = false; }}
+          onInstalled={() => void refreshPacks()}
+        />
+      ) : null}
     </>
   );
 }
