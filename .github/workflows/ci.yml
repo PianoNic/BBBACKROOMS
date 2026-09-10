@@ -50,6 +50,10 @@ jobs:
         working-directory: client
         run: bun install --frozen-lockfile
 
+      - name: Identifier guard
+        working-directory: client
+        run: node scripts/check-identifiers.mjs
+
       - name: Unit tests
         working-directory: client
         run: bun run test:unit
