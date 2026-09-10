@@ -9,6 +9,9 @@ import { Minimap } from "./Minimap";
 import { TaskCompass } from "./Compass";
 import { Banner } from "./Banner";
 import { Toast } from "./Toast";
+import { Loading } from "./Loading";
+import { IntroSplash } from "./IntroSplash";
+import { HideOverlay } from "./HideOverlay";
 import { hudActive } from "./state";
 
 export function HudApp() {
@@ -16,6 +19,8 @@ export function HudApp() {
     <>
       <Crosshair />
       <InteractPrompt />
+      <Loading />
+      <IntroSplash />
       {hudActive.value ? (
         <>
           <TaskBoard />
@@ -27,6 +32,7 @@ export function HudApp() {
           <TaskCompass />
           <Banner />
           <Toast />
+          <HideOverlay />
         </>
       ) : null}
     </>

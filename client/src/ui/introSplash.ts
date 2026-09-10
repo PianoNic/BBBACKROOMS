@@ -4,11 +4,18 @@
  *  that block pre-gesture audio just roll the credits silently, and the
  *  title music starts on the first real interaction instead. */
 import { playSfx, unlockAudio } from "../core/audio";
-import { el } from "./dom";
 import { INTRO_SEEN_KEY } from "./menu/state/storageKeys";
+import { introPhase } from "./hud/state";
 
 const STING = "/sounds/actions/logo-sting.ogg";
 const CREDITS_MS = 3400;
+const FADE_MS = 650;
+
+let finishCurrent: (() => void) | null = null;
+
+export function skipIntro(): void {
+  finishCurrent?.();
+}
 
 export function playIntro(): Promise<void> {
   // Once per tab session — endgame "back to lobby" reloads shouldn't replay it.
@@ -16,13 +23,7 @@ export function playIntro(): Promise<void> {
   sessionStorage.setItem(INTRO_SEEN_KEY, "1");
 
   return new Promise((resolve) => {
-    const overlay = el<HTMLDivElement>("div");
-    overlay.id = "intro-splash";
-    const credit = el<HTMLDivElement>("div", "intro-credit");
-    credit.appendChild(el("div", "intro-studio", "PianoNic Games"));
-    credit.appendChild(el("div", "intro-presents", "presents"));
-    overlay.appendChild(credit);
-    document.body.appendChild(overlay);
+    introPhase.value = "visible";
 
     unlockAudio();
     playSfx(STING, 0.85); // best effort — may be blocked before a gesture
@@ -31,11 +32,12 @@ export function playIntro(): Promise<void> {
     const finish = (): void => {
       if (finished) return;
       finished = true;
-      overlay.classList.add("intro-out");
-      window.setTimeout(() => overlay.remove(), 650);
+      finishCurrent = null;
+      introPhase.value = "out";
+      window.setTimeout(() => { introPhase.value = "hidden"; }, FADE_MS);
       resolve();
     };
-    overlay.addEventListener("pointerdown", finish); // click skips
+    finishCurrent = finish;
     window.setTimeout(finish, CREDITS_MS);
   });
 }
