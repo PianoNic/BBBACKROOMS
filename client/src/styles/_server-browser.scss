@@ -9,9 +9,12 @@
   min-height: 0;
   overflow-y: auto;
   align-content: start;
+  grid-auto-rows: min-content;
 
   @media (min-width: 720px) {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    grid-auto-rows: auto;
+    align-content: stretch;
     align-items: stretch;
     overflow: hidden;
   }
@@ -26,14 +29,20 @@
 .server-panel {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   gap: var(--bb-space-2);
+
+  @media (min-width: 720px) { min-height: 0; }
 }
 
 .lobby-scroll {
+  flex: 0 1 auto;
+  min-height: 12svh;
   max-height: 45svh;
 
-  @media (min-width: 720px) { max-height: none; }
+  @media (min-width: 720px) {
+    flex: 1 1 auto;
+    max-height: none;
+  }
 }
 
 .list-header {
@@ -133,7 +142,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--bb-space-3);
-  min-height: 0;
   min-width: 0;
 
   .change-avatar, .delete-account { align-self: stretch; }
