@@ -5,7 +5,10 @@ export const BBPACK_MAX_ASSETS = 256;
 
 const MAGIC = [0x42, 0x42, 0x50, 0x4b];
 const FORMAT_VERSION = 1;
-const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_MIME = new Set([
+  "image/jpeg", "image/png", "image/webp",
+  "audio/mpeg", "audio/ogg", "audio/wav", "audio/webm",
+]);
 
 export function encodeBbpack(manifest: unknown, assets: BbpackAsset[]): Uint8Array<ArrayBuffer> {
   if (assets.length > BBPACK_MAX_ASSETS) {

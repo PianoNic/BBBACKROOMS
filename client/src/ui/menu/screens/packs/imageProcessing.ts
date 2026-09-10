@@ -1,6 +1,7 @@
 import { encodeBbpack, type BbpackAsset } from "../../../../core/bbpack";
 import { MAX_TEACHER_ENTRIES, PACK_ID_RE } from "../../../../core/texturePacks";
 import type { RosterEntry } from "../../../../net/protocol";
+import { extensionForMime, sanitizeAssetSegment, type AudioAsset } from "./audioProcessing";
 
 export const MAX_IMAGE_BYTES = 512 * 1024;
 export const MAX_IMAGE_DIM = 1024;
@@ -69,15 +70,23 @@ export type PackMeta = { id: string; version: string; name: string };
 
 export type SlotEntry = { blob: Blob; nameOverride: string };
 
+export type AudioBuildInput = {
+  sounds: Map<string, AudioAsset>;
+  music: Map<string, AudioAsset>;
+  teacherSounds: Map<number, AudioAsset>;
+};
+
+type BuiltTeacherEntry = { image?: string; name?: string; sound?: string };
+
 export async function buildPack(
-  roster: RosterEntry[], slots: Map<number, SlotEntry>, meta: PackMeta,
+  roster: RosterEntry[], slots: Map<number, SlotEntry>, meta: PackMeta, audio?: AudioBuildInput,
 ): Promise<Uint8Array<ArrayBuffer>> {
   const editedIndices = [...slots.keys()].sort((a, b) => a - b);
   if (editedIndices.length > MAX_TEACHER_ENTRIES) {
     throw new Error(`höchstens ${MAX_TEACHER_ENTRIES} Bilder pro Pack`);
   }
 
-  const teachers: Record<string, { image: string; name?: string }> = {};
+  const teachers: Record<string, BuiltTeacherEntry> = {};
   const assets: BbpackAsset[] = [];
 
   for (const index of editedIndices) {
@@ -87,19 +96,50 @@ export async function buildPack(
     const path = `teachers/${slugifyImage(entry.image)}.jpg`;
     assets.push({ name: path, mime: "image/jpeg", bytes: new Uint8Array(await slot.blob.arrayBuffer()) });
     const overrideName = slot.nameOverride.trim();
-    const teacherEntry: { image: string; name?: string } = { image: path };
+    const teacherEntry: BuiltTeacherEntry = { image: path };
     if (overrideName) teacherEntry.name = overrideName;
     teachers[String(index)] = teacherEntry;
   }
 
-  for (const index of editedIndices) {
+  const sounds: Record<string, string> = {};
+  const music: Record<string, string> = {};
+
+  if (audio) {
+    for (const [id, asset] of audio.sounds) {
+      const path = `sounds/${sanitizeAssetSegment(id)}.${extensionForMime(asset.mime)}`;
+      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.blob.arrayBuffer()) });
+      sounds[id] = path;
+    }
+    for (const [id, asset] of audio.music) {
+      const path = `music/${sanitizeAssetSegment(id)}.${extensionForMime(asset.mime)}`;
+      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.blob.arrayBuffer()) });
+      music[id] = path;
+    }
+    for (const [index, asset] of audio.teacherSounds) {
+      const entry = roster[index];
+      const path = `teachers/${slugifyImage(entry.image)}-taunt.${extensionForMime(asset.mime)}`;
+      assets.push({ name: path, mime: asset.mime, bytes: new Uint8Array(await asset.blob.arrayBuffer()) });
+      const key = String(index);
+      const existing = teachers[key];
+      if (existing) existing.sound = path;
+      else teachers[key] = { sound: path };
+    }
+  }
+
+  const teacherSoundIndices = audio ? [...audio.teacherSounds.keys()] : [];
+  const allIndices = [...new Set([...editedIndices, ...teacherSoundIndices])].sort((a, b) => a - b);
+
+  for (const index of allIndices) {
     if (Object.keys(teachers).length >= MAX_TEACHER_ENTRIES) break;
     const entry = roster[index];
     if (Object.prototype.hasOwnProperty.call(teachers, entry.ability)) continue;
     teachers[entry.ability] = teachers[String(index)];
   }
 
-  return encodeBbpack({ id: meta.id, version: meta.version, name: meta.name, teachers }, assets);
+  return encodeBbpack(
+    { id: meta.id, version: meta.version, name: meta.name, teachers, sounds, music },
+    assets,
+  );
 }
 
 export function isIdValid(id: string): boolean {
@@ -120,7 +160,7 @@ export function bumpPatchVersion(version: string): string {
   return `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
 }
 
-export type OpenedTeacherEntry = { image: string; name?: string };
+export type OpenedTeacherEntry = { image?: string; name?: string; sound?: string };
 
 export function slotIndicesFromTeachers(
   teachers: Record<string, OpenedTeacherEntry>, rosterLength: number,

@@ -9,6 +9,7 @@ import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TeacherAbilityPkt, TeacherInfo } from "../net/protocol";
+import { playTeacherTaunt } from "../core/audio";
 import { showBanner } from "../ui/banner";
 import {
   corruptTasks, fakePing, flashOverlay, flickerWorldLights, flipGravity,
@@ -132,6 +133,7 @@ export class TeacherEffects {
         break;
       case "taunt_shout":
         showBanner(`${teacherName}: "I SEE YOU!"`, 2500);
+        playTeacherTaunt(t?.ability, -1);
         break;
       case "relock_laptop":
         showBanner(`${teacherName} RE-LOCKED A LAPTOP`, 3000);

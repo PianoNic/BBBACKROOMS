@@ -1,5 +1,7 @@
 /** Master music + sfx routing. Lazy-creates the AudioContext on first user gesture. */
 import { getSettings, onSettingsChange } from "./settings";
+import { soundIdForUrl, TEACHER_TAUNT_ID } from "./soundRegistry";
+import { onActivePackChange, resolveSound, resolveTeacherSound } from "./texturePacks";
 
 let ctx: AudioContext | null = null;
 let musicGain: GainNode | null = null;
@@ -9,6 +11,11 @@ let musicOscillators: { stop(): void } | null = null;
 const FOOTSTEP_URLS = [1, 2, 3, 4, 5].map((i) => `/sounds/footsteps/step-${i}.ogg`);
 const footstepBuffers: AudioBuffer[] = [];
 let footstepLoadStarted = false;
+
+function resolveUrl(url: string): string {
+  const id = soundIdForUrl(url);
+  return id ? resolveSound(id, url) : url;
+}
 
 function ensureCtx(): AudioContext | null {
   if (ctx) return ctx;
@@ -58,7 +65,7 @@ async function loadFootsteps(): Promise<void> {
   if (!c) return;
   for (const url of FOOTSTEP_URLS) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(resolveUrl(url));
       const data = await res.arrayBuffer();
       const buf = await c.decodeAudioData(data);
       footstepBuffers.push(buf);
@@ -71,22 +78,22 @@ async function loadFootsteps(): Promise<void> {
 const sfxBuffers = new Map<string, AudioBuffer>();
 const sfxLoading = new Set<string>();
 
-async function loadSfx(url: string): Promise<AudioBuffer | null> {
-  if (sfxBuffers.has(url)) return sfxBuffers.get(url)!;
-  if (sfxLoading.has(url)) return null;
-  sfxLoading.add(url);
+async function loadSfx(resolvedUrl: string): Promise<AudioBuffer | null> {
+  if (sfxBuffers.has(resolvedUrl)) return sfxBuffers.get(resolvedUrl)!;
+  if (sfxLoading.has(resolvedUrl)) return null;
+  sfxLoading.add(resolvedUrl);
   const c = ensureCtx();
-  if (!c) { sfxLoading.delete(url); return null; }
+  if (!c) { sfxLoading.delete(resolvedUrl); return null; }
   try {
-    const res = await fetch(url);
+    const res = await fetch(resolvedUrl);
     const data = await res.arrayBuffer();
     const buf = await c.decodeAudioData(data);
-    sfxBuffers.set(url, buf);
+    sfxBuffers.set(resolvedUrl, buf);
     return buf;
   } catch {
     return null;
   } finally {
-    sfxLoading.delete(url);
+    sfxLoading.delete(resolvedUrl);
   }
 }
 
@@ -106,14 +113,22 @@ function spawnSfxSource(buf: AudioBuffer, volume: number, pitch: number): void {
 export function playSfx(url: string, volume = 1, pitch = 1): void {
   ensureCtx();
   if (!ctx || !sfxGain) return;
-  const buf = sfxBuffers.get(url);
+  const resolved = resolveUrl(url);
+  const buf = sfxBuffers.get(resolved);
   if (buf) { spawnSfxSource(buf, volume, pitch); return; }
-  loadSfx(url).then((b) => { if (b) spawnSfxSource(b, volume, pitch); });
+  loadSfx(resolved).then((b) => { if (b) spawnSfxSource(b, volume, pitch); });
 }
 
 /** Preload an sfx so it plays without a network round trip on first use. */
 export function preloadSfx(url: string): void {
-  loadSfx(url);
+  loadSfx(resolveUrl(url));
+}
+
+export function playTeacherTaunt(abilityId: string | undefined, rosterIndex: number): void {
+  const perTeacher = resolveTeacherSound(abilityId, rosterIndex);
+  const url = perTeacher ?? resolveSound(TEACHER_TAUNT_ID, "");
+  if (!url) return;
+  playSfx(url);
 }
 
 /** One-shot SFX attenuated by distance to the listener. Silent past
@@ -156,7 +171,7 @@ async function loadAmbientBuffer(): Promise<AudioBuffer | null> {
   const c = ensureCtx();
   if (!c) return null;
   try {
-    const res = await fetch(AMBIENT_URL);
+    const res = await fetch(resolveUrl(AMBIENT_URL));
     const data = await res.arrayBuffer();
     ambientBuffer = await c.decodeAudioData(data);
   } catch {
@@ -202,6 +217,13 @@ export function stopAmbient(): void {
 onSettingsChange((s) => {
   if (musicGain) musicGain.gain.value = s.musicVolume;
   if (sfxGain) sfxGain.gain.value = s.sfxVolume;
+});
+
+onActivePackChange(() => {
+  sfxBuffers.clear();
+  footstepBuffers.length = 0;
+  footstepLoadStarted = false;
+  ambientBuffer = null;
 });
 
 function envAttackDecay(
