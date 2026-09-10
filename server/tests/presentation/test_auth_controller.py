@@ -118,7 +118,7 @@ async def test_logout_clears_session_cookie(api_client_factory):
         resp = await client.post("/auth/logout")
         assert resp.json() == {"ok": True}
         set_cookie = resp.headers.get("set-cookie", "")
-        assert "bbb_session=" in set_cookie
+        assert f"{SESSION_COOKIE}=" in set_cookie
 
 
 async def test_delete_account_with_session(api_client_factory):
@@ -131,7 +131,7 @@ async def test_delete_account_with_session(api_client_factory):
         resp = await client.request("DELETE", "/auth/account")
         assert resp.status_code == 204
         set_cookie = resp.headers.get("set-cookie", "")
-        assert "bbb_session=" in set_cookie
+        assert f"{SESSION_COOKIE}=" in set_cookie
         assert "Max-Age=0" in set_cookie
 
         assert await accounts.get(acct.id) is None

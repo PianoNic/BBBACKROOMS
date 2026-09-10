@@ -11,7 +11,7 @@ from app.domain.accounts.account_repository import IAccountRepository
 from app.domain.accounts.profile_repository import IProfileRepository
 from app.domain.security.blocked_subject_policy import BlockedSubjectPolicy
 
-log = logging.getLogger("bbb.auth")
+log = logging.getLogger("nachsitzen.auth")
 
 
 @dataclass

@@ -16,7 +16,7 @@ from app.domain.lobbies.lobby import Lobby
 from app.domain.lobbies.player_conn import PlayerConn
 from app.game.broadcaster import Broadcaster
 
-log = logging.getLogger("bbb")
+log = logging.getLogger("nachsitzen")
 
 
 class CosmeticHandler:

@@ -11,7 +11,7 @@ from app.domain.achievements.achievement_catalog import AchievementCatalog
 from app.domain.achievements.achievement_repository import IAchievementRepository
 from app.domain.progression.achievement_evaluator import AchievementEvaluator
 
-log = logging.getLogger("bbb")
+log = logging.getLogger("nachsitzen")
 
 
 class UnlockAchievementsHandler(INotificationHandler[RoundEndedNotification]):

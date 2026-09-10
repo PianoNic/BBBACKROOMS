@@ -26,9 +26,25 @@ __all__ = ["app"]
 
 
 if __name__ == "__main__":
+    import logging
     import os
 
     import uvicorn
+
+    _LEGACY_PORT_ENV = "BBB_PORT"
+
+    def _resolve_port() -> str:
+        port = os.environ.get("NACHSITZEN_PORT")
+        if port is not None:
+            return port
+        legacy_port = os.environ.get(_LEGACY_PORT_ENV)
+        if legacy_port is not None:
+            logging.getLogger("nachsitzen").warning(
+                "%s is deprecated and will be removed in a future release; use NACHSITZEN_PORT instead",
+                _LEGACY_PORT_ENV,
+            )
+            return legacy_port
+        return "8000"
 
     # reload=True is intentional for local dev: per uvicorn's docs, on Windows
     # single-process mode uses the ProactorEventLoop (incompatible with
@@ -38,7 +54,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.asgi:app",
         host="0.0.0.0",
-        port=int(os.environ.get("BBB_PORT", "8000")),
+        port=int(_resolve_port()),
         reload=True,
         ws_ping_interval=20,
         ws_ping_timeout=20,

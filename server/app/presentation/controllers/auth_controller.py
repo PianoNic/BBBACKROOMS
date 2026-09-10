@@ -16,8 +16,8 @@ from app.presentation.dependencies import get_mediator
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-SESSION_COOKIE = "bbb_session"
-OAUTH_COOKIE = "bbb_oauth"
+SESSION_COOKIE = "nachsitzen_session"
+OAUTH_COOKIE = "nachsitzen_oauth"
 OAUTH_TTL = 600
 
 

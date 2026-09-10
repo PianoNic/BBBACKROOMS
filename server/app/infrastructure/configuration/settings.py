@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     # overrides DB_HOST=postgres (the service name on the internal network).
     db_host: str = "127.0.0.1"
     db_port: int = 5432
-    db_name: str = "bbb"
-    db_user: str = "bbb"
-    db_password: str = "bbb"
+    db_name: str = "nachsitzen"
+    db_user: str = "nachsitzen"
+    db_password: str = "nachsitzen"
     db_pool_min: int = 1
     db_pool_max: int = 8
 

@@ -11,7 +11,7 @@ import time
 from app.application.abstractions.token_service import ITokenService
 from app.infrastructure.configuration.settings import Settings, settings
 
-log = logging.getLogger("bbb.auth")
+log = logging.getLogger("nachsitzen.auth")
 
 
 class HmacTokenService(ITokenService):

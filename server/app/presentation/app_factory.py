@@ -16,7 +16,7 @@ from app.presentation.controllers.shop_controller import router as shop_router
 from app.presentation.controllers.turn_controller import router as turn_router
 from app.presentation.websocket.game_web_socket_endpoint import router as ws_router
 
-log = logging.getLogger("bbb")
+log = logging.getLogger("nachsitzen")
 
 
 @asynccontextmanager
