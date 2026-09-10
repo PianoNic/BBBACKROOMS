@@ -81,7 +81,7 @@ export function buildScene(
   }
   const ambientLights = new AmbientLights(ctx.scene);
 
-  const remotes = new RemotePlayers();
+  const remotes = new RemotePlayers(ctx.camera);
   remotes.attachAudio(audioListener);
   for (const p of init.players) remotes.add(p);
 
@@ -131,8 +131,8 @@ export function buildScene(
 
   const corpses = new Corpses();
   for (const c of init.corpses ?? []) {
-    const col = init.players.find((p) => p.id === c.id)?.color ?? init.selfColor;
-    corpses.add(c.id, c.x, c.z, col);
+    const owner = init.players.find((p) => p.id === c.id);
+    corpses.add(c.id, c.x, c.z, owner?.color ?? init.selfColor, owner?.equipped);
   }
   const laptop = new LaptopOverlay(net);
   const chairs = new Chairs(init.chairs ?? [], init.selfId, ctx.camera, remotes);

@@ -3,6 +3,7 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { VideoTexture } from "@babylonjs/core/Materials/Textures/videoTexture";
+import type { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { EquippedCosmetics, RemotePlayer } from "../net/protocol";
@@ -15,6 +16,8 @@ import {
   makeColorMaterial, makeFacePatternMaterials, makeVideoMaterials, setVoxelMaterial,
 } from "./remotePlayerMaterials";
 import { resolveCosmetic } from "./cosmetics";
+import { bodyColor } from "./cosmeticStyle";
+import { NameTags } from "./nameTags";
 
 const Y = 0.85;
 const STEP_DISTANCE = 1.1;
@@ -22,13 +25,6 @@ const REF_DISTANCE = 2.5;
 const MAX_DISTANCE = 25;
 const ROLLOFF = 1.8;
 const FOOTSTEP_URLS = [1, 2, 3, 4, 5].map((i) => `/sounds/footsteps/step-${i}.ogg`);
-
-/** Effective body colour: an equipped body theme's hex, else the player's
- *  assigned colour (the `body_default` theme has an empty assetRef). */
-function bodyColor(equipped: EquippedCosmetics, fallback: string): string {
-  const ref = resolveCosmetic(equipped.body)?.assetRef;
-  return ref ? ref : fallback;
-}
 
 type Entry = {
   mesh: Mesh;
@@ -43,19 +39,29 @@ type Entry = {
   videoTex: VideoTexture | null;
   equipped: EquippedCosmetics;
   hat: TransformNode | null;
+  name: string;
+};
+
+type RetiredLook = {
+  avatarUrl: string | null;
+  equipped: EquippedCosmetics;
+  name: string;
 };
 
 export class RemotePlayers {
   readonly group = group("remotePlayers");
+  readonly nameTags = new NameTags();
   private readonly entries = new Map<string, Entry>();
   /** Looks of downed players, kept so the recreated voxel on revive keeps
    *  its avatar and cosmetics (the live entry is destroyed by `markDead`). */
-  private readonly retiredLooks = new Map<
-    string, { avatarUrl: string | null; equipped: EquippedCosmetics }
-  >();
+  private readonly retiredLooks = new Map<string, RetiredLook>();
   private listener: SpatialListener | null = null;
   private readonly buffers: AudioBuffer[] = [];
   private buffersLoaded = false;
+
+  constructor(private readonly camera: FreeCamera) {
+    this.group.add(this.nameTags.group);
+  }
 
   /** Optional: attaching a listener enables spatial footsteps. */
   attachAudio(listener: SpatialListener): void {
@@ -88,6 +94,7 @@ export class RemotePlayers {
     this.retiredLooks.delete(p.id);
     const equipped = p.equipped ?? look?.equipped ?? {};
     const avatar = p.avatar ?? look?.avatarUrl ?? null;
+    const name = p.name ?? look?.name ?? p.id.slice(0, 6);
     const mesh = buildVoxelMesh(0.6, 1.7, 0.6, makeColorMaterial(bodyColor(equipped, p.color)));
     mesh.position.set(p.x, Y, p.z);
     mesh.rotation.y = p.yaw;
@@ -111,11 +118,12 @@ export class RemotePlayers {
       lastStepX: p.x, lastStepZ: p.z,
       avatarUrl: avatar,
       video: null, videoTex: null,
-      equipped, hat: null,
+      equipped, hat: null, name,
     });
     this.updateHat(p.id);
     if (avatar) this.applyAvatar(p.id, avatar);
     else this.applyFacePattern(p.id);
+    this.nameTags.set(p.id, name, equipped, mesh);
   }
 
   /** Swap the player's hat to match their equipped cosmetic. */
@@ -168,6 +176,7 @@ export class RemotePlayers {
     e.equipped = equipped ?? {};
     this.updateHat(id);
     this.repaintBody(id);
+    this.nameTags.set(id, e.name, e.equipped, e.mesh);
   }
 
   setState(id: string, x: number, z: number, yaw: number): void {
@@ -247,9 +256,15 @@ export class RemotePlayers {
   markDead(id: string, _x?: number, _z?: number): void {
     const e = this.entries.get(id);
     if (e) {
-      this.retiredLooks.set(id, { avatarUrl: e.avatarUrl, equipped: e.equipped });
+      this.retiredLooks.set(id, {
+        avatarUrl: e.avatarUrl, equipped: e.equipped, name: e.name,
+      });
     }
     this.remove(id);
+  }
+
+  lastLook(id: string): RetiredLook | null {
+    return this.retiredLooks.get(id) ?? null;
   }
 
   /** Toggle voxel visibility (hidden-in-closet players stay in the map
@@ -257,6 +272,7 @@ export class RemotePlayers {
   setVisible(id: string, visible: boolean): void {
     const e = this.entries.get(id);
     if (e) e.mesh.visible = visible;
+    this.nameTags.setVisible(id, visible);
   }
 
   remove(id: string): void {
@@ -269,6 +285,7 @@ export class RemotePlayers {
     if (e.video) e.video.srcObject = null;
     e.videoTex?.dispose();
     this.entries.delete(id);
+    this.nameTags.remove(id);
   }
 
   positions(): { x: number; z: number; color: string }[] {
@@ -285,5 +302,8 @@ export class RemotePlayers {
       Vector3.LerpToRef(e.mesh.position, e.target, lerp, e.mesh.position);
       e.mesh.rotation.y += (e.targetYaw - e.mesh.rotation.y) * lerp;
     }
+    this.nameTags.update(
+      this.camera.position, (id) => this.entries.get(id)?.mesh.position ?? null,
+    );
   }
 }

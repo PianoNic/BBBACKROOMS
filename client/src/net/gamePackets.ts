@@ -237,14 +237,16 @@ function handleKilled(
       const name = resolveTeacherName(t.ability, -1, t.name);
       jumpscare(image, name, t.subject);
     }
-    d.corpses.add(p.id, p.x, p.z, d.init.selfColor);
+    d.corpses.add(p.id, p.x, p.z, d.init.selfColor, d.init.selfCosmetics?.equipped);
     d.state.extracted = true;
     d.spectator.activate();
     showBanner("YOU WERE CAUGHT — wait for a teammate with a medkit to revive you.", 6000);
   } else {
     const col = d.init.players.find((q) => q.id === p.id)?.color ?? "#888";
-    d.corpses.add(p.id, p.x, p.z, col);
     d.remotes.markDead(p.id, p.x, p.z);
+    const equipped = d.remotes.lastLook(p.id)?.equipped
+      ?? d.init.players.find((q) => q.id === p.id)?.equipped;
+    d.corpses.add(p.id, p.x, p.z, col, equipped);
   }
 }
 
