@@ -111,7 +111,6 @@ export function buildScene(
   }
 
   const minimap = new Minimap(init.grid);
-  document.body.appendChild(minimap.element);
   const stamina = new StaminaBar();
   const interactPrompt = new InteractPrompt();
   const laptops = new Laptops(init.laptops);

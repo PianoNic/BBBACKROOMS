@@ -5,6 +5,7 @@ import { TaskBoard } from "./TaskBoard";
 import { TaskCounter } from "./TaskCounter";
 import { InventoryHud } from "./InventoryHud";
 import { InteractPrompt } from "./InteractPrompt";
+import { Minimap } from "./Minimap";
 import { hudActive } from "./state";
 
 export function HudApp() {
@@ -19,6 +20,7 @@ export function HudApp() {
           <StaminaBar />
           <ReviveBar />
           <InventoryHud />
+          <Minimap />
         </>
       ) : null}
     </>

@@ -8,33 +8,21 @@ const FACING_LEN = 10;
 export type RemoteDot = { x: number; z: number; color: string };
 export type WorldPos = { x: number; z: number };
 
+let publishedCtx: CanvasRenderingContext2D | null = null;
+
+export function setMinimapCanvas(ctx: CanvasRenderingContext2D | null): void {
+  publishedCtx = ctx;
+}
+
 /** Round, player-centred minimap. */
 export class Minimap {
-  readonly element: HTMLCanvasElement;
-  private readonly ctx: CanvasRenderingContext2D;
-  private readonly base: HTMLCanvasElement;
+  private readonly base: OffscreenCanvas;
   private readonly grid: Grid;
 
   constructor(grid: Grid) {
     this.grid = grid;
 
-    this.element = document.createElement("canvas");
-    this.element.width = DISPLAY;
-    this.element.height = DISPLAY;
-    this.element.style.cssText = `
-      position: fixed; top: 12px; right: 12px;
-      width: ${DISPLAY}px; height: ${DISPLAY}px;
-      border-radius: 50%;
-      border: 2px solid #444;
-      background: black;
-      image-rendering: pixelated;
-      pointer-events: none;
-    `;
-    this.ctx = this.element.getContext("2d")!;
-
-    this.base = document.createElement("canvas");
-    this.base.width = grid.width * ZOOM;
-    this.base.height = grid.height * ZOOM;
+    this.base = new OffscreenCanvas(grid.width * ZOOM, grid.height * ZOOM);
     const b = this.base.getContext("2d")!;
     b.fillStyle = "black";
     b.fillRect(0, 0, this.base.width, this.base.height);
@@ -58,7 +46,8 @@ export class Minimap {
       pings?: RemoteDot[];
     } = { items: [], tasks: [], teachers: [] },
   ): void {
-    const ctx = this.ctx;
+    const ctx = publishedCtx;
+    if (!ctx) return;
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, DISPLAY, DISPLAY);
 
