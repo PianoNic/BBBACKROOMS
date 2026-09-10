@@ -81,7 +81,7 @@ export function buildScene(
   }
   const ambientLights = new AmbientLights(ctx.scene);
 
-  const remotes = new RemotePlayers();
+  const remotes = new RemotePlayers(ctx.camera);
   remotes.attachAudio(audioListener);
   for (const p of init.players) remotes.add(p);
 
